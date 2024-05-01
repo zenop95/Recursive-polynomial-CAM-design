@@ -1,0 +1,19 @@
+add_interface_library(LIB_NAME odeprop
+    LINK_LIBRARIES
+        ${CSPICE_LIBRARY}
+        ${DACE_LIBRARIES}
+        ${JSON_LIBRARY}
+        geco
+    INCLUDE_DIRS
+        ${CSPICE_INCLUDE_DIR}
+        ${DACE_INCLUDE_DIR}
+        ${JSON_INCLUDE_DIR}
+    LIB_PUBLIC_HEADERS
+        DynModel.hpp
+        ControlModel.hpp
+        Propagator.hpp
+    LIB_PRIVATE_HEADERS
+        VariableStepPropagator.hpp
+        RKPropagator.hpp
+        RK78Propagator.hpp
+)

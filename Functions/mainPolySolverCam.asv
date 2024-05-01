@@ -1,0 +1,153 @@
+beep off
+format longG
+% close all
+clear
+addpath(genpath('.\data'))
+addpath(genpath('.\Functions'))
+addpath(genpath('.\CppExec'))
+addpath(genpath('.\OPM'))
+addpath(genpath('.\CDM'))
+addpath(genpath('..\Path'));
+addpath(genpath('C:\Program Files\Mosek\10.0\toolbox\r2017a'));
+set(0,'DefaultTextInterpreter','latex');
+set(0,'DefaultAxesFontSize',16);
+set(0,'DefaultAxesFontName','Times');
+set(0,'DefaultUicontrolFontName','Times', 'DefaultUicontrolFontSize', 14);
+set(0,'DefaultUitableFontName','Times', 'DefaultUitableFontSize', 14);
+set(0,'DefaultTextFontName','Times', 'DefaultTextFontSize', 14);
+set(0,'DefaultUipanelFontName','Times', 'DefaultUipanelFontSize', 14);
+
+set(0, 'DefaultLineLineWidth', 1);
+set(0,'defaultfigurecolor',[1 1 1])
+warning('off','MATLAB:table:ModifiedAndSavedVarnames')
+%% Initialize variables
+pp       = generateInitRoberto('leo',1);
+pp       = generateAida(pp);                                                            % [km/s^2]         (1,1) Acceleration scaling constant
+mu       = 398600.4418;
+Lsc      = pp.primary.a;                                                        % [km]             (1,1) Distance scaling constant
+Vsc      = sqrt(mu/Lsc);                                                     % [km/s]           (1,1) Velocity scaling constant
+Tsc      = Lsc/Vsc;                                                             % [s]              (1,1) Time scaling constant
+Asc      = Vsc/Tsc; 
+scaling  = [Lsc*ones(3,1); Vsc*ones(3,1)];
+T        = 2*pi/pp.primary.n/Tsc;                                          % [-] (1,1) Scaled orbital period
+et       = 478548000/Tsc;                                                  % [-] (1,1) Scaled initial ephemeris time
+x_pTCA   = pp.primary.x0./scaling;
+x_sTCA   = pp.secondary.x0./scaling;
+HBR      = pp.secondary.HBR/Lsc;
+r2e_p    = rtn2eci(x_pTCA(1:3),x_pTCA(4:6));
+r2e_s    = rtn2eci(x_sTCA(1:3),x_sTCA(4:6));
+P        = (r2e_p*pp.primary.C0(1:3,1:3)*r2e_p' + ...
+            r2e_s*pp.secondary.C0(1:3,1:3)*r2e_s')/Lsc^2;
+u = zeros(3,1);
+% u = load('dv.mat').dvF;
+% PoCLim = 1e-6;                                                             % [-] (1,1) PoC limit
+PoCLim = 1e-6;                                                             % [-] (1,1) PoC limit
+mdLim  =.3/Lsc;                                                           % [-] (1,1) Miss distance limit
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Select Metric for the collision (0: Alfriend, 1: Chan, 2: SMD, 3: Miss distance)
+metricFlag  = 0; 
+DAorder     = 4;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+n = 1.5;
+t = n*T;                                                               % [-] (1,1) Maneuver time before TCA
+% Write to file
+fid = fopen('initial_state.dat', 'w');
+fprintf(fid, '%2i\n',     DAorder);
+fprintf(fid, '%2i\n',     metricFlag);
+fprintf(fid, '%40.12f\n', t);
+fprintf(fid, '%40.12f\n', et);
+fprintf(fid, '%40.12f\n', Lsc);
+fprintf(fid, '%40.12f\n', mu);
+fprintf(fid, '%40.12f\n', HBR);
+for j = 1:6 
+    fprintf(fid, '%40.12f\n', x_pTCA(j));
+end
+for j = 1:6
+    fprintf(fid, '%40.12f\n', x_sTCA(j));
+end
+for j = 1:3 
+    for k = 1:3 
+        fprintf(fid, '%40.12f\n', P(j,k));
+    end
+end
+for j = 1:3 
+    fprintf(fid, '%40.12f\n', u(j));
+end
+fclose(fid);
+aidaInit(pp,'primary');
+tic
+% Run the C++ Executable to perform the DA propagation
+!wsl ./CppExec/greedyProp
+
+% Polynomials extraction 
+b        = tic;
+a        = load("constPart.dat");                                                         
+xBall    = a(1:6);                                                          % [-] (6,1) Constant part of the propagated state and control
+x0       = a(7:12);                                                         % [-] (6,1) Constant part of the propagated state and control
+metric   = a(13);                                                           % [-] (1,1) Collision metric with no maneuver
+detPB    = a(14);                                                           % [-] (1,1) Determinant of the combined covariance at TCA (2d)
+smdLim   = -2*log(2*PoCLim*sqrt(detPB)/HBR^2);                              % [-] (1,1) SMD limit computed with Alfriend and Akella's formula applied to PC
+if metricFlag == 0 || metricFlag == 1
+    lim = PoCLim;
+elseif metricFlag == 2
+    lim = smdLim;
+else
+    lim = mdLim^2;
+end
+coeff    = LoadCOSY('metricPoly.dat',6,1,0);                                % [-] (struct) Polynomial coefficients of the collision metric
+a        = toc(b);
+Delta = lim - metric;                                                       % [-] (1,1) Collision metric residual
+scaleG   = 1e3;
+
+mpol dvSym 3;
+obj        = min(sum(dvSym.^2));                                % Fuel minimization objective function
+poly       = SymDAPoly(coeff.C,coeff.E,dvSym',[4 5 6],scaleG);  % Construct polynomial from DA
+constr     = poly == lim;                                       % Polynomial Constraint on collision metric
+constr(2)  = dvSym(1) - 1 <= 0;  
+constr(3)  = dvSym(2) - 1 <= 0;  
+constr(4)  = dvSym(3) - 1 <= 0;  
+constr(5)  = dvSym(1) + 1 >= 0;  
+constr(6)  = dvSym(2) + 1 >= 0;  
+constr(7)  = dvSym(3) + 1 >= 0;  
+p          = msdp(obj,constr);
+[~,optObj] = msol(p);
+dv         = double(dvSym)/scaleG;
+dvF        = dv;
+
+simTime      = toc - load("timeOut.dat")/1000 - a;                      
+%   Polynomial validation
+metricValPoly = eval_poly(coeff.C,coeff.E,[zeros(1,3), dvF']);
+[x,smd] = validateCam(metricFlag,t,et,Lsc,Vsc,lim,mu,HBR,x_pTCA,x_sTCA,P,dvF,1,simTime,pp);
+    
+%% Ellipse B-plane
+colors = [0 0.4470 0.7410];
+e2b = eci2Bplane(xBall(4:6,1),x_sTCA(4:6));
+e2b = e2b([1 3],:);
+PB  = e2b*P*e2b';
+[semiaxes,cov2b] = defineEllipsoid(PB,smdLim);
+a          = semiaxes(1)*Lsc;
+b          = semiaxes(2)*Lsc;
+t          = 0:0.001:2*pi;
+xx         = a*cos(t);
+yy         = b*sin(t);
+xx1        = mdLim*Lsc*cos(t);
+yy1        = mdLim*Lsc*sin(t);
+ellCov     = [xx; yy];
+ellB       = nan(2,length(t));
+for k = 1:length(t)
+    ellB(:,k) = cov2b*ellCov(:,k);
+end
+figure
+hold on    
+pOldB = e2b*(xBall(1:3)-x_sTCA(1:3))*Lsc;
+pNewB = e2b*(x(1:3)-x_sTCA(1:3))*Lsc;
+plot(ellB(1,:),ellB(2,:),'k');
+plot(xx1,yy1,'k--');
+plot(pOldB(1),pOldB(2),'color',colors, ...
+    'Marker','diamond','HandleVisibility','off')
+plot(pNewB(1,:),pNewB(2,:),'o');
+grid on 
+xlabel('$\xi$ [km]')
+ylabel('$\zeta$ [km]')
+hold off
+axis equal

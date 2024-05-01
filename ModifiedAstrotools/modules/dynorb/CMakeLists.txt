@@ -1,0 +1,19 @@
+add_interface_library(LIB_NAME dynorb
+    LINK_LIBRARIES
+        ${CSPICE_LIBRARY}
+        ${DACE_LIBRARIES}
+        ${JSON_LIBRARY}
+        astro
+        atmos
+        geco
+        odeprop
+    INCLUDE_DIRS
+        ${JSON_INCLUDE_DIR}
+        ${CSPICE_INCLUDE_DIR}
+        ${DACE_INCLUDE_DIR}
+    LIB_PUBLIC_HEADERS
+        AIDA.h
+        AIDAwrappers.h
+        DynClass.h
+        GravityFieldModel.h
+)

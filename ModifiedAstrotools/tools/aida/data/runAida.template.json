@@ -1,0 +1,42 @@
+{
+    "initialState": {
+        "epoch": "2016-12-31T17:58:51.816077",
+        "state": [
+            6.6526831668497343e+03,
+            0.0000000000000000e+00,
+            0.0000000000000000e+00,
+            0.0000000000000000e+00,
+            -8.8474643737438263e-01,
+            7.6917814141592569e+00
+        ],
+        "mass": 1000.0
+    },
+    "finalEpoch": "2017-01-01T00:07:50.813036",
+    "dynamics": {
+        "type": "AIDA",
+        "gravityField": {
+            "model": "./data/egm2008",
+            "degree": 15
+        },
+        "thirdBody": 2,
+        "drag": {
+            "mode": 2,
+            "area": 1.0,
+            "Cd": 2.2
+        },
+        "srp": {
+            "mode": 2,
+            "area": 1.0,
+            "Cr": 1.31
+        },
+        "minHeight" : 78.0
+    },
+    "propagator" : {
+        "type" : "rungeKutta78",
+        "minStep"     : 1e-10,
+        "maxStep"     : 6e2,
+        "initialStep" : 600.0,
+        "tolerance"   : 1e-10,
+        "maxAttempts" : 100
+    }
+}

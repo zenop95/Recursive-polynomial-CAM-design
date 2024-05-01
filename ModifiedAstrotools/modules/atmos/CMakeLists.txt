@@ -1,0 +1,20 @@
+add_shared_library(LIB_NAME atmos
+    LINK_LIBRARIES
+        ${CSPICE_LIBRARY}
+        ${DACE_LIBRARIES}
+        ${JSON_LIBRARY}
+        cfg
+        geco
+        astro
+    LIB_PUBLIC_HEADERS
+        Nrlmsise00.hpp
+        Exponential.hpp
+        SpaceWeather.hpp
+    LIB_PRIVATE_HEADERS
+        Nrlmsise00_p.hpp
+        Nrlmsise00_math.hpp
+    LIB_PRIVATE_SOURCES
+        Nrlmsise00_data.cpp
+        Nrlmsise00_p.cpp
+        SpaceWeather.cpp
+)
