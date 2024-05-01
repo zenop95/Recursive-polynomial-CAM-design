@@ -69,7 +69,7 @@ switch pp.solvingMethod
         yF = computeDvGlobal(lim,coeffPoC,n_man,m,scale);
 
     case 'nlp'
-        yF = computeDvNlp(lim,coeffPoC,u,n_man,m,scale);
+        yF = computeCtrlNlp(lim,coeffPoC,u,n_man,m,scale);
 
     case 'moment-relaxation' %not working
         yF = computeDvMomRel(lim,coeffPoC,n_man,m,scale);
@@ -99,4 +99,4 @@ if pp.metricFlag  == 0 || pp.metricFlag  == 1
 end
 
 %% PostProcess
-postProcessPoly(smdLim,xBall,x,lim,dv,simTime,pp)
+postProcess(smdLim,xBall,x,lim,dv,simTime,pp)

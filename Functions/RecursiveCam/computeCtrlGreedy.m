@@ -26,7 +26,7 @@ for k = 1:DAorder
     DAArraysPoC{k}  =  buildDAArray(coeffPoC.C,coeffPoC.E,k);                   % [-] (cell) Build cell arrays for the DA expansion high-order tensors
 end
 %% First-order Dv
-Y0p   = findCtrl(DAArraysPoC{1},zeros(1,n),Delta) + u;                          % [-] (n,1) 1st-order greedy solution of the polynomial constraint
+Y0p   = greedyCtrl(Delta,DAArraysPoC,zeros(n,1),1);                             % [-] (n,1) 1st-order greedy solution of the polynomial constraint
 Yp    = Y0p;                                                                    % [-] (n,1) Initialize linearization point for 2nd-order solution
 
 %% Higher-orders Dv
@@ -38,7 +38,6 @@ for k = 2:DAorder
         Yp  = greedyCtrl(Delta,DAArraysPoC,Y0p-u,k) + u;                        % [-] (n,1) kth-order greedy solution of the polynomial constraint
         err  = norm(Yp-Y0p);                                                    % [-] (n,1) Compute convergence variable at iteration iter
         Y0p = Yp;                                                               % [-] (n,1) Update linearization point for kth-order solution
-%         e(iter) = err;
     end
 end
 yf = reshape(Yp,[],N).*scale;                                                   % [-] (m,N) Reshape final solution to epress it node-wise

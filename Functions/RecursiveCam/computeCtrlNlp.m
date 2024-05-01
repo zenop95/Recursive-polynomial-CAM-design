@@ -1,4 +1,4 @@
-function yf = computeDvNlp(lim,coeffPoC,u,N,m,scale)
+function yf = computeCtrlNlp(lim,coeffPoC,u,N,m,scale)
 % computeDvNlp Solves the polynomial CAM optimization problem using fmincon
 %
 % INPUT:  lim      = [-] Metric limit

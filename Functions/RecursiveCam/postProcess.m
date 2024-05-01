@@ -1,4 +1,4 @@
-function [] = postProcessPoly(smdLim,xBall,xMan,lim,ctrl,simTime,pp)
+function [] = postProcess(smdLim,xBall,xMan,lim,ctrl,simTime,pp)
 %UNTITLED11 Summary of this function goes here
 %   Detailed explanation goes here
 metricFlag = pp.metricFlag;
