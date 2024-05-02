@@ -7,7 +7,6 @@ simTimeNlp  = nan(6,n);
 simTimeRec  = nan(6,n);
 dvNlp       = nan(6,n);
 dvRec       = nan(6,n);
-
 load('SimOutput\singleImpulseEsaCases\convex.mat')
 PoCConv     = PoC;
 simTimeConv = simTime;
@@ -16,12 +15,13 @@ for kk = 2:7
     PoCNlp(kk-1,:)     = PoC;
     simTimeNlp(kk-1,:) = simTime;
     dvNlp(kk-1,:)      = normOfVec(dvs)*sqrt(pp.mu/6378)*1e6;
-    load(['SimOutput\singleImpulseEsaCases\recursive',num2str(kk),'.mat'])
+    load(['SimOutput\singleImpulseEsaCasesFixedDir\rec',num2str(kk),'.mat'])
     PoCRec(kk-1,:)     = PoC;
     simTimeRec(kk-1,:) = simTime;
     dvRec(kk-1,:)      = normOfVec(dvs)*sqrt(pp.mu/6378)*1e6;
 end
 clearvars -except PoCConv simTimeConv PoCNlp simTimeNlp PoCRec simTimeRec dvNlp dvRec n
+alsoNlp = 0;
 
 %% Define colors
 col1 = [0.9290 0.6940 0.1250];
@@ -40,10 +40,12 @@ PoCNlp(PoCNlp<1e-8) = nan;
 colororder(colors)
 scatter(1:n,log10(PoCRec),3,'filled')
 hold on
-scatter(1:n,log10(PoCNlp),3,'filled')
+if alsoNlp
+    scatter(1:n,log10(PoCNlp),3,'filled')
+end
 axis tight
 xlabel('Conjunction ID [-]')
-ylabel('PoC after maneuver [-]')
+ylabel('Log of PoC after maneuver [-]')
 grid on
 hold off
 
@@ -52,38 +54,44 @@ colororder(colors(1:6,:))
 scatter(1:n,simTimeRec,4,'filled')
 axis tight
 xlabel('Conjunction ID [-]')
-ylabel('PoC after maneuver [-]')
+ylabel('Computation time [s]')
 grid on
 ylim([0.15,0.4])
 
-figure()
-colororder(colors(7:12,:))
-scatter(1:n,simTimeNlp,4,'filled')
-axis tight
-xlabel('Conjunction ID [-]')
-ylabel('PoC after maneuver [-]')
-grid on
-ylim([0.15,0.4])
+if alsoNlp
+    figure()
+    colororder(colors(7:12,:))
+    scatter(1:n,simTimeNlp,4,'filled')
+    axis tight
+    xlabel('Conjunction ID [-]')
+    ylabel('Computation time [s]')
+    grid on
+    ylim([0.15,0.4])
+end
 
 %% Histograms
 % Define edges
 edgesTime = 0.1:0.05:0.45;
-edgesPoC = -6.04:0.01:-5.96;
+edgesPoC = -6.0002:0.00002:-5.9998;
 edgesDv = (0:3e-6:5e-5)*1e6*sqrt(398600/6378);
 % Build edges
 for kk = 1:6
-    histTimeNlp(kk,:) = histcounts(simTimeNlp(kk,:),edgesTime);
+    if alsoNlp
+        histTimeNlp(kk,:) = histcounts(simTimeNlp(kk,:),edgesTime);
+        histPocNlp(kk,:) = histcounts(log10(PoCNlp(kk,:)),edgesPoC);
+        histDvNlp(kk,:) = histcounts(dvNlp(kk,:),edgesDv);
+    end
     histTimeRec(kk,:) = histcounts(simTimeRec(kk,:),edgesTime);
-    histPocNlp(kk,:) = histcounts(log10(PoCNlp(kk,:)),edgesPoC);
     histPocRec(kk,:) = histcounts(log10(PoCRec(kk,:)),edgesPoC);
-    histDvNlp(kk,:) = histcounts(dvNlp(kk,:),edgesDv);
     histDvRec(kk,:) = histcounts(dvRec(kk,:),edgesDv);
 end
-histTimeNlp = histTimeNlp'/n*100;
+if alsoNlp
+    histTimeNlp = histTimeNlp'/n*100;
+    histPocNlp  = histPocNlp'/n*100;
+    histDvNlp  = histDvNlp'/n*100;
+else; histTimeNlp = []; histPocNlp = []; histDvNlp = []; end
 histTimeRec = histTimeRec'/n*100;
-histPocNlp  = histPocNlp'/n*100;
 histPocRec  = histPocRec'/n*100;
-histDvNlp  = histDvNlp'/n*100;
 histDvRec  = histDvRec'/n*100;
 
 % Plot histograms
