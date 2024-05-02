@@ -1,4 +1,4 @@
-function pp = definePolyParams(pp)
+function pp = definePolyParams(pp,tMan)
 % definePolyParams defines the optimization parameters for the polynomial 
 % optimization.
 % 
@@ -12,7 +12,7 @@ function pp = definePolyParams(pp)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 
-pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 2;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
 pp.metricFlag    = 1;                                                           % [-]   (1,1) Metric for the collision (1: PoC, 2: SMD, 3: Miss distance)
 pp.solvingMethod = 'greedy';                                                    % [str] (1,1) Optimization method (greedy,global,nlp,moment-relaxations)
@@ -25,20 +25,16 @@ pp.dyn = 0;
 %% Operational constraints
 pp.returnFlag       = 0;                                                    % [-]      (1,1) Include return (does not work yet)
 pp.lowThrust        = 0;                                                        % [bool]   (1,1) Low-thrust flag
-pp.fixedDir         = 0;                                                        % [bool]   (1,1) Fixed-direction flag
+pp.fixedDir         = 1;                                                        % [bool]   (1,1) Fixed-direction flag
 pp.fixedMag         = 0;                                                        % [bool]   (1,1) Fixed-magnitude flag
-pp.singleMan        = 0;                                                        % [bool]   (1,1) Single maneuver flag (impulse or low-thrust arc)
+pp.filterMans       = 0;                                                        % [bool]   (1,1) Filtered maneuver flag
+pp.nMans            = 0;                                                        % [bool]   (1,1) Selects how many impulses to use
 thrustMagnitude     = 0.2;                                                     % [mm/s^2] (1,1) Maximum acceleration if fixedMag = true
 pp.thrustMagnitude  = thrustMagnitude/pp.Asc/1e6;                    % [-]      (1,1) Scaled maximum acceleration
-pp.thrustDirections = repmat([0 1 0; 0 1 0]',1,10);                                    % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
+pp.thrustDirections = repmat([0 1 0]',1,100);                                    % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
 
 %% Maneuvering times
-nFire      = [1.5];
-if pp.cislunar
-    nFire = 3.6*86400/pp.Tsc;
-end
-% nFire      = linspace(0.49,0.51,2);
-% nFire      = [nFire, nFire + 1, nFire + 2];
+nFire      = tMan;
 nConj      = -pp.tca_sep;
 pp.ns      = sort(unique([nFire, nConj]),"descend")';
 canFire    = ismember(pp.ns,nFire);

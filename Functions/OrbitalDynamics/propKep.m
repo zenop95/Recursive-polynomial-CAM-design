@@ -16,7 +16,7 @@ else
     mu = 3.986004418e14; 
 end
 N      = length(t);
-coe    = cartesian2kepler(x0);
+coe    = cartesian2kepler(x0,mu);
 theta  = nan(N,1);
 tt0    = trueAnomaly2time(coe.n,coe.ecc,coe.theta);
 x      = nan(6,N);

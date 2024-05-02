@@ -100,12 +100,12 @@ b = tic;
 % Polynomials extraction 
 a         = load("constPart.dat");                                                         
 for k = 1:n_conj
-    xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,1) Constant part of the propagated state and control
+    xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
 x0     = a(n_conj*6+1:n_conj*6+6);                                              % [-] (6,1) Constant part of the propagated state and control
 metric = a(n_conj*6 + 7);                                                       % [-] (1,1) Collision metric with no maneuver
 detPB  = a(n_conj*6 + 7 + (1:k));                                               % [-] (1,1) Determinant of the combined covariance at TCA (2d)
-P_B    = reshape(a(end-n_conj*4+1:end),2,2,n_conj);                                  % [-] (1,1) Determinant of the combined covariance at TCA (2d)
+P_B    = reshape(a(end-n_conj*4+1:end),2,2,n_conj);                             % [-] (1,1) Determinant of the combined covariance at TCA (2d)
 timeSubtr = toc(b) + timeSubtr1 + load("timeOut.dat")/1000 ;
 for k = 1:n_conj
     switch pocType
