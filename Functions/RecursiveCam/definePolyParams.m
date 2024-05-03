@@ -12,7 +12,7 @@ function pp = definePolyParams(pp,tMan)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 
-pp.DAorder       = 2;                                                           % [-]   (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
 pp.metricFlag    = 1;                                                           % [-]   (1,1) Metric for the collision (1: PoC, 2: SMD, 3: Miss distance)
 pp.solvingMethod = 'greedy';                                                    % [str] (1,1) Optimization method (greedy,global,nlp,moment-relaxations)
@@ -25,10 +25,10 @@ pp.dyn = 0;
 %% Operational constraints
 pp.returnFlag       = 0;                                                    % [-]      (1,1) Include return (does not work yet)
 pp.lowThrust        = 0;                                                        % [bool]   (1,1) Low-thrust flag
-pp.fixedDir         = 1;                                                        % [bool]   (1,1) Fixed-direction flag
+pp.fixedDir         = 0;                                                        % [bool]   (1,1) Fixed-direction flag
 pp.fixedMag         = 0;                                                        % [bool]   (1,1) Fixed-magnitude flag
 pp.filterMans       = 0;                                                        % [bool]   (1,1) Filtered maneuver flag
-pp.nMans            = 0;                                                        % [bool]   (1,1) Selects how many impulses to use
+pp.nMans            = 2;                                                        % [bool]   (1,1) Selects how many impulses to use
 thrustMagnitude     = 0.2;                                                     % [mm/s^2] (1,1) Maximum acceleration if fixedMag = true
 pp.thrustMagnitude  = thrustMagnitude/pp.Asc/1e6;                    % [-]      (1,1) Scaled maximum acceleration
 pp.thrustDirections = repmat([0 1 0]',1,100);                                    % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)

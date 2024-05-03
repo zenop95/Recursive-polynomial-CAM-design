@@ -15,12 +15,12 @@ ylabel('PoC after maneuver [-]')
 grid on
 legend('$n=2$','$n=3$','$n=4$','$n=5$','$n=6$','$n=7$','$n=8$','$n=9$','Interpreter','Latex')
 
-% figure
-% semilogy(tMan,dvNorm*pp.Vsc*1e6)
-% xlabel('Orbits to TCA [-]')
-% ylabel('$||\Delta v||$ [mm/s]')
-% grid on
-% legend('$n=2$','$n=3$','$n=4$','$n=5$','$n=6$','$n=7$','$n=8$','$n=9$','Interpreter','Latex')
+figure
+semilogy(tMan,dvNorm*pp.Vsc*1e6)
+xlabel('Orbits to TCA [-]')
+ylabel('$||\Delta v||$ [mm/s]')
+grid on
+legend('$n=2$','$n=3$','$n=4$','$n=5$','$n=6$','$n=7$','$n=8$','$n=9$','Interpreter','Latex')
 
 figure
 semilogy(tMan,compTime,'.')
