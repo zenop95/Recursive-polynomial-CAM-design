@@ -910,7 +910,7 @@ DACE::AlgebraicVector<T> RK78Sc(const int N, DACE::AlgebraicVector<T> Y0, DACE::
 template<typename T, typename U>
 DACE::AlgebraicVector<T> RK78Dv(const int N, DACE::AlgebraicVector<T> Y0,
 	const U X0, const U X1, const U Lsc, const U mu, bool gravOrd, dynamicsTemplateDv<T, U>& dyn, 
-	const bool flag_SADA = false, const bool returnIntermediatePoints = false, 
+	const bool flag_SADA = true, const bool returnIntermediatePoints = false, 
 	const double tolerance = 1.e-12){
 
     double ERREST;
