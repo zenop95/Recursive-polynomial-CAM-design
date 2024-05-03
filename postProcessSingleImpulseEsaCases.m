@@ -16,13 +16,13 @@ for kk = 2:7
     PoC(PoC<prctile(PoC,5)) = nan;
     PoCNlp(kk-1,:)     = PoC;
     simTimeNlp(kk-1,:) = simTime;
-    dvNlp(kk-1,:)      = normOfVec(dvs)*sqrt(pp.mu/6378)*1e6;
-    load(['SimOutput\singleImpulseEsaCases\recursive',num2str(kk),'.mat'])
+    dvNlp(kk-1,:)      = normOfVec(dvs);
+    load(['SimOutput\singleImpulseEsaCases\rec',num2str(kk),'.mat'])
     PoC(PoC>prctile(PoC,95)) = nan;
     PoC(PoC<prctile(PoC,5)) = nan;
     PoCRec(kk-1,:)     = PoC;
     simTimeRec(kk-1,:) = simTime;
-    dvRec(kk-1,:)      = normOfVec(dvs)*sqrt(pp.mu/6378)*1e6;
+    dvRec(kk-1,:)      = normOfVec(dvs);
 end
 clearvars -except PoCConv simTimeConv PoCNlp simTimeNlp PoCRec simTimeRec dvNlp dvRec n
 alsoNlp = 1;
