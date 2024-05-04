@@ -116,20 +116,21 @@ if alsoNlp
     set(gca,'ColorOrder',colors(7:12,:))
 end
 
-% figure()
-% colororder(colors(1:6,:))
-% scatter(1:n,dvRec,4,'filled')
-% axis tight
-% xlabel('Conjunction ID [-]')
-% ylabel('$||\Delta v||$ [mm/s]')
-% grid on
-% ylim([0.15,0.4])
+figure()
+colororder(colors)
+scatter(1:n,dvRec,4,'filled')
+hold on
+scatter(1:n,dvNlp,4,'filled')
+axis tight
+xlabel('Conjunction ID [-]')
+ylabel('$||\Delta v||$ [mm/s]')
+grid on
 
 %% Histograms
 % Define edges
 edgesTime = 0.1:0.05:0.45;
 edgesPoC = -6.0002:0.00002:-5.9998;
-edgesDv = (0:3e-6:5e-5)*1e6*sqrt(398600/6378);
+edgesDv = 5:10:1000;
 % Build edges
 for kk = 1:6
     if alsoNlp
