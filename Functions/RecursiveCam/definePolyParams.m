@@ -28,7 +28,7 @@ pp.lowThrust        = 0;                                                        
 pp.fixedDir         = 0;                                                        % [bool]   (1,1) Fixed-direction flag
 pp.fixedMag         = 0;                                                        % [bool]   (1,1) Fixed-magnitude flag
 pp.filterMans       = 1;                                                        % [bool]   (1,1) Filtered maneuver flag
-pp.nMans            = 2;                                                        % [bool]   (1,1) Selects how many impulses to use
+pp.nMans            = 1;                                                        % [bool]   (1,1) Selects how many impulses to use
 thrustMagnitude     = 0.2;                                                     % [mm/s^2] (1,1) Maximum acceleration if fixedMag = true
 pp.thrustMagnitude  = thrustMagnitude/pp.Asc/1e6;                    % [-]      (1,1) Scaled maximum acceleration
 pp.thrustDirections = repmat([0 1 0]',1,100);                                    % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
