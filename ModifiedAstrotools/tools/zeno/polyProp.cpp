@@ -155,9 +155,9 @@ int main(void)
             else if (m == 2) {
                 alpha = DA(2*kk+1)*scale.at(0,kk);
                 beta  = DA(2*kk+2)*scale.at(1,kk);
-                ctrlRtn[0] = magnitude[kk]*cos(alpha);
-                ctrlRtn[1] = magnitude[kk]*sin(alpha)*cos(beta);
-                ctrlRtn[2] = magnitude[kk]*sin(alpha)*sin(beta);
+                ctrlRtn[0] = magnitude[kk]*cos(alpha)*sin(beta);
+                ctrlRtn[1] = magnitude[kk]*cos(alpha)*cos(beta);
+                ctrlRtn[2] = magnitude[kk]*sin(alpha);
             }
             else if (m == 1) {
                 for (j = 0; j < 3 ; j++) {
@@ -250,9 +250,6 @@ int main(void)
         for (j = 0; j < 6 ; j++) {
         constPart  << cons(xTca.at(j,k)) << endl;
         }
-    }
-    for (j = 0; j < 6 ; j++) {
-    constPart  << cons(xstart[j]) << endl;
     }
     constPart  << cons(poc_tot)  << endl;
     for (k = 0; k < n_conj ; k++) {

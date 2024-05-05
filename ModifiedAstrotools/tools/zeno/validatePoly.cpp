@@ -59,7 +59,7 @@ int main(void)
         Input >> n_conj; // Number of conjunctions
         Input >> n_man; // Number of impulses
         Input >> m; // Number of DA variables per node
-        Input >> dyn; // Number of DA variables per node
+        Input >> dyn; // 0 Earth Orbit, 1 Cislunar
         Input >> lowThrust_flag;
         Input >> order;
         Input >> metricFlag;

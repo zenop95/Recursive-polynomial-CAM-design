@@ -1,5 +1,5 @@
 function [pp] = generateAida(pp)
-%GENERATEAIDA define here the AIDA parameters for primary and secondary satellite
+% GENERATEAIDA define here the AIDA parameters for primary and secondary satellite
 % 
 % Author: Zeno Pavanello, 2022
 % E-mail: zpav176@aucklanduni.ac.nz

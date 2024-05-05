@@ -1,4 +1,4 @@
-function [lim,smdLim,coeffPoC,timeSubtr,xTca,x0,metric,dist,convRadius] = ...
+function [lim,smdLim,coeffPoC,timeSubtr,xTca,metric,dist,convRadius] = ...
               propDAPoly(DAorder,u,scale,validateFlag,convRadFlag,pp)
 
 n_conj     = pp.n_conj;
@@ -89,10 +89,10 @@ elseif ~validateFlag && convRadFlag
 else
     error('Invalid flag combination')
 end
-if convRadFlag; lim=[];smdLim=[];coeffPoC=[];timeSubtr=[];xTca=[];x0=[];metric=[];dist=[]; 
+if convRadFlag; lim=[];smdLim=[];coeffPoC=[];timeSubtr=[];xTca=[];metric=[];dist=[]; 
     return; 
 elseif validateFlag
-    lim=[];smdLim=[];coeffPoC=[];timeSubtr=[];dist=[];x0=[];metric=[];
+    lim=[];smdLim=[];coeffPoC=[];timeSubtr=[];dist=[];metric=[];
     xTca = reshape(load("constPart.dat"),6,pp.n_conj);                          % [-] (6,1) Constant part of the propagated state and control
     return; 
 end
@@ -102,9 +102,8 @@ a         = load("constPart.dat");
 for k = 1:n_conj
     xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
-x0     = a(n_conj*6+1:n_conj*6+6);                                              % [-] (6,1) Constant part of the propagated state and control
-metric = a(n_conj*6 + 7);                                                       % [-] (1,1) Collision metric with no maneuver
-detPB  = a(n_conj*6 + 7 + (1:k));                                               % [-] (1,1) Determinant of the combined covariance at TCA (2d)
+metric = a(n_conj*6 + 1);                                                       % [-] (1,1) Collision metric with no maneuver
+detPB  = a(n_conj*6 + 1 + (1:k));                                               % [-] (1,1) Determinant of the combined covariance at TCA (2d)
 P_B    = reshape(a(end-n_conj*4+1:end),2,2,n_conj);                             % [-] (1,1) Determinant of the combined covariance at TCA (2d)
 timeSubtr = toc(b) + timeSubtr1 + load("timeOut.dat")/1000 ;
 for k = 1:n_conj
