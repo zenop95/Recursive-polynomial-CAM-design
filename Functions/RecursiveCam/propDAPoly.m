@@ -4,7 +4,6 @@ function [lim,smdLim,coeffPoC,timeSubtr,xTca,metric,dist,convRadius] = ...
 n_conj     = pp.n_conj;
 n_man      = pp.n_man;
 pocType    = pp.pocType;
-metricFlag = pp.metricFlag;
 t          = pp.t;
 et         = pp.et;
 mdLim      = pp.mdLim;
@@ -30,7 +29,6 @@ fprintf(fid, '%2i\n',     pp.m);
 fprintf(fid, '%2i\n',     pp.cislunar);
 fprintf(fid, '%2i\n',     pp.lowThrust);
 fprintf(fid, '%2i\n',     DAorder);
-fprintf(fid, '%2i\n',     metricFlag);
 fprintf(fid, '%2i\n',     pocType);
 fprintf(fid, '%40.16f\n', et);
 fprintf(fid, '%40.16f\n', Lsc);
@@ -116,16 +114,7 @@ for k = 1:n_conj
             error('invalid PoC type')
     end
 end
-switch  metricFlag
-    case 1
-        lim = log10(PoCLim);
-    case 2
-        lim = smdLim;
-    case 3
-        lim = mdLim^2;
-    otherwise
-        error('Invalid metric flag')
-end
+lim = log10(PoCLim);
 coeffPoC  = struct();
 if ~validateFlag && ~convRadFlag
     coeffPoC  = LoadCOSY('metricPoly.dat',(3-2*pp.fixedDir-pp.fixedMag)*pp.n_man,1,0);
