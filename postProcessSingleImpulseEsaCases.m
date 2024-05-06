@@ -110,28 +110,28 @@ PoCNlp(PoCNlp<1e-8) = nan;
 % hold off
 
 figure()
-if alsoNlp; subplot(2,1,1); end
+if alsoNlp; subplot(1,2,1); end
 colororder(colors(1:6,:))
 a = scatter(1:n,simTimeRec,4,'filled');
 axis tight
-if ~alsoNlp
-    xlabel('Conjunction ID [-]')
-    ylabel('Computation time [s]')
-else
-xticklabels({})
-end
+xlabel('Conjunction ID [-]')
+ylabel('Computation time [s]')
 grid on
 ylim([0.15,0.5])
+legend('$n=2$','$n=3$','$n=4$','$n=5$','$n=6$','$n=7$','Interpreter','Latex')
+box on
 
 if alsoNlp
-    subplot(2,1,2);
+    subplot(1,2,2);
     scatter(1:n,simTimeNlp,4,'filled')
     axis tight
     xlabel('Conjunction ID [-]')
-    ylabel('Computation time [s]')
     grid on
     ylim([0.15,0.5])
     set(gca,'ColorOrder',colors(7:12,:))
+    legend('$n=2$','$n=3$','$n=4$','$n=5$','$n=6$','$n=7$','Interpreter','Latex')
+    box on
+    yticklabels([])
 end
 
 figure()

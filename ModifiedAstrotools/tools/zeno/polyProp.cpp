@@ -27,23 +27,23 @@ int main(void)
     // AIDA initialization input file
     ifstream aidaParams;
 	aidaParams.open("AIDA_init.dat");
-        aidaParams >> flag1;	
-        aidaParams >> flag2;	
-        aidaParams >> flag3;	
-        aidaParams >> gravOrd;	
-        aidaParams >> mass;	
-        aidaParams >> A_drag;	
-        aidaParams >> Cd;
-        aidaParams >> A_srp;	
-        aidaParams >> Cr;	
+        aidaParams >> flag1;	     // Luni-solar model	
+        aidaParams >> flag2;	     // Atmosphere model	
+        aidaParams >> flag3;	     // SRP model
+        aidaParams >> gravOrd;	     //	Maximum order of the gravitational potential considered
+        aidaParams >> mass;	         //	Mass of the spacecraft
+        aidaParams >> A_drag;	     // Equivalent drag area of the spacecraft	 
+        aidaParams >> Cd;            // Aerodynmic coefficient of the spacecraft
+        aidaParams >> A_srp;         // Equivalent SRP area of the spacecraft	
+        aidaParams >> Cr;            // SRP coefficient of the spacecraft	
 	aidaParams.close();
   
     ifstream nodes, Input;
 	nodes.open("initial_state.dat");
-        nodes >> N; // Number of impulses
-        nodes >> n_conj; // Number of impulses
-        nodes >> n_man; // Number of impulses
-        nodes >> m; // Number of DA variables per node
+        nodes >> N;         // Number of nodes
+        nodes >> n_conj;    // Number of conjunctions
+        nodes >> n_man;     // Number of control nodes
+        nodes >> m;         // Number of DA variables per node
 	nodes.close();
     // Initialize variable
     AlgebraicMatrix<double> P(3,3), cov(9,n_conj), covB(4,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(m,n_man), scale(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
@@ -53,7 +53,7 @@ int main(void)
 	Input.open("initial_state.dat");
         Input >> N;               // Number of nodes
         Input >> n_conj;          // Number of conjunctions
-        Input >> n_man;           // Number of impulses
+        Input >> n_man;           // Number of control nodes
         Input >> m;               // Number of DA variables per node
         Input >> dyn;             // Dynamics model (0 Earth Orbit, 1 Cislunar)
         Input >> lowThrust_flag;  // Low thrust dynamics flag

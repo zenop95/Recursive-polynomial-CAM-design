@@ -21,12 +21,13 @@ set(0,'defaultfigurecolor',[1 1 1])
 
 %% Initialization variables
 multiple = 0;
+t_man = 2.5;
 for kk = 2:7
 for j = 1:2170
 pp = initPolyOpt(0,0,j);
 pp.cislunar = 0;
-% t_man = linspace(0.5,2.5,11);
-t_man = 2.5;
+% t_man = linspace(2.5,1.5,11);
+% t_man = 2.5;
 pp = definePolyParams(pp,t_man);
 pp.DAorder = kk;
 N  = pp.N;
@@ -64,7 +65,7 @@ if pp.filterMans
     scale      = ones(m,n_man);
     ctrl       = nan(3,n_man);
 end
-[lim,smdLim,coeffPoC,timeSubtr,xBall,x0,metric] = propDAPoly(pp.DAorder,u,scale,0,0,pp);
+[lim,smdLim,coeffPoC,timeSubtr,xBall,metric] = propDAPoly(pp.DAorder,u,scale,0,0,pp);
 switch pp.solvingMethod
     case 'greedy'
         yF = computeCtrlGreedy(lim,metric,coeffPoC,u, ...
@@ -104,6 +105,7 @@ PB     = e2b*pp.P*e2b';
 p      = e2b*(x(1:3)-pp.x_sTCA(1:3));
 smd    = dot(p,PB\p);
 PoC(j) = poc_Chan(pp.HBR,PB,smd,3);                                        % [-] (1,1) PoC computed with Chan's formula
+% nodeThrust(:,j) = thrustNode;
 end
-save(['simOutput/singleImpulseEsaCasesFixedDir/rec' num2str(pp.DAorder)])
+save(['simOutput/singleImpulseEsaCasesFixedDir/nlp' num2str(pp.DAorder)])
 end

@@ -128,6 +128,8 @@ ylabel('$\Delta v$ [mm/s]')
 grid on
 
 %% Ellipse B-plane
+tMan = tMan(300:350);
+xs = xs(:,300:350);
 e2b = eci2Bplane(xBall(4:6,1),pp.x_sTCA(4:6));
 e2b = e2b([1 3],:);
 PB  = e2b*pp.P*e2b';
@@ -145,19 +147,18 @@ end
 figure
 hold on    
 pOldB = e2b*(xBall(1:3)-pp.x_sTCA(1:3))*pp.Lsc;
-for j = 1:nMan
+for j = 1:51
     pNewB(:,j) = e2b*(xs(1:3,j)-pp.x_sTCA(1:3))*pp.Lsc;
 end
-plot(ellB(1,:),ellB(2,:),'k');
-plot(pOldB(1),pOldB(2),'k','marker','diamond','HandleVisibility','off')
-s = scatter(pNewB(1,:),pNewB(2,:),[],tMan','filled');
+plot(ellB(2,:),ellB(1,:),'k');
+plot(pOldB(2),pOldB(1),'k','marker','diamond','HandleVisibility','off')
+s = scatter(pNewB(2,:),pNewB(1,:),[],tMan','filled');
 s.SizeData = 20;
-colormap jet;
+colormap(flipud(jet));
 grid on 
-xlabel('$\xi$ [km]')
-ylabel('$\zeta$ [km]')
+xlabel('$\zeta$ [km]')
+ylabel('$\xi$ [km]')
 hold off
-axis equal
 cb = colorbar;
 ylabel(cb,'Orbits to TCA [-]','Interpreter','latex')
 clearvars -except PoC dvs xs pp tMan nMan simTime xBall smdLim

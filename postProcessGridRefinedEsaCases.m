@@ -10,18 +10,18 @@ load(['SimOutput\gridRefinedEsaCases\nlp',num2str(kk),'.mat'])
 PoCNlp(1,:)     = PoC;
 simTimeNlp(1,:) = simTime;
 dvNlp(1,:)      = normOfVec(dvs);
-% load(['SimOutput\gridRefinedEsaCases\nlp',num2str(kk),'_2Imp.mat'])
-% PoCNlp(2,:)     = PoC;
-% simTimeNlp(2,:) = simTime;
-% dvNlp(2,:)      = normOfVec(dvs);
-load(['SimOutput\gridRefinedEsaCases\recursive',num2str(kk),'.mat'])
+load(['SimOutput\gridRefinedEsaCases\nlp',num2str(kk),'_2Imp.mat'])
+PoCNlp(2,:)     = PoC;
+simTimeNlp(2,:) = simTime;
+dvNlp(2,:)      = normOfVec(dvs);
+load(['SimOutput\gridRefinedEsaCases\rec',num2str(kk),'.mat'])
 PoCRec(1,:)     = PoC;
 simTimeRec(1,:) = simTime;
 dvRec(1,:)      = normOfVec(dvs);
-% load(['SimOutput\gridRefinedEsaCases\recursive',num2str(kk),'_2Imp.mat'])
-% PoCRec(2,:)     = PoC;
-% simTimeRec(2,:) = simTime;
-% dvRec(2,:)      = normOfVec(dvs);
+load(['SimOutput\gridRefinedEsaCases\rec',num2str(kk),'_2Imp.mat'])
+PoCRec(2,:)     = PoC;
+simTimeRec(2,:) = simTime;
+dvRec(2,:)      = normOfVec(dvs);
 clearvars -except PoCConv simTimeConv PoCNlp simTimeNlp PoCRec simTimeRec dvNlp dvRec dvConv nodeThrust n
 
 %% Define colors
