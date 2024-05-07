@@ -28,61 +28,118 @@ dvRec       = nan(6,n);
 load('SimOutput\singleImpulseEsaCases\convex.mat')
 PoCConv     = PoC;
 simTimeConv = simTime;
-for kk = 2:7
-    load(['SimOutput\singleImpulseEsaCases\nlp',num2str(kk),'.mat'])
-    PoC(PoC>prctile(PoC,95)) = nan;
-    PoC(PoC<prctile(PoC,5)) = nan;
+for kk = 2:6
+    load(['SimOutput\doubleImpulseEsaCases\nlp',num2str(kk),'.mat'])
+    PoC(PoC>prctile(PoC,99)) = nan;
+    PoC(PoC<prctile(PoC,1)) = nan;
     PoCNlp(kk-1,:)     = PoC;
     simTimeNlp(kk-1,:) = simTime;
     dvNlp(kk-1,:)      = normOfVec(dvs);
-    load(['SimOutput\singleImpulseEsaCases\rec',num2str(kk),'.mat'])
-    PoC(PoC>prctile(PoC,95)) = nan;
-    PoC(PoC<prctile(PoC,5)) = nan;
+    load(['SimOutput\doubleImpulseEsaCases\rec',num2str(kk),'.mat'])
+    PoC(PoC>prctile(PoC,99)) = nan;
+    PoC(PoC<prctile(PoC,1)) = nan;
     PoCRec(kk-1,:)     = PoC;
     simTimeRec(kk-1,:) = simTime;
     dvRec(kk-1,:)      = normOfVec(dvs);
 end
 clearvars -except PoCConv simTimeConv PoCNlp simTimeNlp PoCRec simTimeRec dvNlp dvRec n
 alsoNlp = 1;
+%% Violin plots
 % figure
-% violin(PoCRec','facecolor',[0 0.4470 0.7410],'facealpha',.5,'x',2:7,'mc','','medc','')
+% A = iosr.statistics.boxPlot(PoCRec');
+% A.mediancolor = 'b';
+% A.outliersize = nan;
+% A.showMean = true;
+% A.percentile = [50 50]; 
+% A.lineStyle = 'none';
+% A.meancolor = 'b';
+% A.showViolin = true;
+% A.showScatter = false;
+% A.LineColor   = [0 0.4470 0.7410];
+% A.violinColor = [0 0.4470 0.7410];
+% A.violinAlpha = 0.4;
+% if alsoNlp
+%     hold on
+%     B = iosr.statistics.boxPlot(PoCNlp');
+%     B.mediancolor = 'r';
+%     B.outliersize = nan;
+%     B.showMean = true;
+%     B.percentile = [50 50]; 
+%     B.lineStyle = 'none';
+%     B.meancolor = 'r';
+%     B.showViolin = true;
+%     B.showScatter = false;
+%     B.LineColor = [0.4940 0.1840 0.5560];
+%     B.violinColor = [0.4940 0.1840 0.5560];
+%     B.violinAlpha = 0.3;
+%  end
 % xlabel('Expansion order [-]')
 % ylabel('PoC [-]')
 % grid on
-% hold on
-% violin(PoCNlp','facecolor', [0.4940 0.1840 0.5560],'facealpha',.2,'x',2:7,'mc','','medc','')
-
-figure
-A = iosr.statistics.boxPlot(2:7,PoCRec');
-A.mediancolor = 'b';
-A.outliersize = nan;
-A.showMean = true;
-A.percentile = [50,50]; 
-A.lineStyle = 'none';
-A.meancolor = 'b';
-A.showViolin = true;
-A.showScatter = false;
-A.LineColor   = [0 0.4470 0.7410];
-A.violinColor = [0 0.4470 0.7410];
-A.violinAlpha = 0.4;
-hold on
-B = iosr.statistics.boxPlot(2:7,PoCNlp');
-B.mediancolor = 'r';
-B.outliersize = nan;
-B.showMean = true;
-B.percentile = [50,50]; 
-B.lineStyle = 'none';
-B.meancolor = 'r';
-B.showViolin = true;
-B.showScatter = false;
-B.LineColor = [0.4940 0.1840 0.5560];
-B.violinColor = [0.4940 0.1840 0.5560];
-B.violinAlpha = 0.3;
-xlabel('Expansion order [-]')
-ylabel('PoC [-]')
-grid on
-box on
-
+% box on
+% figure
+% subplot(1,2,1)
+% C = iosr.statistics.boxPlot(2,PoCRec(1,:)');
+% C.mediancolor = 'b';
+% C.outliersize = nan;
+% C.showMean = true;
+% C.percentile = [50,50]; 
+% C.lineStyle = 'none';
+% C.meancolor = 'b';
+% C.showViolin = true;
+% C.showScatter = false;
+% C.LineColor   = [0 0.4470 0.7410];
+% C.violinColor = [0 0.4470 0.7410];
+% C.violinAlpha = 0.4;
+% if alsoNlp 
+%     hold on
+%     D = iosr.statistics.boxPlot(2,PoCNlp(1,:)');
+%     D.mediancolor = 'r';
+%     D.outliersize = nan;
+%     D.showMean = true;
+%     D.percentile = [50,50]; 
+%     D.lineStyle = 'none';
+%     D.meancolor = 'r';
+%     D.showViolin = true;
+%     D.showScatter = false;
+%     D.LineColor = [0.4940 0.1840 0.5560];
+%     D.violinColor = [0.4940 0.1840 0.5560];
+%     D.violinAlpha = 0.3;
+% end
+% xlabel('Expansion order [-]')
+% ylabel('PoC [-]')
+% grid on
+% box on
+% subplot(1,2,2)
+% C = iosr.statistics.boxPlot(3,PoCRec(2,:)');
+% C.mediancolor = 'b';
+% C.outliersize = nan;
+% C.showMean = true;
+% C.percentile = [50,50]; 
+% C.lineStyle = 'none';
+% C.meancolor = 'b';
+% C.showViolin = true;
+% C.showScatter = false;
+% C.LineColor   = [0 0.4470 0.7410];
+% C.violinColor = [0 0.4470 0.7410];
+% C.violinAlpha = 0.4;
+% if alsoNlp
+%     hold on
+%     D = iosr.statistics.boxPlot(3,PoCNlp(2,:)');
+%     D.mediancolor = 'r';
+%     D.outliersize = nan;
+%     D.showMean = true;
+%     D.percentile = [50,50]; 
+%     D.lineStyle = 'none';
+%     D.meancolor = 'r';
+%     D.showViolin = true;
+%     D.showScatter = false;
+%     D.LineColor = [0.4940 0.1840 0.5560];
+%     D.violinColor = [0.4940 0.1840 0.5560];
+%     D.violinAlpha = 0.3;
+% end
+% grid on
+% box on
 %% Define colors
 col1 = [0.9290 0.6940 0.1250];
 col2 = [0.4940 0.1840 0.5560];
@@ -94,9 +151,6 @@ colors = [colorsRec;colorsNlp];
 
 
 %% Scatter plots
-figure()
-PoCRec(PoCRec<1e-8) = nan;
-PoCNlp(PoCNlp<1e-8) = nan;
 % colororder(colors)
 % scatter(1:n,log10(PoCRec),3,'filled')
 % hold on
@@ -117,7 +171,7 @@ axis tight
 xlabel('Conjunction ID [-]')
 ylabel('Computation time [s]')
 grid on
-ylim([0.15,0.5])
+ylim([0.15,2])
 legend('$n=2$','$n=3$','$n=4$','$n=5$','$n=6$','$n=7$','Interpreter','Latex')
 box on
 
@@ -127,7 +181,7 @@ if alsoNlp
     axis tight
     xlabel('Conjunction ID [-]')
     grid on
-    ylim([0.15,0.5])
+    ylim([0.15,2])
     set(gca,'ColorOrder',colors(7:12,:))
     legend('$n=2$','$n=3$','$n=4$','$n=5$','$n=6$','$n=7$','Interpreter','Latex')
     box on
