@@ -1,7 +1,17 @@
 function [] = postProcess(smdLim,xBall,xMan,lim,ctrl,simTime,pp)
-%UNTITLED11 Summary of this function goes here
-%   Detailed explanation goes here
-metricFlag = pp.metricFlag;
+% postProcess plots the relevant data 
+% 
+% INPUT:
+%        pp = [struct] optimization paramters structure
+% 
+% OUTPUT:
+%        pp    = [struct] optimization paramters structure
+%        t_man = [-] Maneuvering times in orbit units
+%
+% Author: Zeno Pavanello, 2024
+% E-mail: zpav176@aucklanduni.ac.nz
+%--------------------------------------------------------------------------
+
 mdLim      = pp.mdLim;
 Lsc        = pp.Lsc;
 Vsc        = pp.Vsc;
@@ -52,26 +62,9 @@ if ~pp.lowThrust
 else
     disp(['Total Delta-v = ',num2str(normOfVec(ctrl)*dt_lt*Vsc*1e6), ' mm/s'])
 end
+disp(['PoC after validation ',num2str(poc_tot)]);
 
-if metricFlag == 3
-    disp(['Limit: ',num2str(sqrt(lim)*Lsc), ' km'])
-else
-    disp(['Limit: ',num2str(lim)])
-end
-% disp(['Targeting error position ',num2str(norm(distVal(1:3))*pp.Lsc),' km']);
-% disp(['Targeting error velocity ',num2str(norm(distVal(4:6))*pp.Vsc*1e3),' m/s']);
-if metricFlag == 0 || metricFlag == 1
-    disp(['PoC after validation ',num2str(poc_tot)]);
-    stringMetric = 'PoC';
-elseif metricFlag == 2
-    disp(['SMD after validation ',num2str(metricVal)]);                    % [-] (1,1) SMD limit computed with Alfriend and Akella's formula applied to PC
-    stringMetric = 'SMD';
-else
-    disp(['Miss distance after validation ',num2str(sqrt(metricVal)*Lsc)]);      % [-] (1,1) SMD limit computed with Alfriend and Akella's formula applied to PC
-    stringMetric = 'miss distance';
-end
-disp(['Metric used: ', stringMetric])
-
+disp(['Limit: ',num2str(lim)])
 ctrlNorm = normOfVec(ctrl);
 
 figure()
@@ -150,12 +143,12 @@ for k = 1:pp.n_conj
     hold on    
     pOldB = e2b*(xb(1:3)-x_s(1:3))*Lsc;
     pNewB = e2b*(x(1:3)-x_s(1:3))*Lsc;
-    plot(ellB(1,:),ellB(2,:),'k');
-    plot(pNewB(1,:),pNewB(2,:),'o','LineWidth',2);
-    plot(pOldB(1,:),pOldB(2,:),'k','marker','diamond');
+    plot(ellB(2,:),ellB(1,:),'k');
+    plot(pNewB(2,:),pNewB(1,:),'o','LineWidth',2);
+    plot(pOldB(2,:),pOldB(1,:),'k','marker','diamond');
     grid on 
-    xlabel('$\xi$ [km]')
-    ylabel('$\zeta$ [km]')
+    xlabel('$\zeta$ [km]')
+    ylabel('$\xi$ [km]')
     hold off
     axis equal
 end
