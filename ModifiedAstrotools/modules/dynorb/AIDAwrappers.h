@@ -74,19 +74,27 @@ public:
 			usc[i+3] = aMax*Asc*uEci[i];
         }
         double tsc = t*Tsc; 
-		if (gravOrd > 0)
+		if (gravOrd > 4)
+		{
+			acc =  m_aidaProp.evaluation(tsc, xsc, m_eventflag) + usc;
+			for (int i = 0; i < 3; i ++) 
 			{
-				acc =  m_aidaProp.evaluation(tsc, xsc, m_eventflag) + usc;
-				for (int i = 0; i < 3; i ++) 
-				{
-					acc[i] = acc[i]/Vsc;
-					acc[i+3] = acc[i+3]/Asc;
-        		}
-		}
-		else
-			{
-				acc = keplerPropAcc(x,uEci*aMax,t,musc);
+				acc[i] = acc[i]/Vsc;
+				acc[i+3] = acc[i+3]/Asc;
 			}
+		}
+		else if (gravOrd = 2)
+		{
+			acc = J2dynamics(x,uEci*aMax,t,musc,Lsc);
+		}
+		else if (gravOrd = 4)
+		{
+			acc = J2_J4dynamics(x,uEci*aMax,t,musc,Lsc);
+		}
+		else if (gravOrd = 0)
+		{
+			acc = keplerPropAcc(x,uEci*aMax,t,musc);
+		}
 		
         return acc;
 	}
