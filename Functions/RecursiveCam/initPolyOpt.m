@@ -15,7 +15,7 @@ function pp = initPolyOpt(multiple,cislunar,i)
 %-------------------------------------------------------------------------------
 
 if multiple && ~cislunar
-    pp = generateInitMultiplePoly('leo');
+    pp = generateInitMultiple('leo');
 elseif ~multiple && cislunar
     pp = generateInitCislunar('perp');
     pp.Lsc     = 384405;                                                        % [km]   (1,1) Distance scaling constant
@@ -23,7 +23,7 @@ elseif ~multiple && cislunar
     pp.Vsc     = pp.Lsc/pp.Tsc;                                                 % [km/s] (1,1) Velocity scaling constant
     pp.T   = 1;                                                                 % [-]    (1,1) null paramter
 else
-    pp = generateInitRoberto('leo',i);
+    pp = generateInitLeo('leo',i);
 end
 pp         = generateAida(pp);                                                  % [struct] Include AIDA parameters
 if ~cislunar 
