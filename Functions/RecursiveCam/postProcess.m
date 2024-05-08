@@ -1,7 +1,12 @@
 function [] = postProcess(xBall,xMan,lim,ctrl,simTime,pp)
 % postProcess plots the relevant data 
 % 
-% INPUT:
+% INPUT: 
+%        xBall
+%        xMan
+%        lim
+%        ctrl
+%        simTime
 %        pp = [struct] optimization paramters structure
 % 
 % OUTPUT:
@@ -140,8 +145,6 @@ for k = 1:pp.n_conj
     tt         = 0:0.001:2*pi;
     xx         = a*cos(tt);
     yy         = b*sin(tt);
-    xx1        = mdLim*Lsc*cos(tt);
-    yy1        = mdLim*Lsc*sin(tt);
     ellCov     = [xx; yy];
     ellB       = nan(2,length(tt));
     for j = 1:length(tt)

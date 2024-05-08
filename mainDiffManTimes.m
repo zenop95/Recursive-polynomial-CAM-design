@@ -22,12 +22,11 @@ set(0,'defaultfigurecolor',[1 1 1])
 %% Initialization variables
 multiple = 0;
 nMan     = 500;
-tMan     = linspace(5.5,0.5,nMan);
+tMan     = linspace(4,0.05,nMan);
 for j = 1:nMan
-pp = initPolyOpt(0,0,1);
+pp = initPolyOpt(0,1,1);
+pp.cislunar = 1;
 pp = definePolyParams(pp,tMan(j));
-pp.DAorder = 9;
-pp.cislunar = 0;
 N  = pp.N;
 n_man = pp.n_man;
 if N == 1 && pp.lowThrust; error('The algorithm needs at least two nodes to define the low-thrust window'); end
@@ -42,7 +41,7 @@ dv    = nan(3,n_man);                          % [-] (3,N)  Initialized ctrl of 
 %% Propagation
 timeSubtr1 = 0;
 tic
-if pp.singleMan
+if pp.filterMans
     [~,~,coeffPoC,timeSubtr1] = propDAPoly(1,u,scale,0,0,pp);
     gradVec  =  buildDAArrayGeneralized(coeffPoC.C,coeffPoC.E,1);
     for j = 1:n_man
@@ -56,7 +55,7 @@ if pp.singleMan
     dv    = nan(3,1);
     pp.N  = 1;
 end
-[lim,smdLim,coeffPoC,timeSubtr,xBall,x0,metric] = propDAPoly(pp.DAorder,u,scale,0,0,pp);
+[lim,smdLim,coeffPoC,timeSubtr,xBall,metric] = propDAPoly(pp.DAorder,u,scale,0,0,pp);
 
 %% Optimization
 switch pp.solvingMethod
@@ -91,11 +90,9 @@ simTime(j) = toc - timeSubtr - timeSubtr1;
 metricValPoly = eval_poly(coeffPoC.C,coeffPoC.E,reshape(yF./scale,1,[]),pp.DAorder);
 
 [~,~,~,~,x] = propDAPoly(1,dv,scale,1,0,pp);
-if pp.metricFlag  == 0 || pp.metricFlag  == 1
-    metricValPoly = 10^metricValPoly;
-    lim           = 10^lim;
-end
-dvs(:,j) = dv;
+metricValPoly = 10^metricValPoly;
+lim           = 10^lim;
+dvs(:,j) = dv*pp.Vsc*1e6;
 xs(:,j)  = x;
 e2b    = eci2Bplane(xBall(4:6),pp.x_sTCA(4:6));
 e2b    = e2b([1 3],:);
@@ -126,10 +123,9 @@ legend('R','T','N','$||\cdot||$','Interpreter','Latex')
 xlabel('Orbits to TCA [-]')
 ylabel('$\Delta v$ [mm/s]')
 grid on
+set(gca, 'XDir','reverse')
 
 %% Ellipse B-plane
-tMan = tMan(300:350);
-xs = xs(:,300:350);
 e2b = eci2Bplane(xBall(4:6,1),pp.x_sTCA(4:6));
 e2b = e2b([1 3],:);
 PB  = e2b*pp.P*e2b';
@@ -147,7 +143,7 @@ end
 figure
 hold on    
 pOldB = e2b*(xBall(1:3)-pp.x_sTCA(1:3))*pp.Lsc;
-for j = 1:51
+for j = 1:nMan
     pNewB(:,j) = e2b*(xs(1:3,j)-pp.x_sTCA(1:3))*pp.Lsc;
 end
 plot(ellB(2,:),ellB(1,:),'k');
@@ -160,6 +156,7 @@ xlabel('$\zeta$ [km]')
 ylabel('$\xi$ [km]')
 hold off
 cb = colorbar;
-ylabel(cb,'Orbits to TCA [-]','Interpreter','latex')
+if pp.cislunar; str = 'Days'; else; str = 'Orbits'; end
+ylabel(cb, [str, ' to TCA [-]'])
 clearvars -except PoC dvs xs pp tMan nMan simTime xBall smdLim
-save(['simOutput/diffManTimesord' num2str(pp.DAorder)])
+save(['simOutput/diffManTimesordCislunar' num2str(pp.DAorder)])

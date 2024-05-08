@@ -21,10 +21,10 @@
 
 %% Initialization variables
 multiple = 0;
-ts = linspace(0.5,2.5,5); ts = flip(ts);
+ts = linspace(0.5,4,8); ts = flip(ts);
 for k = 5
 for j = 1:8
-% try
+try
     pp = initPolyOpt(0,0,1060);
     pp.cislunar = 0;
 %     t_man = linspace(2.47,2.53,j+1);
@@ -113,18 +113,18 @@ for j = 1:8
     smd    = dot(p,PB\p);
     PoC(k,j) = poc_Chan(pp.HBR,PB,smd,3);                                        % [-] (1,1) PoC computed with Chan's formula
     % nodeThrust(:,j) = thrustNode;
-% catch
+catch
     simTime(k,j) = nan;
     dvs(:,k,j) = nan(3,1);
     xs(:,k,j)  = nan(6,1);
     PoC(k,j) = nan;
-% end
+end
 end
 end
 % save('simOutput/ordVsNImp/recFixedDir')
 
 %%
-kk = 4;
+kk = 5;
 jj = 8;
 for j = 1:jj
     for k = 1:kk
