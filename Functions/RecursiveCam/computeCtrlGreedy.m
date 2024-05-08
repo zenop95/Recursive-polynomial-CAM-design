@@ -22,6 +22,7 @@ Delta    = lim - metric;                                                        
 tol      = 1e-10;                                                               % [-] (1,1) Tolerance for the successive linearizations
 maxIter  = 1e3;                                                                 % [-] (1,1) Maximum number of successive linearizations
 DAArraysPoC  = cell(DAorder,1);                                                 % [-] (cell) Initialize cell arrays for the DA expansion high-order tensors
+DAArraysPoC{2}  = zeros(3);                                                     % [-] (cell) Initialize second-order in case only first-order is used
 for k = 1:DAorder
     DAArraysPoC{k}  =  buildDAArray(coeffPoC.C,coeffPoC.E,k);                   % [-] (cell) Build cell arrays for the DA expansion high-order tensors
 end

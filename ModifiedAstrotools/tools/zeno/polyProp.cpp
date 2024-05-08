@@ -46,8 +46,8 @@ int main(void)
         nodes >> m;         // Number of DA variables per node
 	nodes.close();
     // Initialize variable
-    AlgebraicMatrix<double> P(3,3), cov(9,n_conj), covB(4,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(m,n_man), scale(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
-    AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), detP(n_conj), HBR(n_conj), magnitude(n_man);
+    AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(m,n_man), scale(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
+    AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), HBR(n_conj), magnitude(n_man);
     AlgebraicVector<int>    canFire(N), isConj(N);
     // Write input from .txt
 	Input.open("initial_state.dat");
@@ -237,16 +237,6 @@ int main(void)
         P_B.at(0,0) = P_B3.at(0,0);     P_B.at(0,1) = P_B3.at(0,2);
         P_B.at(1,0) = P_B3.at(2,0);     P_B.at(1,1) = P_B3.at(2,2);
         vv = 0;
-        // Build dummy variable of the combined covariance in B-plane for output
-        for (i = 0; i < 2 ; i ++) {
-            for (j = 0; j < 2 ; j ++) {
-                covB.at(vv,k)  = P_B.at(i,j);
-                vv = vv + 1;
-            }
-        }
-        // Determinant of the combined covariance in B-plane
-        detP[k] = astro::det2(P_B);
-
         // Compute PoC for the single conjunction, according to the required model
         if (pocType == 0) {
             metric = astro::ConstPoC(r_rel,P_B,HBR[k]);}
@@ -277,16 +267,6 @@ int main(void)
     }
     // write ballistic PoC in output (not valid for fixed magnitude)
     constPart  << cons(poc_tot)  << endl;
-    // write determinant of the B-plane projection of the covariance matrix for each conjunction in output
-    for (k = 0; k < n_conj ; k++) {
-        constPart  << detP[k]  << endl;
-    }
-    // write the B-plane projection of the covariance matrix for each conjunction in output
-    for (k = 0; k < n_conj ; k++) { 
-        for (j = 0; j < 4 ; j++) {
-            constPart  << covB.at(j,k) << endl;
-        }
-    }
     // write the DA expansion of PoC in output
     metricPoly << poc_tot << endl;
 

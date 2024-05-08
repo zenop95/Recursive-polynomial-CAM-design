@@ -17,7 +17,6 @@ set(0,'DefaultUipanelFontName','Times', 'DefaultUipanelFontSize', 14);
 set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
 %% load variables
-close all
 n = 2170;
 PoCNlp      = nan(6,n);
 PoCRec      = nan(6,n);
@@ -28,25 +27,33 @@ dvRec       = nan(6,n);
 load('SimOutput\singleImpulseEsaCases\convex.mat')
 PoCConv     = PoC;
 simTimeConv = simTime;
-for kk = 2:6
-    load(['SimOutput\doubleImpulseEsaCases\nlp',num2str(kk),'.mat'])
+for kk = 2:7
+%     load(['SimOutput\singleImpulseEsaCases\nlp',num2str(kk),'.mat'])
+    load(['SimOutput\singleImpulseEsaCases\nlp',num2str(kk),'_J2.mat'])
+%     load(['SimOutput\doubleImpulseEsaCases\nlp',num2str(kk),'.mat'])
     PoC(PoC>prctile(PoC,99)) = nan;
     PoC(PoC<prctile(PoC,1)) = nan;
     PoCNlp(kk-1,:)     = PoC;
     simTimeNlp(kk-1,:) = simTime;
-    dvNlp(kk-1,:)      = normOfVec(dvs);
-    load(['SimOutput\doubleImpulseEsaCases\rec',num2str(kk),'.mat'])
+    dvn = normOfVec(dvs);
+%     dvn(dvn>prctile(dvn,95)) = nan;
+    dvNlp(kk-1,:) = dvn;
+%     load(['SimOutput\singleImpulseEsaCases\rec',num2str(kk),'.mat'])
+    load(['SimOutput\singleImpulseEsaCases\rec',num2str(kk),'_J2.mat'])
+%     load(['SimOutput\doubleImpulseEsaCases\rec',num2str(kk),'.mat'])
     PoC(PoC>prctile(PoC,99)) = nan;
     PoC(PoC<prctile(PoC,1)) = nan;
     PoCRec(kk-1,:)     = PoC;
     simTimeRec(kk-1,:) = simTime;
-    dvRec(kk-1,:)      = normOfVec(dvs);
-end
+    dvn = normOfVec(dvs);
+%     dvn(dvn>prctile(dvn,95)) = nan;
+    dvRec(kk-1,:) = dvn;
+    end
 clearvars -except PoCConv simTimeConv PoCNlp simTimeNlp PoCRec simTimeRec dvNlp dvRec n
 alsoNlp = 1;
 %% Violin plots
 % figure
-% A = iosr.statistics.boxPlot(PoCRec');
+% A = iosr.statistics.boxPlot(2:7,PoCRec');
 % A.mediancolor = 'b';
 % A.outliersize = nan;
 % A.showMean = true;
@@ -60,7 +67,7 @@ alsoNlp = 1;
 % A.violinAlpha = 0.4;
 % if alsoNlp
 %     hold on
-%     B = iosr.statistics.boxPlot(PoCNlp');
+%     B = iosr.statistics.boxPlot(2:7,PoCNlp');
 %     B.mediancolor = 'r';
 %     B.outliersize = nan;
 %     B.showMean = true;
@@ -77,69 +84,7 @@ alsoNlp = 1;
 % ylabel('PoC [-]')
 % grid on
 % box on
-% figure
-% subplot(1,2,1)
-% C = iosr.statistics.boxPlot(2,PoCRec(1,:)');
-% C.mediancolor = 'b';
-% C.outliersize = nan;
-% C.showMean = true;
-% C.percentile = [50,50]; 
-% C.lineStyle = 'none';
-% C.meancolor = 'b';
-% C.showViolin = true;
-% C.showScatter = false;
-% C.LineColor   = [0 0.4470 0.7410];
-% C.violinColor = [0 0.4470 0.7410];
-% C.violinAlpha = 0.4;
-% if alsoNlp 
-%     hold on
-%     D = iosr.statistics.boxPlot(2,PoCNlp(1,:)');
-%     D.mediancolor = 'r';
-%     D.outliersize = nan;
-%     D.showMean = true;
-%     D.percentile = [50,50]; 
-%     D.lineStyle = 'none';
-%     D.meancolor = 'r';
-%     D.showViolin = true;
-%     D.showScatter = false;
-%     D.LineColor = [0.4940 0.1840 0.5560];
-%     D.violinColor = [0.4940 0.1840 0.5560];
-%     D.violinAlpha = 0.3;
-% end
-% xlabel('Expansion order [-]')
-% ylabel('PoC [-]')
-% grid on
-% box on
-% subplot(1,2,2)
-% C = iosr.statistics.boxPlot(3,PoCRec(2,:)');
-% C.mediancolor = 'b';
-% C.outliersize = nan;
-% C.showMean = true;
-% C.percentile = [50,50]; 
-% C.lineStyle = 'none';
-% C.meancolor = 'b';
-% C.showViolin = true;
-% C.showScatter = false;
-% C.LineColor   = [0 0.4470 0.7410];
-% C.violinColor = [0 0.4470 0.7410];
-% C.violinAlpha = 0.4;
-% if alsoNlp
-%     hold on
-%     D = iosr.statistics.boxPlot(3,PoCNlp(2,:)');
-%     D.mediancolor = 'r';
-%     D.outliersize = nan;
-%     D.showMean = true;
-%     D.percentile = [50,50]; 
-%     D.lineStyle = 'none';
-%     D.meancolor = 'r';
-%     D.showViolin = true;
-%     D.showScatter = false;
-%     D.LineColor = [0.4940 0.1840 0.5560];
-%     D.violinColor = [0.4940 0.1840 0.5560];
-%     D.violinAlpha = 0.3;
-% end
-% grid on
-% box on
+
 %% Define colors
 col1 = [0.9290 0.6940 0.1250];
 col2 = [0.4940 0.1840 0.5560];
@@ -163,31 +108,31 @@ colors = [colorsRec;colorsNlp];
 % grid on
 % hold off
 
-figure()
-if alsoNlp; subplot(1,2,1); end
-colororder(colors(1:6,:))
-a = scatter(1:n,simTimeRec,4,'filled');
-axis tight
-xlabel('Conjunction ID [-]')
-ylabel('Computation time [s]')
-grid on
-ylim([0.15,2])
-legend('$n=2$','$n=3$','$n=4$','$n=5$','$n=6$','$n=7$','Interpreter','Latex')
-box on
-
-if alsoNlp
-    subplot(1,2,2);
-    scatter(1:n,simTimeNlp,4,'filled')
-    axis tight
-    xlabel('Conjunction ID [-]')
-    grid on
-    ylim([0.15,2])
-    set(gca,'ColorOrder',colors(7:12,:))
-    legend('$n=2$','$n=3$','$n=4$','$n=5$','$n=6$','$n=7$','Interpreter','Latex')
-    box on
-    yticklabels([])
-end
-
+% figure()
+% if alsoNlp; subplot(1,2,1); end
+% colororder(colors(1:6,:))
+% a = scatter(1:n,simTimeRec,4,'filled');
+% axis tight
+% xlabel('Conjunction ID [-]')
+% ylabel('Computation time [s]')
+% grid on
+% ylim([0.15,3.5])
+% legend('$n=2$','$n=3$','$n=4$','$n=5$','$n=6$','$n=7$','Interpreter','Latex','color','none','edgeColor','none')
+% box on
+% 
+% if alsoNlp
+%     subplot(1,2,2);
+%     scatter(1:n,simTimeNlp,4,'filled')
+%     axis tight
+%     xlabel('Conjunction ID [-]')
+%     grid on
+%     ylim([0.15,3.5])
+%     set(gca,'ColorOrder',colors(7:12,:))
+%     legend('$n=2$','$n=3$','$n=4$','$n=5$','$n=6$','$n=7$','Interpreter','Latex','color','none','edgeColor','none')
+%     box on
+%     yticklabels([])
+% end
+% 
 figure()
 colororder(colors)
 scatter(1:n,dvRec,4,'filled')
@@ -200,63 +145,29 @@ grid on
 
 %% Histograms
 % Define edges
-edgesTime = 0.1:0.05:0.45;
-edgesPoC = -6.0002:0.00002:-5.9998;
-edgesDv = 5:10:1000;
+edges = 0:10:200;
+nn = round(n*0.95);
 % Build edges
 for kk = 1:6
     if alsoNlp
-        histTimeNlp(kk,:) = histcounts(simTimeNlp(kk,:),edgesTime);
-        histPocNlp(kk,:) = histcounts(log10(PoCNlp(kk,:)),edgesPoC);
-        histDvNlp(kk,:) = histcounts(dvNlp(kk,:),edgesDv);
+        histDvNlp(kk,:) = histcounts(dvNlp(kk,:),edges);
     end
-    histTimeRec(kk,:) = histcounts(simTimeRec(kk,:),edgesTime);
-    histPocRec(kk,:) = histcounts(log10(PoCRec(kk,:)),edgesPoC);
-    histDvRec(kk,:) = histcounts(dvRec(kk,:),edgesDv);
+    histDvRec(kk,:) = histcounts(dvRec(kk,:),edges);
 end
-histPocConv  = histcounts(log10(PoCConv),edgesPoC);
-histPocConv  = histPocConv'/n*100;
 if alsoNlp
-    histTimeNlp = histTimeNlp'/n*100;
-    histPocNlp  = histPocNlp'/n*100;
-    histDvNlp  = histDvNlp'/n*100;
-else; histTimeNlp = []; histPocNlp = []; histDvNlp = []; 
+    histDvNlp  = histDvNlp'/nn*100;
+else; histDvNlp = []; 
 end
-histTimeRec = histTimeRec'/n*100;
-histPocRec  = histPocRec'/n*100;
-histDvRec  = histDvRec'/n*100;
+histDvRec  = histDvRec'/nn*100;
 
 % Plot histograms
-% figure
-% colororder(colors)
-% bar(edgesTime(2:end),[histTimeRec,histTimeNlp],'FaceColor','flat');
-% legend
-% grid on
-% xlabel('Computation time [s]')
-% ylabel('\% of cases [-]')
-% legend('$n=2$','$n=3$','$n=4$','$n=5$', ...
-%        '$n=6$','$n=7$','$n=2$','$n=3$', ...
-%        '$n=4$','$n=5$', '$n=6$','$n=7$','interpreter','latex')
-
-% figure
-% colororder(colors)
-% bar(edgesPoC(2:end),[histPocRec,histPocNlp,histPocConv],'grouped','FaceColor','flat');
-% grid on
-% xlabel('log$_{10}$(PoC) [-]')
-% ylabel('\% of cases [-]')
-% legend('$n=2$','$n=3$','$n=4$','$n=5$', ...
-%        '$n=6$','$n=7$','$n=2$','$n=3$', ...
-%        '$n=4$','$n=5$', '$n=6$','$n=7$','interpreter','latex')
-
 figure
-colororder(colors)
-bar(edgesDv(2:end),[histDvRec,histDvNlp],'FaceColor','flat');
+colororder([colors(1,:);colors(end,:)])
+bar(edges(2:end),[histDvRec(:,5),histDvNlp(:,5)],'FaceColor','flat');
 legend
 grid on
 xlabel('$\Delta v$ [mm/s]')
 ylabel('\% of cases [-]')
-legend('$n=2$','$n=3$','$n=4$','$n=5$', ...
-       '$n=6$','$n=7$','$n=2$','$n=3$', ...
-       '$n=4$','$n=5$', '$n=6$','$n=7$','interpreter','latex','box','off')
+legend('Recursive','fmincon','interpreter','latex','box','off')
 
 % Plot normal distribution

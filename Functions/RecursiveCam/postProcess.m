@@ -1,4 +1,4 @@
-function [] = postProcess(smdLim,xBall,xMan,lim,ctrl,simTime,pp)
+function [] = postProcess(xBall,xMan,lim,ctrl,simTime,pp)
 % postProcess plots the relevant data 
 % 
 % INPUT:
@@ -126,7 +126,15 @@ for k = 1:pp.n_conj
     e2b    = eci2Bplane(xb(4:6),x_s(4:6));
     e2b    = e2b([1 3],:);
     PB     = e2b*P(:,:,k)*e2b';
-    [semiaxes,cov2b] = defineEllipsoid(PB,smdLim(k));
+    switch pp.pocType
+    case 0
+        smdLim   = -2*log(2*pp.PoCLim*sqrt(det(PB(:,:,k)))/pp.HBR(k)^2);        % [-] (1,1) SMD limit computed with Alfriend and Akella's formula
+    case 1
+        smdLim   = PoC2SMD(PB(:,:,k), pp.HBR(k), pp.PoCLim, 3, 1, 1e-3, 200);   % [-] (1,1) SMD limit computed with Chan's formula
+    otherwise
+        error('invalid PoC type')
+    end
+    [semiaxes,cov2b] = defineEllipsoid(PB,smdLim);
     a          = semiaxes(1)*Lsc;
     b          = semiaxes(2)*Lsc;
     tt         = 0:0.001:2*pi;

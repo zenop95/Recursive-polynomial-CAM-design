@@ -21,15 +21,17 @@ set(0,'defaultfigurecolor',[1 1 1])
 
 %% Initialization variables
 multiple = 0;
-t_man = 2.5;
-for kk = 2:7
-for j = 1:2170
-pp = initPolyOpt(0,0,j);
+t_man = [0.1,1.5:4.5];
+dvs = nan(3,5,5);
+for kk = 5
+for j = 1:5
+pp = initPolyOpt(0,0,1466);
 pp.cislunar = 0;
 % t_man = linspace(2.5,1.5,11);
 % t_man = 2.5;
 pp = definePolyParams(pp,t_man);
 pp.DAorder = kk;
+pp.nMans   = j;                                                        % [bool]   (1,1) Selects how many impulses to use
 N  = pp.N;
 n_man = pp.n_man;
 if N == 1 && pp.lowThrust; error('The algorithm needs at least two nodes to define the low-thrust window'); end
@@ -44,7 +46,7 @@ dv    = nan(3,n_man);                          % [-] (3,N)  Initialized ctrl of 
 timeSubtr1 = 0;
 tic
 if pp.filterMans
-    [~,~,coeffPoC,timeSubtr1] = propDAPoly(1,u,scale,0,0,pp);
+    [~,coeffPoC,timeSubtr1] = propDAPoly(1,u,scale,0,pp);
     gradVec = buildDAArray(coeffPoC.C,coeffPoC.E,1);
     for jj = 1:n_man
         grads(jj) = norm(gradVec(1+m*(jj-1):m*jj));
@@ -65,7 +67,7 @@ if pp.filterMans
     scale      = ones(m,n_man);
     ctrl       = nan(3,n_man);
 end
-[lim,smdLim,coeffPoC,timeSubtr,xBall,metric] = propDAPoly(pp.DAorder,u,scale,0,0,pp);
+[lim,coeffPoC,timeSubtr,xBall,metric] = propDAPoly(pp.DAorder,u,scale,0,pp);
 switch pp.solvingMethod
     case 'greedy'
         yF = computeCtrlGreedy(lim,metric,coeffPoC,u, ...
@@ -91,12 +93,10 @@ simTime(j) = toc - timeSubtr - timeSubtr1;
 %% Validation
 metricValPoly = eval_poly(coeffPoC.C,coeffPoC.E,reshape(yF./scale,1,[]),pp.DAorder);
 
-[~,~,~,~,x] = propDAPoly(1,dv,scale,1,0,pp);
-if pp.metricFlag  == 0 || pp.metricFlag  == 1
-    metricValPoly = 10^metricValPoly;
-    lim           = 10^lim;
-end
-dvs(:,j) = sum(dv,2)*pp.Vsc*1e6;
+[~,~,~,x] = propDAPoly(1,ctrl,scale,1,pp);
+metricValPoly = 10^metricValPoly;
+lim           = 10^lim;
+dvs(:,1:j,j) = dv*pp.Vsc*1e6;
 xs(:,j)  = x;
 % nodeThrust(:,j)  = thrustNode;
 e2b    = eci2Bplane(xBall(4:6),pp.x_sTCA(4:6));
@@ -107,5 +107,6 @@ smd    = dot(p,PB\p);
 PoC(j) = poc_Chan(pp.HBR,PB,smd,3);                                        % [-] (1,1) PoC computed with Chan's formula
 % nodeThrust(:,j) = thrustNode;
 end
-save(['simOutput/singleImpulseEsaCasesFixedDir/nlp' num2str(pp.DAorder)])
+% save(['simOutput/singleImpulseEsaCases/nlp' num2str(pp.DAorder),'_J2'])
+save('full')
 end

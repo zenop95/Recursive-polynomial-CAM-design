@@ -1,12 +1,26 @@
-function [lim,smdLim,coeffPoC,timeSubtr,xTca,metric,dist,convRadius] = ...
-              propDAPoly(DAorder,u,scale,validateFlag,convRadFlag,pp)
-
+function [lim,coeffPoC,timeSubtr,xTca,PoC0] = ...
+              propDAPoly(DAorder,u,scale,validateFlag,pp)
+% propDAPoly performs the DA propagation to build the NLP
+% 
+% INPUT:
+%        pp = [struct] optimization paramters structure
+% 
+% OUTPUT:
+%        lim       = [-] PoC limit
+%        coeffPoC  = [struct] structure with polynomial coefficient
+%        timeSubtr = [struct] time to subtract from execution time to
+%                             disregard writing and reading times
+%        xTca      = [struct] states at TCA
+%        PoC0      = [struct] PoC of the ballistic trajectory
+%
+% Author: Zeno Pavanello, 2024
+% E-mail: zpav176@aucklanduni.ac.nz
+%-------------------------------------------------------------------------------
 n_conj     = pp.n_conj;
 n_man      = pp.n_man;
 pocType    = pp.pocType;
 t          = pp.t;
 et         = pp.et;
-mdLim      = pp.mdLim;
 Lsc        = pp.Lsc;
 mu         = pp.mu;
 HBR        = pp.HBR;
@@ -14,13 +28,12 @@ x_pTCA     = pp.x_pTCA;
 x_sTCA     = pp.x_sTCA;
 P          = pp.P;
 PoCLim     = pp.PoCLim;
-convRadius = nan;
 N = length(pp.t);
 u = reshape(u,[],1);
 scale = reshape(scale,[],1);
 xTca   = nan(6,pp.n_conj);
-smdLim = nan(pp.n_conj,1);
 bb = tic;
+% Write file to pass to C++
 fid = fopen('initial_state.dat', 'w');
 fprintf(fid, '%2i\n',     N);
 fprintf(fid, '%2i\n',     n_conj);
@@ -73,51 +86,31 @@ for i = 1:N
     fprintf(fid, '%2i\n', pp.isConj(i));
 end
 fclose(fid);
-aidaInit(pp,'primary');
-timeSubtr1 = toc(bb);
-% Run the C++ Executable to perform the DA propagation
-if ~validateFlag && ~convRadFlag
+aidaInit(pp,'primary');                                                         % Initialize AiDA dynamics (not needeed in paper)
+timeSubtr1 = toc(bb);                                                           % Exlude writing time from computation time measure
+
+%% Run the C++ Executable to perform the DA propagation
+if ~validateFlag
     !wsl ./CppExec/polyProp
-elseif validateFlag && ~convRadFlag
-    !wsl ./CppExec/validatePoly
-elseif ~validateFlag && convRadFlag
-    !wsl ./CppExec/polyConvRadius
-    convRadius = load('convRad.dat');
-    convRadius = reshape(convRadius,[],N);
-else
-    error('Invalid flag combination')
-end
-if convRadFlag; lim=[];smdLim=[];coeffPoC=[];timeSubtr=[];xTca=[];metric=[];dist=[]; 
-    return; 
 elseif validateFlag
-    lim=[];smdLim=[];coeffPoC=[];timeSubtr=[];dist=[];metric=[];
-    xTca = reshape(load("constPart.dat"),6,pp.n_conj);                          % [-] (6,1) Constant part of the propagated state and control
-    return; 
+    !wsl ./CppExec/validatePoly
+    lim=[];coeffPoC=[];timeSubtr=[];PoC0=[];
+    xTca = reshape(load("constPart.dat"),6,pp.n_conj);                          % If validating we only care about the TCA positions
+    return;
 end
 b = tic;
-% Polynomials extraction 
+
+%% Extract output from propagation
 a         = load("constPart.dat");                                                         
 for k = 1:n_conj
     xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
-metric = a(n_conj*6 + 1);                                                       % [-] (1,1) Collision metric with no maneuver
-detPB  = a(n_conj*6 + 1 + (1:k));                                               % [-] (1,1) Determinant of the combined covariance at TCA (2d)
-P_B    = reshape(a(end-n_conj*4+1:end),2,2,n_conj);                             % [-] (1,1) Determinant of the combined covariance at TCA (2d)
-timeSubtr = toc(b) + timeSubtr1 + load("timeOut.dat")/1000 ;
-for k = 1:n_conj
-    switch pocType
-        case 0
-            smdLim(k)   = -2*log(2*PoCLim*sqrt(detPB(k))/HBR(k)^2);                                  % [-] (1,1) SMD limit computed with Alfriend and Akella's formula applied to PC
-        case 1
-            smdLim(k)   = PoC2SMD(P_B(:,:,k), HBR(k), PoCLim, 3, 1, 1e-3, 200);                          % [-] (1,1) SMD limit computed with Chan's formula applied to PC
-        otherwise
-            error('invalid PoC type')
-    end
-end
+PoC0 = a(n_conj*6 + 1);                                                       % [-] (1,1) Collision metric with no maneuver
+timeSubtr = toc(b) + timeSubtr1 + load("timeOut.dat")/1000 ;                    % Exclude reading time from computation time measure
+
 lim = log10(PoCLim);
 coeffPoC  = struct();
-if ~validateFlag && ~convRadFlag
+if ~validateFlag
     coeffPoC  = LoadCOSY('metricPoly.dat',(3-2*pp.fixedDir-pp.fixedMag)*pp.n_man,1,0);
-elseif validateFlag
 end
 end
