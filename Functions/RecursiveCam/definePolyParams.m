@@ -15,9 +15,9 @@ function pp = definePolyParams(pp,tMan)
 
 pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
-% pp.solvingMethod = 'greedy';                                                    % [str] (1,1) Optimization method (greedy,global,nlp,moment-relaxations)
+pp.solvingMethod = 'greedy';                                                    % [str] (1,1) Optimization method (greedy,global,nlp,moment-relaxations)
 % pp.solvingMethod = 'global';                                                    % [str] (1,1) Optimization method (greedy,global,nlp,moment-relaxations)
-pp.solvingMethod = 'nlp';                                                       % [str] (1,1) Optimization method (greedy,global,nlp,moment-relaxations)
+% pp.solvingMethod = 'nlp';                                                       % [str] (1,1) Optimization method (greedy,global,nlp,moment-relaxations)
 % pp.solvingMethod = 'moment-relaxation';                                           % [str] (1,1) Optimization method (greedy,global,nlp,moment-relaxations)
 pp.PoCLim        = 1e-6;                                                        % [-]   (1,1) PoC limit
 pp.mdLim         = .3/pp.Lsc;                                                   % [-]   (1,1) Miss distance limit
