@@ -13,7 +13,7 @@ function pp = definePolyParams(pp,tMan)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 
-pp.DAorder       = 2;                                                           % [-]   (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
 pp.solvingMethod = 'greedy';                                                    % [str] (1,1) Optimization method (greedy,global,nlp,moment-relaxations)
 % pp.solvingMethod = 'global';                                                    % [str] (1,1) Optimization method (greedy,global,nlp,moment-relaxations)

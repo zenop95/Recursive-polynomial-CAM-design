@@ -26,7 +26,7 @@ int main(void)
     long time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     // AIDA initialization input file
     ifstream aidaParams;
-	aidaParams.open("AIDA_init.dat");
+	aidaParams.open("./write_read/AIDA_init.dat");
         aidaParams >> flag1;	     // Luni-solar model	
         aidaParams >> flag2;	     // Atmosphere model	
         aidaParams >> flag3;	     // SRP model
@@ -39,7 +39,7 @@ int main(void)
 	aidaParams.close();
   
     ifstream nodes, Input;
-	nodes.open("initial_state.dat");
+	nodes.open("./write_read/initial_state.dat");
         nodes >> N;         // Number of nodes
         nodes >> n_conj;    // Number of conjunctions
         nodes >> n_man;     // Number of control nodes
@@ -50,7 +50,7 @@ int main(void)
     AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), HBR(n_conj), magnitude(n_man);
     AlgebraicVector<int>    canFire(N), isConj(N);
     // Write input from .txt
-	Input.open("initial_state.dat");
+	Input.open("./write_read/initial_state.dat");
         Input >> N;               // Number of nodes
         Input >> n_conj;          // Number of conjunctions
         Input >> n_man;           // Number of control nodes
@@ -254,9 +254,9 @@ int main(void)
 
     //open the output files
     ofstream constPart, metricPoly;
-    constPart.open("constPart.dat");
+    constPart.open("./write_read/constPart.dat");
     constPart << setprecision(18);
-    metricPoly.open("metricPoly.dat");
+    metricPoly.open("./write_read/metricPoly.dat");
     metricPoly << setprecision(18);
 
     // write TCA states in ECI coordinates into output
@@ -275,7 +275,7 @@ int main(void)
     timeSubtr = timeSubtr + time2 - time1;
 
     ofstream timeOut;
-    timeOut.open("timeOut.dat");
+    timeOut.open("./write_read/timeOut.dat");
     timeOut << setprecision(16);
     timeOut << timeSubtr << endl;
     timeOut.close();

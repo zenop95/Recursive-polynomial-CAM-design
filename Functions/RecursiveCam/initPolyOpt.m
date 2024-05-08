@@ -17,7 +17,7 @@ function pp = initPolyOpt(multiple,cislunar,i)
 if multiple && ~cislunar
     pp = generateInitMultiplePoly('leo');
 elseif ~multiple && cislunar
-    pp = generateInitCislunar('parallel');
+    pp = generateInitCislunar('perp');
     pp.Lsc     = 384405;                                                        % [km]   (1,1) Distance scaling constant
     pp.Tsc     = 375677;                                                        % [s]    (1,1) Time scaling constant
     pp.Vsc     = pp.Lsc/pp.Tsc;                                                 % [km/s] (1,1) Velocity scaling constant

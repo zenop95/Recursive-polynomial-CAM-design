@@ -17,7 +17,6 @@ function [] = postProcess(xBall,xMan,lim,ctrl,simTime,pp)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 
-mdLim      = pp.mdLim;
 Lsc        = pp.Lsc;
 Vsc        = pp.Vsc;
 x_sTCA     = pp.x_sTCA;

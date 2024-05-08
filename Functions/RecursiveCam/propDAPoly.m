@@ -34,7 +34,7 @@ scale = reshape(scale,[],1);
 xTca   = nan(6,pp.n_conj);
 bb = tic;
 % Write file to pass to C++
-fid = fopen('initial_state.dat', 'w');
+fid = fopen('write_read/initial_state.dat', 'w');
 fprintf(fid, '%2i\n',     N);
 fprintf(fid, '%2i\n',     n_conj);
 fprintf(fid, '%2i\n',     n_man);
@@ -95,22 +95,22 @@ if ~validateFlag
 elseif validateFlag
     !wsl ./CppExec/validatePoly
     lim=[];coeffPoC=[];timeSubtr=[];PoC0=[];
-    xTca = reshape(load("constPart.dat"),6,pp.n_conj);                          % If validating we only care about the TCA positions
+    xTca = reshape(load("write_read/constPart.dat"),6,pp.n_conj);                          % If validating we only care about the TCA positions
     return;
 end
 b = tic;
 
 %% Extract output from propagation
-a         = load("constPart.dat");                                                         
+a         = load("write_read/constPart.dat");                                                         
 for k = 1:n_conj
     xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
 PoC0 = a(n_conj*6 + 1);                                                       % [-] (1,1) Collision metric with no maneuver
-timeSubtr = toc(b) + timeSubtr1 + load("timeOut.dat")/1000 ;                    % Exclude reading time from computation time measure
+timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;                    % Exclude reading time from computation time measure
 
 lim = log10(PoCLim);
 coeffPoC  = struct();
 if ~validateFlag
-    coeffPoC  = LoadCOSY('metricPoly.dat',(3-2*pp.fixedDir-pp.fixedMag)*pp.n_man,1,0);
+    coeffPoC  = LoadCOSY('write_read/metricPoly.dat',(3-2*pp.fixedDir-pp.fixedMag)*pp.n_man,1,0);
 end
 end

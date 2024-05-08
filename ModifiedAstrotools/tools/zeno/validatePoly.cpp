@@ -20,18 +20,14 @@ using namespace std::chrono;
 
 int main(void)
 {
-    //open the output files
-    ofstream constPart;
-    constPart.open("constPart.dat");
-    constPart << setprecision(16);
-
     int j, i, k, ii, flag1, flag2, flag3, gravOrd, order, metricFlag, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn;
 	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, dt, musc;
 
     long time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
+
     // AIDA initialization input file
     ifstream aidaParams;
-	aidaParams.open("AIDA_init.dat");
+	aidaParams.open("./write_read/AIDA_init.dat");
         aidaParams >> flag1;	     // Luni-solar model	
         aidaParams >> flag2;	     // Atmosphere model	
         aidaParams >> flag3;	     // SRP model
@@ -42,9 +38,9 @@ int main(void)
         aidaParams >> A_srp;         // Equivalent SRP area of the spacecraft	
         aidaParams >> Cr;            // SRP coefficient of the spacecraft	
 	aidaParams.close();
-  
+
     ifstream nodes;
-	nodes.open("initial_state.dat");
+	nodes.open("./write_read/initial_state.dat");
         nodes >> N;         // Number of nodes
         nodes >> n_conj;    // Number of conjunctions
         nodes >> n_man;     // Number of control nodes
@@ -54,7 +50,7 @@ int main(void)
     AlgebraicVector<double> xdum(6), x0(6), ctrl(3), ctrlRtn(3), t(N), HBR(n_conj);
     AlgebraicVector<int>    canFire(N), isConj(N);
     ifstream Input;
-	Input.open("initial_state.dat");
+	Input.open("./write_read/initial_state.dat");
         Input >> N;               // Number of nodes
         Input >> n_conj;          // Number of conjunctions
         Input >> n_man;           // Number of control nodes
@@ -95,10 +91,10 @@ int main(void)
     AIDAScaledDynamics<double> aidaCartDynLT(gravmodel, gravOrd, AIDA_flags, Bfactor, SRPC);
 
     if (dyn == 0) {
-        x0     = RK78Dv(6, xdum, tca, tca - t[0], Lsc, musc, gravOrd, aidaCartDynImp); // backpropagation from first TCA
+        x0     = RK78Dv(6, xdum, tca, tca - t[0], Lsc, musc, gravOrd, aidaCartDynImp); // backpropagation from first TCA (Earth orbit)
     }
     else if (dyn == 1) {
-        x0     = RK78Cis(6, xdum, {0.0,0.0,0.0}, 0.0, - t[0], CR3BPsyn, 0.012150668, 0.0); // backpropagation from TCA
+        x0     = RK78Cis(6, xdum, {0.0,0.0,0.0}, 0.0, - t[0], CR3BPsyn, 0.012150668, 0.0); // backpropagation from first TCA (Cislunar)
     }    
     else {throw std::runtime_error("The dynamics flag should be 0 for Earth orbit and 1 for Cislunar");}
     k  = 0;
@@ -143,15 +139,20 @@ int main(void)
             k ++;
         }
     }
+        
+    //open the output files
+    ofstream constPart;
+    constPart.open("./write_read/constPart.dat");
+    constPart << setprecision(16);
     for (k = 0; k < n_conj ; k++) {
         for (j = 0; j < 6 ; j++) {
         constPart  << xTca.at(j,k) << endl;
         }
     }
+    constPart.close();
 
     ofstream timeOut;
-    timeOut.open("timeOut.dat");
+    timeOut.open("./write_read/timeOut.dat");
     timeOut << setprecision(16);
     timeOut.close();
-    constPart.close();
 }
