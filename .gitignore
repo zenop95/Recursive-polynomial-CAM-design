@@ -1,2 +1,4 @@
 *.asv
 *.dat
+CppExec/polyProp
+CppExec/validatePoly
