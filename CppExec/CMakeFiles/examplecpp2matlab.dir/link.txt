@@ -1,1 +1,0 @@
-/usr/bin/c++  -pthread -O3 -DNDEBUG -rdynamic CMakeFiles/examplecpp2matlab.dir/examplecpp2matlab.cpp.o -o examplecpp2matlab   -L"/mnt/c/Program Files/MATLAB/R2021b/extern/bin/win64"  -Wl,-rpath,"/mnt/c/Program Files/MATLAB/R2021b/extern/bin/win64:/usr/local/lib" /usr/local/lib/libdace.so.2.0.1 

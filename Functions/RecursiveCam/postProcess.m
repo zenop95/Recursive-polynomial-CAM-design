@@ -124,7 +124,7 @@ hold off
 
 % Ellipse B-plane
 for k = 1:pp.n_conj
-    xb     = pp.x_pTCA(:,k);
+    xb     = xBall(:,k);
     x      = xMan(:,k);
     x_s    = x_sTCA(:,k);
     e2b    = eci2Bplane(xb(4:6),x_s(4:6));
@@ -132,9 +132,9 @@ for k = 1:pp.n_conj
     PB     = e2b*P(:,:,k)*e2b';
     switch pp.pocType
     case 0
-        smdLim   = -2*log(2*pp.PoCLim*sqrt(det(PB(:,:,k)))/pp.HBR(k)^2);        % [-] (1,1) SMD limit computed with Alfriend and Akella's formula
+        smdLim   = -2*log(2*pp.PoCLim*sqrt(det(PB))/pp.HBR(k)^2);        % [-] (1,1) SMD limit computed with Alfriend and Akella's formula
     case 1
-        smdLim   = PoC2SMD(PB(:,:,k), pp.HBR(k), pp.PoCLim, 3, 1, 1e-3, 200);   % [-] (1,1) SMD limit computed with Chan's formula
+        smdLim   = PoC2SMD(PB, pp.HBR(k), pp.PoCLim, 3, 1, 1e-3, 200);   % [-] (1,1) SMD limit computed with Chan's formula
     otherwise
         error('invalid PoC type')
     end
