@@ -46,7 +46,7 @@ try
     timeSubtr1 = 0;
     tic
     if pp.filterMans
-        [~,~,coeffPoC,timeSubtr1] = propDAPoly(1,u,scale,0,0,pp);
+        [~,~,coeffPoC,timeSubtr1] = propDA(1,u,scale,0,0,pp);
         gradVec = buildDAArray(coeffPoC.C,coeffPoC.E,1);
         for jj = 1:n_man
             grads(jj) = norm(gradVec(1+m*(jj-1):m*jj));
@@ -67,7 +67,7 @@ try
         scale      = ones(m,n_man);
         ctrl       = nan(3,n_man);
     end
-    [lim,smdLim,coeffPoC,timeSubtr,xBall,metric] = propDAPoly(pp.DAorder,u,scale,0,0,pp);
+    [lim,smdLim,coeffPoC,timeSubtr,xBall,metric] = propDA(pp.DAorder,u,scale,0,0,pp);
     switch pp.solvingMethod
         case 'greedy'
             yF = computeCtrlGreedy(lim,metric,coeffPoC,u, ...
@@ -93,7 +93,7 @@ try
     %% Validation
     metricValPoly = eval_poly(coeffPoC.C,coeffPoC.E,reshape(yF./scale,1,[]),pp.DAorder);
     
-    [~,~,~,~,x] = propDAPoly(1,ctrl,scale,1,0,pp);
+    [~,~,~,~,x] = propDA(1,ctrl,scale,1,0,pp);
     if pp.metricFlag  == 0 || pp.metricFlag  == 1
         metricValPoly = 10^metricValPoly;
         lim           = 10^lim;

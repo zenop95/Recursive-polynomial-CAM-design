@@ -43,7 +43,7 @@ tic
 % If the filtering routine is adpoted, first perform a first-order
 % propagation to find the most sensitive maneuvering times
 if pp.filterMans
-    [~,~,coeffPoC,timeSubtr1] = propDAPoly(1,u,scale,0,0,pp);
+    [~,~,coeffPoC,timeSubtr1] = propDA(1,u,scale,0,0,pp);
     gradVec = buildDAArray(coeffPoC.C,coeffPoC.E,1);
     for j = 1:n_man
         grads(j) = norm(gradVec(1+m*(j-1):m*j));
@@ -66,7 +66,7 @@ if pp.filterMans
     ctrl       = nan(3,n_man);
 end
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
-[lim,coeffPoC,timeSubtr,xBall,metric] = propDAPoly(pp.DAorder,u,scale,0,pp);
+[lim,coeffPoC,timeSubtr,xBall,metric] = propDA(pp.DAorder,u,scale,0,pp);
 
 %% Optimization
 switch pp.solvingMethod
@@ -103,7 +103,7 @@ simTime = toc - timeSubtr - timeSubtr1;
 %                             pp.DAorder);
 % metricValPoly = 10^metricValPoly;
 
-[~,~,~,x] = propDAPoly(1,ctrl,scale,1,pp);                                      % Validate the solution by forward propagating and computing the real PoC
+[~,~,~,x] = propDA(1,ctrl,scale,1,pp);                                      % Validate the solution by forward propagating and computing the real PoC
 lim       = 10^lim;
 
 %% PostProcess

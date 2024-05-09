@@ -42,7 +42,7 @@ dv    = nan(3,n_man);                          % [-] (3,N)  Initialized ctrl of 
 timeSubtr1 = 0;
 tic
 if pp.filterMans
-    [~,~,coeffPoC,timeSubtr1] = propDAPoly(1,u,scale,0,0,pp);
+    [~,~,coeffPoC,timeSubtr1] = propDA(1,u,scale,0,0,pp);
     gradVec  =  buildDAArrayGeneralized(coeffPoC.C,coeffPoC.E,1);
     for j = 1:n_man
         grads(j) = norm(gradVec(1+m*(j-1):m*j));
@@ -55,7 +55,7 @@ if pp.filterMans
     dv    = nan(3,1);
     pp.N  = 1;
 end
-[lim,smdLim,coeffPoC,timeSubtr,xBall,metric] = propDAPoly(pp.DAorder,u,scale,0,0,pp);
+[lim,smdLim,coeffPoC,timeSubtr,xBall,metric] = propDA(pp.DAorder,u,scale,0,0,pp);
 
 %% Optimization
 switch pp.solvingMethod
@@ -89,7 +89,7 @@ simTime(j) = toc - timeSubtr - timeSubtr1;
 %% Validation
 metricValPoly = eval_poly(coeffPoC.C,coeffPoC.E,reshape(yF./scale,1,[]),pp.DAorder);
 
-[~,~,~,~,x] = propDAPoly(1,dv,scale,1,0,pp);
+[~,~,~,~,x] = propDA(1,dv,scale,1,0,pp);
 metricValPoly = 10^metricValPoly;
 lim           = 10^lim;
 dvs(:,j) = dv*pp.Vsc*1e6;
