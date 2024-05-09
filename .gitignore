@@ -2,3 +2,4 @@
 *.dat
 CppExec/polyProp
 CppExec/validatePoly
+CppExec/cmake_install.cmake
