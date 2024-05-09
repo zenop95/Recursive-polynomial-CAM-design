@@ -1,7 +1,7 @@
 function pp = generateInitLeo(orbit,ind)
 
 mu     = 398600.4418;    % [m^3/s^2]
-load("./matFiles/dataConjunctionsESA.mat");
+load("./data/dataConjunctionsESA.mat");
 B = table2array(data); clear data;
 
 %% Primary

@@ -49,7 +49,7 @@ int main(void)
     AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(m,n_man), scale(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
     AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), HBR(n_conj), magnitude(n_man);
     AlgebraicVector<int>    canFire(N), isConj(N);
-    // Write input from .txt
+    // Write input from .dat
 	Input.open("./write_read/initial_state.dat");
         Input >> N;               // Number of nodes
         Input >> n_conj;          // Number of conjunctions
@@ -208,7 +208,6 @@ int main(void)
             k = k + 1;
         }
     }
-
     // Compute the total PoC resulting from the multiple conjunctions
     DA noCollisions = 1.0;
     for (k = 0; k < n_conj; k ++) {
