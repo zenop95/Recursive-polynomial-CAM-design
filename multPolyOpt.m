@@ -22,7 +22,7 @@ set(0,'defaultfigurecolor',[1 1 1])
 %% Initialization variables
 multiple = 0;
 t_man = 2.5;
-for kk = [2:4,6,7]
+for kk = 2:7
 for j = 1:2170
 pp = initPolyOpt(0,0,j);
 pp.cislunar = 0;
@@ -93,7 +93,7 @@ metricValPoly = eval_poly(coeffPoC.C,coeffPoC.E,reshape(yF./scale,1,[]),pp.DAord
 [~,~,~,x] = propDAPoly(1,ctrl,scale,1,pp);
 metricValPoly = 10^metricValPoly;
 lim           = 10^lim;
-dvs(:,j) = dv*pp.Vsc*1e6;
+dvs(:,j) = ctrl*pp.Vsc*1e6;
 xs(:,j)  = x;
 % nodeThrust(:,j)  = thrustNode;
 e2b    = eci2Bplane(xBall(4:6),pp.x_sTCA(4:6));
@@ -107,7 +107,7 @@ end
 save(['simOutput/singleImpulseEsaCases/rec' num2str(pp.DAorder),'_J2'])
 end
 
-for kk = [2:4,6,7]
+for kk = 2:7
 for j = 1:2170
 pp = initPolyOpt(0,0,j);
 pp.cislunar = 0;
@@ -123,8 +123,6 @@ if pp.fixedMag && pp.fixedDir; error('Both magnitude and direction cannot be fix
 m     = 3 - pp.fixedMag - 2*pp.fixedDir;   % [-] (1,1)  Number of optimization variables per node
 pp.m = m;
 u     = zeros(m,n_man);                        % [-] (m,N)  Ctrl of the unperturbed trajectory
-scale = ones(m,n_man);                         % [-] (m,N)  ~1 if polynomial scaling is used
-dv    = nan(3,n_man);                          % [-] (3,N)  Initialized ctrl of the optimized trajectory
 
 timeSubtr1 = 0;
 tic
@@ -179,7 +177,7 @@ metricValPoly = eval_poly(coeffPoC.C,coeffPoC.E,reshape(yF./scale,1,[]),pp.DAord
 [~,~,~,x] = propDAPoly(1,ctrl,scale,1,pp);
 metricValPoly = 10^metricValPoly;
 lim           = 10^lim;
-dvs(:,j) = dv*pp.Vsc*1e6;
+dvs(:,j) = ctrl*pp.Vsc*1e6;
 xs(:,j)  = x;
 % nodeThrust(:,j)  = thrustNode;
 e2b    = eci2Bplane(xBall(4:6),pp.x_sTCA(4:6));
