@@ -46,7 +46,7 @@ int main(void)
         nodes >> m;         // Number of DA variables per node
 	nodes.close();
     // Initialize variable
-    AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(m,n_man), scale(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
+    AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
     AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), HBR(n_conj), magnitude(n_man);
     AlgebraicVector<int>    canFire(N), isConj(N);
     // Write input from .dat
@@ -82,11 +82,6 @@ int main(void)
             }
         }
         for (i = 0; i < n_man; i ++) {
-            for (j = 0; j < m; j ++) {
-                Input >> scale.at(j,i);  // Not used
-            }
-        }
-        for (i = 0; i < n_man; i ++) {
                 Input >> magnitude[i];    // Write maneuver magnitude if the magnitude is fixed
         }   
         for (i = 0; i < n_man; i ++) {
@@ -119,8 +114,7 @@ int main(void)
     int AIDA_flags[3] = {flag1,flag2,flag3};
     double Bfactor    = Cd*A_drag/mass;
     double SRPC       = Cr*A_srp/mass;
-    AIDADvDynamics<DA> aidaCartDynImp(gravmodel, gravOrd, AIDA_flags, Bfactor, SRPC);
-    AIDAScaledDynamics<DA> aidaCartDynLT(gravmodel, gravOrd, AIDA_flags, Bfactor, SRPC);
+    AIDAScaledDynamics<DA> aidaCartDyn(gravmodel, gravOrd, AIDA_flags, Bfactor, SRPC);
 
     // Initialize DA variables
     AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3); 
@@ -130,7 +124,7 @@ int main(void)
     for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
     // backpropagation from first TCA
     if (dyn == 0) {
-        x0     = RK78Dv(6, xBall, tca, tca - t[0], Lsc, musc, gravOrd, aidaCartDynImp); // Earth Orbit
+        x0     = RK78Sc(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, tca, tca - t[0], 1.0, Lsc, 0, gravOrd, aidaCartDyn); // Earth Orbit
     }
     else if (dyn == 1) {
         x0     = RK78Cis(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[0], CR3BPsyn, 0.012150668, 0.0); // Cislunar
@@ -149,13 +143,13 @@ int main(void)
             if (m == 3) {
                 for (j = 0; j < 3 ; j++) { 
                     jj ++;
-                    ctrlRtn[j] = ctrlDum.at(j,kk) + DA(jj)*scale.at(j,kk);
+                    ctrlRtn[j] = ctrlDum.at(j,kk) + DA(jj);
                 }
             }
             // Only the direction of the control is optimized
             else if (m == 2) {
-                alpha = DA(2*kk+1)*scale.at(0,kk);
-                beta  = DA(2*kk+2)*scale.at(1,kk);
+                alpha = DA(2*kk+1);
+                beta  = DA(2*kk+2);
                 ctrlRtn[0] = magnitude[kk]*cos(alpha)*sin(beta);
                 ctrlRtn[1] = magnitude[kk]*cos(alpha)*cos(beta);
                 ctrlRtn[2] = magnitude[kk]*sin(alpha);
@@ -163,7 +157,7 @@ int main(void)
             // Only the magnitude of the control is optimized
             else if (m == 1) {
                 for (j = 0; j < 3 ; j++) {
-                    ctrlRtn[j] = (ctrlDum.at(0,kk) + DA(kk+1)*scale.at(0,kk))*directions.at(j,kk);
+                    ctrlRtn[j] = (ctrlDum.at(0,kk) + DA(kk+1))*directions.at(j,kk);
                 }
             }
             else {
@@ -177,28 +171,24 @@ int main(void)
             else {
                 ctrl = ctrlRtn;
             }
+            // If impulsive, the control is added to the velocity part of the state and the acceleration is null
+            if (lowThrust_flag == 0) {
+                for (j = 3; j < 6; j ++) {
+                    x0[j] = x0[j] + ctrl[j-3];
+                } 
+                ctrl = {0.0*DA(1), 0.0*DA(1), 0.0*DA(1)};
+            }
         }
         // If the node is a ballistic node, do no include the control
         else {ctrl = {DA(1)*0, DA(1)*0, DA(1)*0};}
-        // Impulsive or ballistic propagation (null contribution of the control acceleration)
-        if (lowThrust_flag == 0 || canFire[i] == 0) {
-            // The control enters as a Dv to be applied at the required node
-            for (j = 3; j < 6 ; j++) {x0[j] = x0[j] + ctrl[j-3];}
-            if (dyn == 0) {
-                x0 = RK78Dv(6, x0, tca - t[i], tca - t[i+1], Lsc, musc, gravOrd, aidaCartDynImp);   // forward propagation to the next node
-            }
-            else {
-                x0 = RK78Cis(6, x0, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, -t[i], -t[i+1], CR3BPsyn, 0.012150668, 0.0); // forward propagation to the next node
-            }
+        if (dyn == 0) {
+            x0 = RK78Sc(6, x0, ctrl, tca - t[i], tca - t[i+1], 1.0, Lsc, 0, gravOrd, aidaCartDyn);   // forward propagation to the next node
         }
-        // Low-thrust propagation (with contribution of the control acceleration)
         else {
-            if (dyn == 0) {
-                x0 = RK78Sc(6, x0, ctrl, tca - t[i], tca - t[i+1], 1.0, Lsc, 0, gravOrd, aidaCartDynLT);   // forward propagation to the next node
-            }
-            else {
-                x0 = RK78Cis(6, x0, ctrl, -t[i], -t[i+1], CR3BPsyn, 0.012150668, 0.0); // forward propagation to the next node
-            }
+                            cout << x0 << endl;
+
+            x0 = RK78Cis(6, x0, ctrl, -t[i], -t[i+1], CR3BPsyn, 0.012150668, 0.0); // forward propagation to the next node
+                cout << x0 << endl;
         }
         // If the next node is a conjunction node, save the state in a DA variable
         if (isConj[i+1] == 1) {
@@ -208,6 +198,7 @@ int main(void)
             k = k + 1;
         }
     }
+
     // Compute the total PoC resulting from the multiple conjunctions
     DA noCollisions = 1.0;
     for (k = 0; k < n_conj; k ++) {

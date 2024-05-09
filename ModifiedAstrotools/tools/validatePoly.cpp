@@ -87,11 +87,10 @@ int main(void)
     int AIDA_flags[3] = {flag1,flag2,flag3};
     double Bfactor    = Cd*A_drag/mass;
     double SRPC       = Cr*A_srp/mass;
-    AIDADvDynamics<double> aidaCartDynImp(gravmodel, gravOrd, AIDA_flags, Bfactor, SRPC);
-    AIDAScaledDynamics<double> aidaCartDynLT(gravmodel, gravOrd, AIDA_flags, Bfactor, SRPC);
+    AIDAScaledDynamics<double> aidaCartDyn(gravmodel, gravOrd, AIDA_flags, Bfactor, SRPC);
 
     if (dyn == 0) {
-        x0     = RK78Dv(6, xdum, tca, tca - t[0], Lsc, musc, gravOrd, aidaCartDynImp); // backpropagation from first TCA (Earth orbit)
+        x0     = RK78Sc(6, xdum, {0.0,0.0,0.0}, tca, tca - t[0], 1.0, Lsc, musc, gravOrd, aidaCartDyn); // backpropagation from first TCA (Earth orbit)
     }
     else if (dyn == 1) {
         x0     = RK78Cis(6, xdum, {0.0,0.0,0.0}, 0.0, - t[0], CR3BPsyn, 0.012150668, 0.0); // backpropagation from first TCA (Cislunar)
@@ -115,22 +114,17 @@ int main(void)
             ii ++;
         }
         else {ctrl = {0.0, 0.0, 0.0};}
-        if (lowThrust_flag == 0 || canFire[i] == 0) {
-            for (j = 3; j < 6 ; j++) {x0[j] = x0[j] + ctrl[j-3];}
-            if (dyn == 0) {
-                x0 = RK78Dv(6, x0, tca - t[i], tca - t[i+1], Lsc, musc, gravOrd, aidaCartDynImp);   // forward propagation to TCA
-            }
-            else {
-                x0 = RK78Cis(6, x0, {0.0,0.0,0.0}, -t[i], -t[i+1], CR3BPsyn, 0.012150668, 0.0); // backpropagation from TCA
-            }        
+        if (lowThrust_flag == 0) {
+            for (j = 3; j < 6; j ++) {
+                x0[j] = x0[j] + ctrl[j-3];
+            } 
+            ctrl = {0.0, 0.0, 0.0};
+        }
+        if (dyn == 0) {
+            x0 = RK78Sc(6, x0, ctrl, tca - t[i], tca - t[i+1], 1.0, Lsc, 0, gravOrd, aidaCartDyn);   // forward propagation to TCA
         }
         else {
-            if (dyn == 0) {
-                x0 = RK78Sc(6, x0, ctrl, tca - t[i], tca - t[i+1], 1.0, Lsc, 0, gravOrd, aidaCartDynLT);   // forward propagation to TCA
-            }
-            else {
-                x0 = RK78Cis(6, x0, ctrl, -t[i], -t[i+1], CR3BPsyn, 0.012150668, 0.0); // backpropagation from TCA        
-            }
+            x0 = RK78Cis(6, x0, ctrl, -t[i], -t[i+1], CR3BPsyn, 0.012150668, 0.0); // backpropagation from TCA        
         }
         if (isConj[i+1] == 1) {
             for (j = 0; j < 6 ; j ++) {

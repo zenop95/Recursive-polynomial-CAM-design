@@ -65,9 +65,6 @@ if ~validateFlag
             end
         end
     end
-    for i = 1:length(scale) 
-        fprintf(fid, '%40.16f\n', scale(i));
-    end
     for i = 1:n_man 
         fprintf(fid, '%40.16f\n', pp.thrustMagnitude);
     end
