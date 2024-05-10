@@ -83,7 +83,7 @@ for i = 1:N
     fprintf(fid, '%2i\n', pp.isConj(i));
 end
 fclose(fid);
-aidaInit(pp,'primary');                                                         % Initialize AiDA dynamics (not needeed in paper)
+aidaInit(pp);                                                         % Initialize AiDA dynamics (not needeed in paper)
 timeSubtr1 = toc(bb);                                                           % Exlude writing time from computation time measure
 
 %% Run the C++ Executable to perform the DA propagation

@@ -17,7 +17,7 @@ set(0,'DefaultUipanelFontName','Times', 'DefaultUipanelFontSize', 14);
 set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
 
-%% User-defined inputs
+%% User-defined inputs (modifiable)
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,1);                                          % [struc] (1,1) Initialize paramters structure with conjunction data

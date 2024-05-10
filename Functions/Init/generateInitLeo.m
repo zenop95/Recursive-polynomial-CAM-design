@@ -1,4 +1,4 @@
-function pp = generateInitLeo(orbit,ind)
+function pp = generateInitLeo(ind)
 
 mu     = 398600.4418;    % [m^3/s^2]
 load("./data/dataConjunctionsESA.mat");
@@ -19,11 +19,9 @@ primary.A_drag = 1;              % [m^2] drag surface area
 primary.Cd     = 2.2;            % [-] shape coefficient for drag
 primary.A_srp  = 1;              % [m^2] SRP surface area
 primary.Cr     = 1.31;           % [-] shape coefficient for SRP
-primary.cart0 = primary.x0;
 
 %% Secondary
 x0s                = toColumn(B(ind,15:20)); % [km] [km/s] Secondary initial state in ECI
-secondary.tca      = 1;         % [s] TCA of conjunction w.r.t. initial time t0 = 0
 secondary.x0       = x0s;         
 r2e = rtn2eci(x0p(1:3),x0p(4:6));
 secondary.relState = [r2e' zeros(3); zeros(3) r2e']*(x0s-x0p);                          % [km] [km/s] Relative cartesian state at TCA
@@ -37,15 +35,9 @@ secondary.A_drag     = 1;            % [m^2] drag surface area
 secondary.Cd         = 2.2;          % [-] shape coefficient for drag
 secondary.A_srp      = 1;            % [m^2] SRP surface area
 secondary.Cr         = 1.31;         % [-] shape coefficient for SRP
-secondary.x          = [];         % [-] 
-secondary.covariance = [];         % [-] 
-secondary.w          = 1;        
-secondary.cdm        = true;        
-secondary.ang        = false;        
 %% Relative initial covariance in ECI reference frame
 
 pp = struct( ...
-            'orbit',     orbit, ...
             'mu',        mu, ...
             'primary',   primary, ...
             'secondary', secondary, ...
