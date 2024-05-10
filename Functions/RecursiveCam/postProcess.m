@@ -102,13 +102,13 @@ else
     ctrl  = [ctrl, zeros(3,length(ttt)+1)];
     ctrl  = ctrl(:,o);
     xq = linspace(pp.t(1),pp.t(end),100000);
-    ctrlInt(1,:) = interp1(t,ctrl(1,:),xq,'linear');
-    ctrlInt(2,:) = interp1(t,ctrl(2,:),xq,'linear');
-    ctrlInt(3,:) = interp1(t,ctrl(3,:),xq,'linear');
-    ctrlNorm = normOfVec(ctrl);
-    plot(t,ctrl','LineWidth',2)
+    ctrlInt(1,:) = interp1(t,ctrl(1,:),xq,'next');
+    ctrlInt(2,:) = interp1(t,ctrl(2,:),xq,'next');
+    ctrlInt(3,:) = interp1(t,ctrl(3,:),xq,'next');
+    ctrlNorm = normOfVec(ctrlInt);
+    plot(xq,ctrlInt','LineWidth',2)
     hold on
-    plot(t,ctrlNorm,'LineWidth',2,'color','k')
+    plot(xq,ctrlNorm,'LineWidth',2,'color','k')
     ylabel('$a$ [mm/s2]')
 end
 if ~pp.cislunar
@@ -125,6 +125,7 @@ hold off
 % Ellipse B-plane
 for k = 1:pp.n_conj
     xb     = xBall(:,k);
+    xb(:,1) = pp.x_pTCA;
     x      = xMan(:,k);
     x_s    = x_sTCA(:,k);
     e2b    = eci2Bplane(xb(4:6),x_s(4:6));

@@ -25,7 +25,7 @@ pp.fixedDir         = 0;                                                        
 pp.fixedMag         = 0;                                                        % [bool]   (1,1) Fixed-magnitude flag
 pp.filterMans       = 0;                                                        % [bool]   (1,1) Filtered maneuver flag
 pp.nMans            = 1;                                                        % [bool]   (1,1) Selects how many impulses to use (only valid if filerMans==1)
-thrustMagnitude     = 0.08;                                                     % [mm/s^2] (1,1) Maximum acceleration if fixedMag = true
+thrustMagnitude     = 0.026;                                                    % [mm/s^2] (1,1) Maximum acceleration if fixedMag = true
 pp.thrustMagnitude  = thrustMagnitude/pp.Asc/1e6;                               % [-]      (1,1) Scaled maximum acceleration
 pp.thrustDirections = repmat([0 1 0]',1,300);                                   % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
 
@@ -37,8 +37,8 @@ pp.ns      = sort(unique([nFire, nConj]),"descend")';                           
 canFire    = ismember(pp.ns,nFire);                                             % [-] (1,N) 1 if the node is a firing node, 0 otherwise
 % If low-thrust model is usde, the last node of each firing window is idle
 if pp.lowThrust
-    for i = 1:length(pp.ns)-1
-        if abs(pp.ns(i) - pp.ns(i+1)) >= 0.4
+    for i = 2:length(pp.ns)-1
+        if abs(pp.ns(i) - pp.ns(i+1)) > abs(pp.ns(i) - pp.ns(i-1)) 
             canFire(i) = 0;
         end
     end
