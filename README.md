@@ -35,4 +35,4 @@ To run the codes, the first thing is to download this repository and install the
 
 
 Author: Zeno Pavanello, 2024
-% E-mail: zpav176@aucklanduni.ac.nz
+E-mail: zpav176@aucklanduni.ac.nz
