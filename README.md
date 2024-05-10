@@ -1,5 +1,5 @@
 # Recursive-polynomial-CAM-design
-This repository includes all the necessary routines to run the CAM design with the method described in the paper currently under review with Transactions on Aerospace and Egineering Systems, titled "Recursive Polynomial Method for Fast Collision Avoidance Maneuver Design," by Z. Pavanello, L. Pirovano and R. Armellin, 2024.
+This repository includes all the necessary routines to run the CAM design with the method described in the paper currently under review with IEEE Transactions on Aerospace and Electronic Systems, titled "Recursive Polynomial Method for Fast Collision Avoidance Maneuver Design," by Z. Pavanello, L. Pirovano and R. Armellin, 2024.
 
 The codes can be used to compute CAMs by employing any combination of the following feaures:
 
