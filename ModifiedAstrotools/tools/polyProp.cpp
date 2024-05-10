@@ -148,11 +148,14 @@ int main(void)
             }
             // Only the direction of the control is optimized
             else if (m == 2) {
-                alpha = DA(2*kk+1);
-                beta  = DA(2*kk+2);
-                ctrlRtn[0] = magnitude[kk]*cos(alpha)*sin(beta);
-                ctrlRtn[1] = magnitude[kk]*cos(alpha)*cos(beta);
-                ctrlRtn[2] = magnitude[kk]*sin(alpha);
+                // alpha = DA(2*kk+1);
+                // beta  = DA(2*kk+2);
+                // ctrlRtn[0] = magnitude[kk]*cos(alpha)*sin(beta);
+                // ctrlRtn[1] = magnitude[kk]*cos(alpha)*cos(beta);
+                // ctrlRtn[2] = magnitude[kk]*sin(alpha);
+                ctrlRtn[0] = DA(2*kk+1);
+                ctrlRtn[1] = DA(2*kk+2);
+                ctrlRtn[2] = sqrt(magnitude[kk]*magnitude[kk] - ctrlRtn[0]*ctrlRtn[0] - ctrlRtn[1]*ctrlRtn[1]);
             }
             // Only the magnitude of the control is optimized
             else if (m == 1) {
@@ -185,10 +188,7 @@ int main(void)
             x0 = RK78Sc(6, x0, ctrl, tca - t[i], tca - t[i+1], 1.0, Lsc, 0, gravOrd, aidaCartDyn);   // forward propagation to the next node
         }
         else {
-                            cout << x0 << endl;
-
             x0 = RK78Cis(6, x0, ctrl, -t[i], -t[i+1], CR3BPsyn, 0.012150668, 0.0); // forward propagation to the next node
-                cout << x0 << endl;
         }
         // If the next node is a conjunction node, save the state in a DA variable
         if (isConj[i+1] == 1) {

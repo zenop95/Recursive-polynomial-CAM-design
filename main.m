@@ -93,9 +93,12 @@ if pp.fixedDir                                                                  
     ctrl = yF.*pp.thrustDirections(:,1:n_man);
 elseif pp.fixedMag                                                              % [-] (3,n_man) Build control matrix node-wise in the case of fixed magnitude
     for j = 1:n_man
-        ctrl(1,j) = pp.thrustMagnitude*cos(yF(1,j))*sin(yF(2,j));
-        ctrl(2,j) = pp.thrustMagnitude*cos(yF(1,j))*cos(yF(2,j));
-        ctrl(3,j) = pp.thrustMagnitude*sin(yF(1,j));
+%         ctrl(1,j) = pp.thrustMagnitude*cos(yF(1,j))*sin(yF(2,j));
+%         ctrl(2,j) = -pp.thrustMagnitude*cos(yF(1,j))*cos(yF(2,j));
+%         ctrl(3,j) = pp.thrustMagnitude*sin(yF(1,j));
+        ctrl(1,j) = yF(1,j);
+        ctrl(2,j) = yF(2,j);
+        ctrl(3,j) = sqrt(pp.thrustMagnitude^2-ctrl(1,j)^2-ctrl(2,j)^2);
     end
 else
     ctrl = yF;                                                                  % [-] (3,n_man) Build control matrix node-wise in the general case
