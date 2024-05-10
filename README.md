@@ -33,6 +33,7 @@ The parameters of the optimization are defined in lines 16-20: the order of the 
 
 To run the codes, the first thing is to download this repository and install the required Differential Algebra tool, DACE, which is publicly available at https://github.com/dacelib/dace. Afterwards, download this repository and unzip it to the preferred location. Unzip "astrotools.m" in your ubuntu bash where also DACE should be installed. The astrotools tools should be compiled using a command similar to the one in "updateAstrotools.txt", which also copies the required executables in the proper folder "CppExec", where they are needed for the codes to run.
 
+DOI: 10.5281/zenodo.11169701
 
 Author: Zeno Pavanello, 2024
 
