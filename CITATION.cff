@@ -1,0 +1,31 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Recursive-polynomial-CAM-design
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Zeno
+    family-names: Pavanello
+    email: zpav176@aucklanduni.ac.nz
+    affiliation: The University of Auckland
+    orcid: 'https://orcid.org/0000-0003-0808-781X'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.11169701
+  - type: url
+    value: >-
+      https://github.com/zenop95/Recursive-polynomial-CAM-design/tree/v1.0.0
+abstract: >-
+  This repository includes all the necessary routines to run
+  the CAM design with the method described in the paper
+  currently under review with IEEE Transactions on Aerospace
+  and Electronic Systems, titled "Recursive Polynomial
+  Method for Fast Collision Avoidance Maneuver Design," by
+  Z. Pavanello, L. Pirovano and R. Armellin, 2024.
+commit: v1.0.0
+version: 1.0.0
+date-released: '2024-05-10'
