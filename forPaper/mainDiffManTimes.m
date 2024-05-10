@@ -24,9 +24,9 @@ multiple = 0;
 nMan     = 500;
 tMan     = linspace(4,0.05,nMan);
 for j = 1:nMan
-pp = initPolyOpt(0,1,1);
+pp = initOpt(0,1,1);
 pp.cislunar = 1;
-pp = definePolyParams(pp,tMan(j));
+pp = defineParams(pp,tMan(j));
 N  = pp.N;
 n_man = pp.n_man;
 if N == 1 && pp.lowThrust; error('The algorithm needs at least two nodes to define the low-thrust window'); end

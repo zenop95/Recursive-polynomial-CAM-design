@@ -17,14 +17,19 @@ set(0,'DefaultUipanelFontName','Times', 'DefaultUipanelFontSize', 14);
 set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
 
-%% Initialization variables
+%% User-defined inputs
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
-pp = initPolyOpt(multiple,cislunar,1);                                          % [struc] (1,1) Initialize paramters structure with conjunction data
+pp = initOpt(multiple,cislunar,1);                                          % [struc] (1,1) Initialize paramters structure with conjunction data
+fireTimes = 2.5;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+% fireTimes = [2.5 0.5];                                                        % [-] Example of bi-impulsive maneuvers
+% fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
+% fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
-nFire = 2.5;                                                                    % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-% nFire = linspace(2.4,2.6,2);                                                                    % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-pp = definePolyParams(pp,nFire);                                                % [-] (1,1) Include optimization paramters to parameters structure
+pp = defineParams(pp,fireTimes);                                            % [-] (1,1) Include optimization paramters to parameters structure
+
+%% Non-user defined
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 N  = pp.N;                                                                      % [-] (1,1) Number of nodes in the propagation
 n_man = pp.n_man;                                                               % [-] (1,1) Number of nodes where the maneuver can be performed
 if N == 1 && pp.lowThrust; error(['The algorithm needs ' ...
@@ -51,10 +56,10 @@ if pp.filterMans
     [~,thrustNode] = sort(grads,'descend');                                     % Rank the nodes
     thrustNode = thrustNode(1:pp.nMans);                                        % Only keep the first nMans nodes
     % Redefine the problem parameters according to the new nodes definition
-    nFire      = pp.ns(thrustNode)';
+    fireTimes      = pp.ns(thrustNode)';
     nConj     = -pp.tca_sep;
-    pp.ns      = sort(unique([nFire, nConj]),"descend")';
-    canFire    = ismember(pp.ns,nFire);
+    pp.ns      = sort(unique([fireTimes, nConj]),"descend")';
+    canFire    = ismember(pp.ns,fireTimes);
     pp.canFire = canFire;
     pp.isConj  = ismember(pp.ns,nConj);
     pp.t       = pp.ns*pp.T;

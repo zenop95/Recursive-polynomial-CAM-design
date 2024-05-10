@@ -25,12 +25,12 @@ ts = linspace(0.5,4,8); ts = flip(ts);
 for k = 5
 for j = 1:8
 try
-    pp = initPolyOpt(0,0,1060);
+    pp = initOpt(0,0,1060);
     pp.cislunar = 0;
 %     t_man = linspace(2.47,2.53,j+1);
     t_man = ts(1:j);
     % t_man = 2.5;
-    pp = definePolyParams(pp,t_man);
+    pp = defineParams(pp,t_man);
     pp.DAorder = k+1;
     N  = pp.N;
     n_man = pp.n_man;
