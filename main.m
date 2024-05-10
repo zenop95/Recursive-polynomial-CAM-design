@@ -20,13 +20,13 @@ set(0,'defaultfigurecolor',[1 1 1])
 %% User-defined inputs (modifiable)
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
-pp = initOpt(multiple,cislunar,1);                                          % [struc] (1,1) Initialize paramters structure with conjunction data
+pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
 fireTimes = 2.5;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 % fireTimes = [2.5 0.5];                                                        % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
-pp = defineParams(pp,fireTimes);                                            % [-] (1,1) Include optimization paramters to parameters structure
+pp = defineParams(pp,fireTimes);                                                % [-] (1,1) Include optimization paramters to parameters structure
 
 %% Non-user defined
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
