@@ -14,4 +14,5 @@ fprintf(fid, '%40.12f\n', pp.primary.A_drag);
 fprintf(fid, '%40.12f\n', pp.primary.Cd);
 fprintf(fid, '%40.12f\n', pp.primary.A_srp);
 fprintf(fid, '%40.12f\n', pp.primary.Cr);
+fclose(fid);
 end

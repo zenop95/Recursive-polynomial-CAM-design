@@ -101,7 +101,7 @@ else
     end
     ctrl  = [ctrl, zeros(3,length(ttt)+1)];
     ctrl  = ctrl(:,o);
-    xq = linspace(pp.t(1),pp.t(end),100000);
+    xq = linspace(t(1),t(end),100000);
     ctrlInt(1,:) = interp1(t,ctrl(1,:),xq,'next');
     ctrlInt(2,:) = interp1(t,ctrl(2,:),xq,'next');
     ctrlInt(3,:) = interp1(t,ctrl(3,:),xq,'next');
