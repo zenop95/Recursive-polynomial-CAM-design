@@ -31,6 +31,7 @@ yf  = reshape(Yf,m,N).*scale;
 
 function J = minFun(y,m,N)
     J = sum(normOfVec(reshape(y,m,N)));
+%     J = sum(y.^2);
 end
 
 function [c_in,c_eq] = polyPoC(y,coeffPoC,lim)
