@@ -21,12 +21,13 @@ set(0,'defaultfigurecolor',[1 1 1])
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
-fireTimes = 2.5;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+fireTimes = [2.5 0 -0.5];                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+returnTime = -1;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 % fireTimes = [2.5 0.5];                                                        % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
-pp = defineParams(pp,fireTimes);                                                % [-] (1,1) Include optimization paramters to parameters structure
+pp = defineParams(pp,fireTimes,returnTime);                                                % [-] (1,1) Include optimization paramters to parameters structure
 
 %% Non-user defined
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,7 +49,7 @@ tic
 % If the filtering routine is adpoted, first perform a first-order
 % propagation to find the most sensitive maneuvering times
 if pp.filterMans
-    [~,~,coeffPoC,timeSubtr1] = propDA(1,u,scale,0,0,pp);
+    [~,~,coeffPoC,coeffRet,timeSubtr1] = propDA(1,u,scale,0,0,pp);
     gradVec = buildDAArray(coeffPoC.C,coeffPoC.E,1);
     for j = 1:n_man
         grads(j) = norm(gradVec(1+m*(j-1):m*j));
@@ -71,7 +72,7 @@ if pp.filterMans
     ctrl       = nan(3,n_man);
 end
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
-[lim,coeffPoC,timeSubtr,xBall,metric] = propDA(pp.DAorder,u,scale,0,pp);
+[lim,coeffPoC,coeffRet,timeSubtr,xBall,metric] = propDA(pp.DAorder,u,scale,0,pp);
 
 %% Optimization
 switch pp.solvingMethod
@@ -80,6 +81,8 @@ switch pp.solvingMethod
                                    pp.DAorder,scale,n_man);
     case 'fmincon'
         yF = computeCtrlNlp(lim,coeffPoC,u,n_man,m,scale);
+    case 'recursiveLagrange'
+        yF = computeCtrlLagrange(metric,coeffPoC,coeffRet,u,scale,pp);
 %     case 'global'  % working badly
 %         yF = computeDvGlobal(lim,coeffPoC,n_man,m,scale);
 % 
@@ -110,9 +113,11 @@ simTime = toc - timeSubtr - timeSubtr1;
 % metricValPoly = eval_poly(coeffPoC.C,coeffPoC.E,reshape(yF./scale,1,[]), ...    
 %                             pp.DAorder);
 % metricValPoly = 10^metricValPoly;
+distValPoly = eval_poly(coeffRet.C,coeffRet.E,reshape(yF./scale,1,[]), ...    
+                            pp.DAorder)*pp.Lsc;
 
-[~,~,~,x] = propDA(1,ctrl,scale,1,pp);                                      % Validate the solution by forward propagating and computing the real PoC
+[~,~,~,~,x,~,xRet0] = propDA(1,ctrl,scale,1,pp);                                      % Validate the solution by forward propagating and computing the real PoC
 lim       = 10^lim;
 
 %% PostProcess
-postProcess(xBall,x,lim,ctrl,simTime,pp)
+postProcess(xBall,x,xRet0,lim,ctrl,simTime,pp)

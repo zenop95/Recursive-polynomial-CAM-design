@@ -47,8 +47,8 @@ int main(void)
 	nodes.close();
     // Initialize variable
     AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
-    AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), HBR(n_conj), magnitude(n_man);
-    AlgebraicVector<int>    canFire(N), isConj(N);
+    AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3);
+    AlgebraicVector<int>    canFire(N), isConj(N), isRet(N);
     // Write input from .dat
 	Input.open("./write_read/initial_state.dat");
         Input >> N;               // Number of nodes
@@ -76,6 +76,12 @@ int main(void)
                 Input >> vsDum.at(j,k); // Write secondary's ECI velocity at each conjunction from input
             }   
         }
+        for (j = 0; j < 3; j ++) {
+                Input >> rRef[j]; // Write reference ECI position for return from input
+            }
+        for (j = 0; j < 3; j ++) {
+                Input >> vRef[j]; // Write reference ECI velocity for return from input
+            }
         for (k = 0; k < n_conj; k ++) {
             for (j = 0; j < 9; j ++) {
                 Input >> cov.at(j,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
@@ -98,6 +104,7 @@ int main(void)
             Input >> t[i];                  // Write node times before conjunction (if negative it means that there are more than one encounters and nodes are needed after the first encounter)
             Input >> canFire[i];            // Define if node i is a firing node
             Input >> isConj[i];             // Define if node i is a conjunction node
+            Input >> isRet[i];             // Define if node i is a conjunction node
         }
     Input.close();
     // initialize execution time counter
@@ -117,7 +124,7 @@ int main(void)
     AIDAScaledDynamics<DA> aidaCartDyn(gravmodel, gravOrd, AIDA_flags, Bfactor, SRPC);
 
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3); 
+    AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), xRet(6); 
     AlgebraicMatrix<DA> xTca(6,n_conj);
     DA metric, poc_tot, alpha, beta;
     // Define ballistic primary's position at first TCA 
@@ -197,6 +204,9 @@ int main(void)
             }        
             k = k + 1;
         }
+        else if (isRet[i+1] == 1) {
+            xRet = x0;
+        }
     }
 
     // Compute the total PoC resulting from the multiple conjunctions
@@ -240,14 +250,29 @@ int main(void)
 
     // Final PoC comprehensive of all the conjunctions
     poc_tot = log10(1.0 - noCollisions);
-    time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
+    time1   = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
+
+
+    // Return constraint (scalar as tangential distance from other spacecraft GRACE)
+    AlgebraicVector<DA> rRet(3), vRet(3), distRel(3);
+    DA tan;
+    for (j = 0; j < 3 ; j ++) {
+        rRet[j] = xRet[j];
+        vRet[j] = xRet[j+3];
+    }      
+    r2e     = astro::rtn2eci(cons(xRet));
+    distRel = r2e.transpose()*(rRet-rRef);
+    tan     = distRel[1]; // tangential displacement with respect to reference
+
 
     //open the output files
-    ofstream constPart, metricPoly;
+    ofstream constPart, metricPoly, distPoly;
     constPart.open("./write_read/constPart.dat");
     constPart << setprecision(18);
     metricPoly.open("./write_read/metricPoly.dat");
     metricPoly << setprecision(18);
+    distPoly.open("./write_read/distPoly.dat");
+    distPoly << setprecision(18);
 
     // write TCA states in ECI coordinates into output
     for (k = 0; k < n_conj ; k++) {
@@ -257,8 +282,11 @@ int main(void)
     }
     // write ballistic PoC in output (not valid for fixed magnitude)
     constPart  << cons(poc_tot)  << endl;
+    constPart  << cons(tan)  << endl;
     // write the DA expansion of PoC in output
     metricPoly << poc_tot << endl;
+    // write the DA expansion of return in output
+    distPoly   << tan    << endl;
 
     // Do not consider writing time when calculating execution time
     time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();

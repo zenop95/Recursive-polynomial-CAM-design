@@ -49,6 +49,7 @@ for k = 1:pp.n_conj
     pp.P(:,:,k) = (r2e_s*pp.secondary(k).C0(1:3,1:3)*r2e_s' + ... 
                     r2e_p*pp.primary.C0(1:3,1:3)*r2e_p')/pp.Lsc^2;              % [-] (3,3) Rotated position combined covariance matrix
 end
+pp.xReference = pp.x_pTCA + [r2e_p*[0; 0.2/pp.Lsc; 0]; 0; 0; 0];
 % (modifiable)
 pp.aidaFlag1 = 0;                                                               % atmosphere flag (1:non-rotating, 2:rotating)
 pp.aidaFlag2 = 0;                                                               % SRP flag (1:no shadow, 2:Earth cylindrical shadow, 3:Earth biconical shadow, 4:Earth and Moon cylindrical shadow, 5:Earth biconical and Moon cylindrical shadow, 6:Earth and Moon biconical shadow)
