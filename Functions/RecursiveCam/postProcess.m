@@ -120,7 +120,7 @@ else
     ylabel('$a$ [mm/s2]')
 end
 if ~pp.cislunar
-    xlabel('Number of orbits to TCA [-]')
+    xlabel('Orbits to TCA [-]')
 else
     xlabel('Time to TCA [days]')
 end

@@ -19,7 +19,7 @@ pp.pocType       = 1;                                                           
 pp.solvingMethod = 'recursiveLagrange';                                         % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'fmincon';                                                
 pp.PoCLim        = 1e-6;                                                        % [-]   (1,1) PoC limit
-pp.nomDist       = 0.200/pp.Lsc;
+pp.nomDist       = 0.200/pp.Lsc;                                                % [-]   (1,1) Relative distance to achieve after 1 orbit
 %% Operational constraints (modifiable)
 pp.lowThrust        = 0;                                                        % [bool]   (1,1) Low-thrust flag
 pp.fixedDir         = 0;                                                        % [bool]   (1,1) Fixed-direction flag
@@ -50,5 +50,9 @@ pp.isRet   = isRet;                                                             
 pp.isConj  = ismember(pp.ns,nConj);                                             % [-] (1,N) 1 if the node is a conjunction, 0 otherwise
 pp.t       = pp.ns*pp.T;                                                        % [-] (1,N) Time before TCA for each node (orbits for LEO, a-dimensional time units for Cislunar)
 pp.n_man   = sum(pp.canFire);                                                   % [-] (1,1) Total number of firing nodes
+
+%% Reference for return
+r2e_p         = rtn2eci(pp.x_pTCA(1:3),pp.x_pTCA(4:6));                         % [-] (3,3) RTN to ECI rotation matrix for primary in Earth Orbit 
+pp.xReference = pp.x_pTCA + [r2e_p*[0; pp.nomDist; 0]; 0; 0; 0];
 
 end
