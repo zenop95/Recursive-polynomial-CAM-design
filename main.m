@@ -21,8 +21,8 @@ set(0,'defaultfigurecolor',[1 1 1])
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
-fireTimes = [0.5 0 -0.5 -0.99];                                                         % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-returnTime = -1;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+fireTimes = [0.5 0 -0.5 -1.99];                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+returnTime = -2;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 % fireTimes = [2.5 0.5];                                                        % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
@@ -77,12 +77,11 @@ metric = coeff(1).C(1);
 %% Optimization
 switch pp.solvingMethod
     case 'recursive'
-        yF = computeCtrlGreedy(lim,metric,coeffPoC,u, ...
-                                   pp.DAorder,scale,n_man);
+        yF = computeCtrlRecursive(coeff,u,scale,pp);
+
     case 'fmincon'
-        yF = computeCtrlNlp(lim,coeffPoC,u,n_man,m,scale);
-    case 'recursiveLagrange'
-        yF = computeCtrlLagrange(coeff,u,scale,pp);
+        yF = computeCtrlNlp(coeff,u,scale,pp);
+
     otherwise 
         error('The solving method should be either recursive or fmincon')
 end

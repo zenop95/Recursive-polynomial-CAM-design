@@ -1,5 +1,5 @@
-function yf = computeCtrlLagrange(coeff,u,scale,pp)
-% computeCtrlLagrange Solves the polynomial CAM optimization problem using a
+function yf = computeCtrlRecursive(coeff,u,scale,pp)
+% computeCtrlRecursive Solves the polynomial CAM optimization problem using a
 % recursive approach with lagrange multiplier formulation
 %
 % INPUT:  lim      = [-] Metric limit
@@ -15,15 +15,11 @@ function yf = computeCtrlLagrange(coeff,u,scale,pp)
 % Author: Zeno Pavanello, 2024
 % E-mail: zpav176@aucklanduni.ac.nz
 %-------------------------------------------------------------------------------
-DAorder  = pp.DAorder;
 n_constr = pp.n_constr;
-m_man    = pp.n_man;
+n_man    = pp.n_man;
 m        = pp.m;
-lim      = [];
-if pp.flagCA;     lim   = log10(pp.PoCLim);     end
-if pp.flagTanSep; lim   = [lim; pp.nomDist];    end
-if pp.flagAlt;    lim   = [lim; 0];             end
-if pp.flagReturn; lim   = [lim; pp.xReference]; end
+lim      = pp.lim;
+DAorder  = pp.DAorder;
 u        = reshape(u,[],1);                                                     % [-] (m,n_man) expansion point for the control
 n        = length(u);                                                           % [-] (1,1) Number of scalar control variables
 tol      = 1e-10;                                                               % [-] (1,1) Tolerance for the successive linearizations
@@ -38,7 +34,7 @@ for c = 1:n_constr
     end
 end
 %% First-order Dv
-Y0p   = ctrlLagrange(Deltas,DAArrays,zeros(n,1),1,m_man,m,n_constr);            % [-] (n,1) 1st-order greedy solution of the polynomial constraint
+Y0p   = findCtrl(Deltas,DAArrays,zeros(n,1),1,n_man,m,n_constr);            % [-] (n,1) 1st-order greedy solution of the polynomial constraint
 Yp    = Y0p;                                                                    % [-] (n,1) Initialize linearization point for 2nd-order solution
 
 %% Higher-orders Dv
@@ -47,11 +43,11 @@ for k = 2:DAorder
     iter = 0;                                                                   % [-] (1,1) Initialize iteration counter
     while err > tol && iter < maxIter
         iter = iter + 1;                                                        % [-] (1,1) Update iteration number
-        Yp  = ctrlLagrange(Deltas,DAArrays,Y0p-u,k,m_man,m,n_constr) + u;       % [-] (n,1) kth-order greedy solution of the polynomial constraint
+        Yp  = findCtrl(Deltas,DAArrays,Y0p-u,k,n_man,m,n_constr) + u;       % [-] (n,1) kth-order greedy solution of the polynomial constraint
         err  = norm(Yp-Y0p);                                                    % [-] (n,1) Compute convergence variable at iteration iter
         Y0p = Yp;                                                               % [-] (n,1) Update linearization point for kth-order solution
         er(iter) = err;
     end
 end
-yf = reshape(Yp,[],m_man).*scale;                                                   % [-] (m,N) Reshape final solution to epress it node-wise
+yf = reshape(Yp,[],n_man).*scale;                                                   % [-] (m,N) Reshape final solution to epress it node-wise
 end
