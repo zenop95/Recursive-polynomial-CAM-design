@@ -30,7 +30,7 @@ pp.nMans            = 1;                                                        
 thrustMagnitude     = 0.026;                                                    % [mm/s^2] (1,1) Maximum acceleration if fixedMag = true
 pp.thrustMagnitude  = thrustMagnitude/pp.Asc/1e6;                               % [-]      (1,1) Scaled maximum acceleration
 pp.thrustDirections = repmat([0 1 0]',1,300);                                   % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
-pp.flagCA           = 0;
+pp.flagCA           = 1;
 pp.flagTanSep       = 0;
 pp.flagAlt          = 0;
 pp.flagReturn       = 1;
@@ -58,7 +58,7 @@ pp.n_constr = pp.flagCA + pp.flagTanSep + pp.flagAlt + 6*pp.flagReturn;
 
 %% Reference for return
 r2e_p         = rtn2eci(pp.x_pTCA(1:3),pp.x_pTCA(4:6));                         % [-] (3,3) RTN to ECI rotation matrix for primary in Earth Orbit 
-pp.xReference = pp.x_pTCA + [r2e_p*[0; 20/pp.Lsc; 0]; 0; 0; 0];
-% pp.xReference = pp.x_pTCA;% + [r2e_p*[pp.nomDist; 0; 0]; 0; 0; 0];
+% pp.xReference = pp.x_pTCA + [r2e_p*[0; 20/pp.Lsc; 0]; 0; 0; 0];
+pp.xReference = pp.x_pTCA;% + [r2e_p*[pp.nomDist; 0; 0]; 0; 0; 0];
 
 end

@@ -21,7 +21,7 @@ set(0,'defaultfigurecolor',[1 1 1])
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
-fireTimes = [0 0.5 -0.99];                                                         % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+fireTimes = [0.5 0 -0.5 -0.99];                                                         % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 returnTime = -1;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 % fireTimes = [2.5 0.5];                                                        % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
