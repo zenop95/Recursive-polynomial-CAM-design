@@ -1,4 +1,4 @@
-function [lim,coeffPoC,coeffRet,timeSubtr,xTca,PoC0,xRet0] = ...
+function [lim,coeff,timeSubtr,xTca,PoC0,xRet0] = ...
               propDA(DAorder,u,scale,validateFlag,pp)
 % propDA performs the DA propagation to build the NLP
 % 
@@ -77,6 +77,10 @@ if ~validateFlag
             fprintf(fid, '%40.16f\n', pp.thrustDirections(j,i));
         end
     end
+    fprintf(fid, '%2i\n', pp.flagCA);
+    fprintf(fid, '%2i\n', pp.flagTanSep);
+    fprintf(fid, '%2i\n', pp.flagAlt);
+    fprintf(fid, '%2i\n', pp.flagReturn);
 end
 for i = 1:length(u) 
     fprintf(fid, '%40.16f\n', u(i));
@@ -96,10 +100,10 @@ if ~validateFlag
     !wsl ./CppExec/polyProp
 elseif validateFlag
     !wsl ./CppExec/validatePoly
-    lim=[];coeffPoC=[];coeffRet=[];timeSubtr=[];PoC0=[];
+    lim=[];coeff=[];timeSubtr=[];PoC0=[];
     x    = reshape(load("write_read/constPart.dat"),6,pp.n_conj+1);             % If validating we only care about the TCA positions
     xRet0 = x(:,end);
-    xTca = x(:,1:end-1);
+    xTca  = x(:,1:end-1);
     return;
 end
 b = tic;
@@ -109,18 +113,15 @@ a         = load("write_read/constPart.dat");
 for k = 1:n_conj
     xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
-PoC0  = a(n_conj*6 + 1);                                                         % [-] (1,1) Collision metric with no maneuver
-xRet0 = a(n_conj*6 + 2);
+PoC0  = [];
+xRet0 = [];
 timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
 lim = log10(PoCLim);
 
 
-coeffPoC  = struct();
-coeffRet  = struct();
+coeff  = struct();
 if ~validateFlag
-    coeffPoC  = LoadCOSY('write_read/metricPoly.dat', ...
-                                    (3-2*pp.fixedDir-pp.fixedMag)*pp.n_man,1,0);
-    coeffRet  = LoadCOSY('write_read/distPoly.dat', ...
-                                    (3-2*pp.fixedDir-pp.fixedMag)*pp.n_man,1,0);
+    coeff  = LoadCOSY('write_read/constraints.dat', ...
+                   (3-2*pp.fixedDir-pp.fixedMag)*pp.n_man,pp.n_constr,0);
 end
 end

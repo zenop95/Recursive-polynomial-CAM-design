@@ -48,7 +48,7 @@ int main(void)
     // Initialize variable
     AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
     AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3);
-    AlgebraicVector<int>    canFire(N), isConj(N), isRet(N);
+    AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(4);
     // Write input from .dat
 	Input.open("./write_read/initial_state.dat");
         Input >> N;               // Number of nodes
@@ -66,7 +66,7 @@ int main(void)
             Input >> xdum[j];           // Write dummy variable for the primary's ECI state at the first conjunction from input
         }
         for (k = 0; k < n_conj; k ++) {
-            Input >> HBR[k];            // Combined Hard Body Radius for each conjunction
+            Input >> HBR[k];            // Combined Hard Body radialius for each conjunction
         }
         for (k = 0; k < n_conj; k ++) {
             for (j = 0; j < 3; j ++) {
@@ -95,6 +95,9 @@ int main(void)
                 Input >> directions.at(j,i); // Write maneuver direction in RTN if the direction is fixed
             }
         }
+        for (i = 0; i < 4; i ++) {
+            Input >> constraintFlags[i];
+        }
         for (i = 0; i < n_man; i ++) {
             for (j = 0; j < m; j ++) {
                 Input >> ctrlDum.at(j,i);   // Write dummy reference control from input ({0 0 0} if ballistic trajectory)
@@ -104,7 +107,7 @@ int main(void)
             Input >> t[i];                  // Write node times before conjunction (if negative it means that there are more than one encounters and nodes are needed after the first encounter)
             Input >> canFire[i];            // Define if node i is a firing node
             Input >> isConj[i];             // Define if node i is a conjunction node
-            Input >> isRet[i];             // Define if node i is a conjunction node
+            Input >> isRet[i];              // Define if node i is a conjunction node
         }
     Input.close();
     // initialize execution time counter
@@ -209,6 +212,7 @@ int main(void)
         }
     }
 
+if (constraintFlags[0] == 1) {
     // Compute the total PoC resulting from the multiple conjunctions
     DA noCollisions = 1.0;
     for (k = 0; k < n_conj; k ++) {
@@ -246,33 +250,33 @@ int main(void)
             throw std::runtime_error("the metric flag must be in the interval [1,3] and the PoC type must be in the interval [0,1]");}
         // Probability of no collision
         noCollisions = noCollisions*(1.0 - metric);
-}
+    }
 
     // Final PoC comprehensive of all the conjunctions
     poc_tot = log10(1.0 - noCollisions);
-    time1   = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
+}
 
-
+DA tan, radial;
+if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     // Return constraint (scalar as tangential distance from other spacecraft GRACE)
     AlgebraicVector<DA> rRet(3), vRet(3), distRel(3);
-    DA tan;
     for (j = 0; j < 3 ; j ++) {
         rRet[j] = xRet[j];
         vRet[j] = xRet[j+3];
     }      
     r2e     = astro::rtn2eci(cons(xRet));
     distRel = r2e.transpose()*(rRet-rRef);
+    radial  = distRel[0]; // radialial displacement with respect to reference
     tan     = distRel[1]; // tangential displacement with respect to reference
+}
 
-
+    time1   = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     //open the output files
-    ofstream constPart, metricPoly, distPoly;
+    ofstream constPart, constraints;
     constPart.open("./write_read/constPart.dat");
     constPart << setprecision(18);
-    metricPoly.open("./write_read/metricPoly.dat");
-    metricPoly << setprecision(18);
-    distPoly.open("./write_read/distPoly.dat");
-    distPoly << setprecision(18);
+    constraints.open("./write_read/constraints.dat");
+    constraints << setprecision(18);
 
     // write TCA states in ECI coordinates into output
     for (k = 0; k < n_conj ; k++) {
@@ -280,13 +284,32 @@ int main(void)
         constPart  << cons(xTca.at(j,k)) << endl;
         }
     }
-    // write ballistic PoC in output (not valid for fixed magnitude)
-    constPart  << cons(poc_tot)  << endl;
-    constPart  << cons(tan)  << endl;
+
     // write the DA expansion of PoC in output
-    metricPoly << poc_tot << endl;
+    if (constraintFlags[0] == 1) {
+        constPart   << cons(poc_tot)  << endl;
+        constraints << poc_tot << endl;
+    }
+
     // write the DA expansion of return in output
-    distPoly   << tan    << endl;
+    if (constraintFlags[1] == 1) {
+        constPart   << cons(tan)      << endl;
+        constraints << tan    << endl;
+    }
+
+    // write the DA expansion of return in output
+    if (constraintFlags[2] == 1) {
+        constPart   << cons(radial) << endl;
+        constraints << radial       << endl;
+    }
+
+    // write the DA expansion of return in output
+    if (constraintFlags[3] == 1) {
+        for (j = 0; j < 6; j ++) {
+        constPart   << cons(xRet[j])  << endl;
+        constraints << xRet[j]        << endl;
+        }
+    }
 
     // Do not consider writing time when calculating execution time
     time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
@@ -298,5 +321,5 @@ int main(void)
     timeOut << timeSubtr << endl;
     timeOut.close();
     constPart.close();
-    metricPoly.close();
+    constraints.close();
 }

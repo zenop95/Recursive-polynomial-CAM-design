@@ -74,8 +74,13 @@ else
     disp(['Total Delta-v = ',num2str(normOfVec(ctrl)*dt_lt*Vsc*1e6), ' mm/s'])
 end
 disp(['PoC after validation ',num2str(poc_tot)]);
-disp(['Tangential error in return ',num2str(tanErr*1e3), ' m']);
-
+if pp.flagTanSep
+    disp(['Tangential error in return ',num2str(tanErr*1e3), ' m']);
+end
+if pp.flagReturn
+    disp(['Position error in return ',num2str(norm(errRetEci(1:3))*pp.Lsc*1e3), ' m']);
+    disp(['Velocity error in return ',num2str(norm(errRetEci(4:6))*pp.Lsc*1e6), ' mm/s']);
+end
 disp(['Limit: ',num2str(lim)])
 ctrlNorm = normOfVec(ctrl);
 

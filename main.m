@@ -21,7 +21,7 @@ set(0,'defaultfigurecolor',[1 1 1])
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
-fireTimes = [2.5 0];                                                            % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+fireTimes = [0 0.5 -0.99];                                                         % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 returnTime = -1;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 % fireTimes = [2.5 0.5];                                                        % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
@@ -72,8 +72,8 @@ if pp.filterMans
     ctrl       = nan(3,n_man);
 end
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
-[lim,coeffPoC,coeffRet,timeSubtr,xBall,metric] = propDA(pp.DAorder,u,scale,0,pp);
-
+[lim,coeff,timeSubtr,xBall] = propDA(pp.DAorder,u,scale,0,pp);
+metric = coeff(1).C(1);
 %% Optimization
 switch pp.solvingMethod
     case 'recursive'
@@ -82,7 +82,7 @@ switch pp.solvingMethod
     case 'fmincon'
         yF = computeCtrlNlp(lim,coeffPoC,u,n_man,m,scale);
     case 'recursiveLagrange'
-        yF = computeCtrlLagrange(metric,coeffPoC,coeffRet,u,scale,pp);
+        yF = computeCtrlLagrange(coeff,u,scale,pp);
     otherwise 
         error('The solving method should be either recursive or fmincon')
 end
@@ -108,10 +108,10 @@ simTime = toc - timeSubtr - timeSubtr1;
 % metricValPoly = eval_poly(coeffPoC.C,coeffPoC.E,reshape(yF./scale,1,[]), ...    
 %                             pp.DAorder);
 % metricValPoly = 10^metricValPoly;
-distValPoly = eval_poly(coeffRet.C,coeffRet.E,reshape(yF./scale,1,[]), ...    
+distValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...    
                             pp.DAorder)*pp.Lsc;
 
-[~,~,~,~,x,~,xRet0] = propDA(1,ctrl,scale,1,pp);                                      % Validate the solution by forward propagating and computing the real PoC
+[~,~,~,x,~,xRet0] = propDA(1,ctrl,scale,1,pp);                                      % Validate the solution by forward propagating and computing the real PoC
 lim       = 10^lim;
 
 %% PostProcess
