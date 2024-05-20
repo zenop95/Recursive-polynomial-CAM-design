@@ -15,10 +15,12 @@ function yf = computeCtrlNlp(coeff,u,scale,pp)
 %--------------------------------------------------------------------------
 n_man    = pp.n_man;
 m        = pp.m;
-lim      = pp.lim;
+limUp    = pp.limUp;
+limLo    = pp.limLo;
+limLo(limLo == -inf) = -10;
 y0       = reshape(u,1,m*n_man);
-lb       = -5e-4*ones(m*n_man,1);
-ub       =  5e-4*ones(m*n_man,1);
+lb       = -5e-5*ones(m*n_man,1);
+ub       =  5e-5*ones(m*n_man,1);
 options  = optimoptions( ...
                        'fmincon',                           ...
                        'Display',               'none',     ...
@@ -28,25 +30,32 @@ options  = optimoptions( ...
                        'MaxIterations',         2e3,        ...
                        'MaxFunctionEvaluations',2e3         ...
                        );
-Yf  = fmincon(@(y)minFun(y,m,n_man),y0,[],[],[],[],lb,ub,@(y)polyConstr(y,coeff,lim),options);
+Yf  = fmincon(@(y)minFun(y,m,n_man,pp),y0,[],[],[],[],lb,ub,@(y)polyConstr(y,coeff,limUp,limLo),options);
 yf  = reshape(Yf,m,n_man).*scale;
 
-function J = minFun(y,m,n_man)
-    J = sum(normOfVec(reshape(y,m,n_man)));
-%     J = sum(y.^2);
+function J = minFun(y,m,n_man,pp)
+switch pp.objFunction
+    case 'fuel'
+        J = sum(normOfVec(reshape(y,m,n_man)));
+    case 'energy'
+        J = sum(y.^2);
+    otherwise
+        error('The objective function must be either fuel- or energy-optimal');
+end
 end
 
-function [c_in,c_eq] = polyConstr(y,coeff,lims)
-
-    c_eq = nan(length(coeff),1);
-    for c = 1:length(coeff)
+function [c_in,c_eq] = polyConstr(y,coeff,limsUp,limsLo)
+    n_constr = length(coeff);
+%     c_in = nan(2*n_constr,1);
+    c_eq = nan(n_constr,1);
+    for c = 1:n_constr
         C       = coeff(c).C;
         E       = coeff(c).E;
         val     = 0;
         for i   = 1:length(C)
             val = val + C(i)*prod(y.^E(i,:));
         end
-        c_eq(c) = val - lims(c);
+        c_eq(c) =  val - limsUp(c);
     end
     c_in    = [];
 

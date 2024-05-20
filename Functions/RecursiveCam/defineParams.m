@@ -13,9 +13,12 @@ function pp = defineParams(pp,nFire,nRet)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 %% Optimization parameters (modifiable)
-pp.DAorder       = 2;                                                           % [-]   (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
+pp.objFunction   = 'fuel';
+% pp.objFunction   = 'energy';
 % pp.solvingMethod = 'recursive';                                                 % [str] (1,1) Optimization method (recursive, fmincon)
+% pp.solvingMethod = 'convex';                                                 % [str] (1,1) Optimization method (recursive, fmincon)
 pp.solvingMethod = 'fmincon';                                                
 pp.PoCLim        = 1e-6;                                                        % [-]   (1,1) PoC limit
 pp.nomDist       = 0.200/pp.Lsc;                                                % [-]   (1,1) Relative distance to achieve after 1 orbit
@@ -30,9 +33,9 @@ thrustMagnitude     = 0.026;                                                    
 pp.thrustMagnitude  = thrustMagnitude/pp.Asc/1e6;                               % [-]      (1,1) Scaled maximum acceleration
 pp.thrustDirections = repmat([0 1 0]',1,300);                                   % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
 pp.flagCA           = 1;
-pp.flagTanSep       = 1;
+pp.flagTanSep       = 0;
 pp.flagAlt          = 0;
-pp.flagReturn       = 0;
+pp.flagReturn       = 1;
 %% Maneuvering times (should not be modified)
 if pp.cislunar; nFire = nFire/4.34811305; nRet = nRet/4.34811305; end                                   % transform days into synodic time units
 nConj      = -pp.tca_sep;                                                       % [-] (1,n_conj) Conjunction times after first TCA
@@ -61,11 +64,13 @@ r2e_p         = rtn2eci(pp.x_pTCA(1:3),pp.x_pTCA(4:6));                         
 pp.xReference = pp.x_pTCA;% + [r2e_p*[pp.nomDist; 0; 0]; 0; 0; 0];
 
 %% Targets of the constraints
-lim      = [];
-if pp.flagCA;     lim   = log10(pp.PoCLim);     end
-if pp.flagTanSep; lim   = [lim; pp.nomDist];    end
-if pp.flagAlt;    lim   = [lim; 0];             end
-if pp.flagReturn; lim   = [lim; pp.xReference]; end
-pp.lim = lim;
+limUp      = [];
+limLo      = [];
+if pp.flagCA;     limUp   = log10(pp.PoCLim);       limLo = -inf;        end
+if pp.flagTanSep; limUp   = [limUp; -.1/pp.Lsc];   limLo = [limLo; -.2/pp.Lsc]; end
+if pp.flagAlt;    limUp   = [limUp; 0];             limLo = [limLo; 0]; end
+if pp.flagReturn; limUp   = [limUp; pp.xReference]; limLo = [limLo; pp.xReference]; end
+pp.limUp = limUp;
+pp.limLo = limLo;
 
 end

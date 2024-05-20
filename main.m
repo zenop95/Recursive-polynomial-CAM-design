@@ -21,9 +21,10 @@ set(0,'defaultfigurecolor',[1 1 1])
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
-fireTimes = [0.5 0 -0.5 -1.99];                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-returnTime = -2;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-% fireTimes = [2.5 0.5];                                                        % [-] Example of bi-impulsive maneuvers
+% fireTimes = [0.5 0 -0.5 -1.99];                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+returnTime = -1;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+% fireTimes = 2.5;                                                              % [-] Example of bi-impulsive maneuvers
+fireTimes = [0.5 -0.5 -0.9999 -0.8];                                            % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
@@ -78,6 +79,9 @@ metric = coeff(1).C(1);
 switch pp.solvingMethod
     case 'recursive'
         yF = computeCtrlRecursive(coeff,u,scale,pp);
+
+    case 'convex'
+        yF = computeCtrlConvex(coeff,u,scale,pp);
 
     case 'fmincon'
         yF = computeCtrlNlp(coeff,u,scale,pp);

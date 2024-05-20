@@ -13,7 +13,7 @@ function ctrl = findCtrl(Deltas,DAArrays,ctrl0,k,n_man,m,n_constr)
 %         m        = [-] Number of variables per maneuverable node
 %         n_constr = [-] Number of constraints
 % 
-% OUTPUT: ctrl     = [-] Greedy solution for the 4th-order truncations of the
+% OUTPUT: ctrl     = [-] Greedy solution for the jth-order truncations of the
 %                        polynomial PoC constraint
 %
 % Author: Zeno Pavanello, 2024

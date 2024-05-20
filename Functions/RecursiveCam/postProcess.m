@@ -56,7 +56,7 @@ poc_tot = PoCTot(PoC);
 errRetEci = xManRet - pp.xReference;
 r2e = rtn2eci(xManRet(1:3),xManRet(4:6));
 errRetRtn = r2e'*errRetEci(1:3);
-tanErr = abs(errRetRtn(2)-pp.nomDist)*pp.Lsc;
+tanErr = errRetRtn(2)*pp.Lsc;
 
 disp(['Solver: ', pp.solvingMethod])
 disp(['Computation time ',num2str(simTime), ' s'])
@@ -75,7 +75,7 @@ else
 end
 disp(['PoC after validation ',num2str(poc_tot)]);
 if pp.flagTanSep
-    disp(['Tangential error in return ',num2str(tanErr*1e3), ' m']);
+    disp(['Tangential distance in return ',num2str(tanErr*1e3), ' m']);
 end
 if pp.flagReturn
     disp(['Position error in return ',num2str(norm(errRetEci(1:3))*pp.Lsc*1e3), ' m']);
