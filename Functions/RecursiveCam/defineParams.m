@@ -25,11 +25,17 @@ pp.lowThrust        = 0;                                                        
 pp.fixedDir         = 0;                                                        % [bool]   (1,1) Fixed-direction flag
 pp.fixedMag         = 0;                                                        % [bool]   (1,1) Fixed-magnitude flag
 pp.filterMans       = 0;                                                        % [bool]   (1,1) Filtered maneuver flag
-pp.nMans            = 1;                                                        % [bool]   (1,1) Selects how many impulses to use (only valid if filerMans==1)
-thrustMagnitude     = 0.026;                                                    % [mm/s^2] (1,1) Maximum acceleration if fixedMag = true
+pp.maxMagConstr     = 0;                                                        % [bool]   (1,1) Filtered maneuver flag
+pp.nMans            = 5;                                                        % [bool]   (1,1) Selects how many impulses to use (only valid if filerMans==1)
+maxMag              = 0.1;                                                      % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if MaxMagConstr = true
+thrustMagnitude     = 0.1;                                                      % [mm/s^2] (1,1) Maximum acceleration if fixedMag = true
 pp.thrustMagnitude  = thrustMagnitude/pp.Asc/1e6;                               % [-]      (1,1) Scaled maximum acceleration
 pp.thrustDirections = repmat([0 1 0]',1,300);                                   % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
-
+if pp.lowThrust
+    pp.maxMag = maxMag/pp.Asc/1e6;
+else
+    pp.maxMag = maxMag/pp.Vsc/1e6;
+end
 %% Maneuvering times (should not be modified)
 nFire      = tMan;
 if pp.cislunar; nFire = nFire/4.34811305; end                                   % transform days into synodic time units
