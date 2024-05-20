@@ -79,7 +79,7 @@ if pp.flagTanSep
 end
 if pp.flagReturn
     disp(['Position error in return ',num2str(norm(errRetEci(1:3))*pp.Lsc*1e3), ' m']);
-    disp(['Velocity error in return ',num2str(norm(errRetEci(4:6))*pp.Lsc*1e6), ' mm/s']);
+    disp(['Velocity error in return ',num2str(norm(errRetEci(4:6))*pp.Vsc*1e6), ' mm/s']);
 end
 disp(['Limit: ',num2str(lim)])
 ctrlNorm = normOfVec(ctrl);
