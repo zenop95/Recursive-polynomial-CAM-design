@@ -107,7 +107,7 @@ int main(void)
             Input >> t[i];                  // Write node times before conjunction (if negative it means that there are more than one encounters and nodes are needed after the first encounter)
             Input >> canFire[i];            // Define if node i is a firing node
             Input >> isConj[i];             // Define if node i is a conjunction node
-            Input >> isRet[i];              // Define if node i is a conjunction node
+            Input >> isRet[i];              // Define if node i is a return node
         }
     Input.close();
     // initialize execution time counter
@@ -137,7 +137,7 @@ int main(void)
         x0     = RK78Sc(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, tca, tca - t[0], 1.0, Lsc, 0, gravOrd, aidaCartDyn); // Earth Orbit
     }
     else if (dyn == 1) {
-        x0     = RK78Cis(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[0], CR3BPsyn, 0.012150668, 0.0); // Cislunar
+        x0     = RK78Cis(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[0], CR3BPsyn, musc, 0.0); // Cislunar
     }
     else {throw std::runtime_error("The dynamics flag should be 0 for Earth orbit and 1 for Cislunar");}
     jj     = 0;
@@ -198,7 +198,7 @@ int main(void)
             x0 = RK78Sc(6, x0, ctrl, tca - t[i], tca - t[i+1], 1.0, Lsc, 0, gravOrd, aidaCartDyn);   // forward propagation to the next node
         }
         else {
-            x0 = RK78Cis(6, x0, ctrl, -t[i], -t[i+1], CR3BPsyn, 0.012150668, 0.0); // forward propagation to the next node
+            x0 = RK78Cis(6, x0, ctrl, -t[i], -t[i+1], CR3BPsyn, musc, 0.0); // forward propagation to the next node
         }
         // If the next node is a conjunction node, save the state in a DA variable
         if (isConj[i+1] == 1) {
@@ -266,9 +266,17 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     }      
     r2e     = astro::rtn2eci(cons(xRet));
     distRel = r2e.transpose()*(rRet-rRef);
-    radial  = distRel[0]; // radialial displacement with respect to reference
+    radial  = distRel[0]; // radial displacement with respect to reference
     tan     = distRel[1]; // tangential displacement with respect to reference
 }
+
+// stability of the monodromy matrix (Cauchy-Green Tensor) after an orbital period
+// if (constraintFlags[4] == 1 || dyn == 1) {
+//     ctrl = {0.0*DA(1), 0.0*DA(1), 0.0*DA(1)};
+//     x0 = RK78Cis(6, x0, ctrl, -t[end], -t[end] +     1, CR3BPsyn, 0.012150668, 0.0); // forward propagation to the next node
+//     AlgebraicMatrix<double> STM = astro::stmDace(x0, 3, 6);
+//     AlgebraicMatrix<double> CG = STM.transpose()*STM;
+// }
 
     time1   = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     //open the output files
@@ -309,6 +317,9 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
         constPart   << cons(xRet[j])  << endl;
         constraints << xRet[j]        << endl;
         }
+    }
+    if (constraintFlags[4] == 1) {
+        
     }
 
     // Do not consider writing time when calculating execution time

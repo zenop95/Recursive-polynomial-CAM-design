@@ -100,9 +100,9 @@ if ~validateFlag
     !wsl ./CppExec/polyProp
 elseif validateFlag
     !wsl ./CppExec/validatePoly
-    lim=[];coeff=[];timeSubtr=[];PoC0=[];
+    lim=[];coeff=[];timeSubtr=[];PoC0=[];xRet0=[];
     x    = reshape(load("write_read/constPart.dat"),6,pp.n_conj+1);             % If validating we only care about the TCA positions
-    xRet0 = x(:,end);
+    if any(pp.isRet); xRet0 = x(:,end); end
     xTca  = x(:,1:end-1);
     return;
 end

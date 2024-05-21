@@ -53,10 +53,12 @@ end
 poc_tot = PoCTot(PoC);
 
 % Validate return
-errRetEci = xManRet - pp.xReference;
-r2e = rtn2eci(xManRet(1:3),xManRet(4:6));
-errRetRtn = r2e'*errRetEci(1:3);
-tanErr = errRetRtn(2)*pp.Lsc;
+if pp.flagReturn || pp.flagTanSep
+    errRetEci = xManRet - pp.xReference;
+    r2e = rtn2eci(xManRet(1:3),xManRet(4:6));
+    errRetRtn = r2e'*errRetEci(1:3);
+    tanErr = errRetRtn(2)*pp.Lsc;
+end
 
 disp(['Solver: ', pp.solvingMethod])
 disp(['Computation time ',num2str(simTime), ' s'])

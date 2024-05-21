@@ -36,7 +36,7 @@ pp.flagCA           = 1;
 pp.flagTanSep       = 0;
 pp.flagAlt          = 0;
 pp.flagReturn       = 0;
-pp.flagStability    = 1; % only for Cislunar
+pp.flagStability    = 0; % only for Cislunar
 %% Maneuvering times (should not be modified)
 if pp.cislunar; nFire = nFire/pp.Tsc*86400; nRet = nRet/pp.Tsc*86400; end       % transform days into synodic time units
 nConj      = -pp.tca_sep;                                                       % [-] (1,n_conj) Conjunction times after first TCA
@@ -54,6 +54,7 @@ end
 pp.N        = length(pp.ns);                                                     % [-] (1,1) Total number of nodes
 pp.canFire  = canFire;                                                           % [-] (1,N) 1 if the node is a firing node, 0 otherwise
 pp.isRet    = isRet;                                                             % [-] (1,N) 1 if the node is a firing node, 0 otherwise
+if nRet == 0; pp.isRet = zeros(pp.N,1); end 
 pp.isConj   = ismember(pp.ns,nConj);                                             % [-] (1,N) 1 if the node is a conjunction, 0 otherwise
 pp.t        = pp.ns*pp.T;                                                        % [-] (1,N) Time before TCA for each node (orbits for LEO, a-dimensional time units for Cislunar)
 pp.n_man    = sum(pp.canFire);                                                   % [-] (1,1) Total number of firing nodes
