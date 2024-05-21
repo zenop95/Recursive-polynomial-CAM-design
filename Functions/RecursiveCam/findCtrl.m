@@ -19,8 +19,6 @@ function ctrl = findCtrl(Deltas,DAArrays,ctrl0,k,n_man,m,n_constr)
 % Author: Zeno Pavanello, 2024
 % E-mail: zpav176@aucklanduni.ac.nz
 %-------------------------------------------------------------------------------
-fun_handles = {@pseudoHess3,@pseudoHess4,@pseudoHess5,@pseudoHess6, ...
-               @pseudoHess7,@pseudoHess8,@pseudoHess9}';                        % [-] (cell) Collect function handles for Dv up to order 9
 n         = m*n_man;
 grad      = nan(n_constr,n);
 pseudoH   = nan(n,n,n_constr);
@@ -29,7 +27,7 @@ for c = 1:n_constr
     grad(c,:)      = DAArrays{c,1};                                             % [-] (n,1) Initialize gradient with 1st-order 
     pseudoH(:,:,c) = DAArrays{c,2}*(k>1);                                       % [-] (n,n) Initialize Hessian with 2nd-order (if first-order set to zeros) 
     for j = 3:k
-        pseudoH(:,:,c) = pseudoH(:,:,c) + fun_handles{j-2}(ctrl0,DAArrays{c,j});% [-] (n,n) Augmented pseudo-Hessian with j-th order contribution
+        pseudoH(:,:,c) = pseudoH(:,:,c) + pseudoHessian(ctrl0,DAArrays{c,j},j); % [-] (n,n) Augmented pseudo-Hessian with j-th order contribution
     end
     deltaGrad(c,:) = ctrl0'*pseudoH(:,:,c);                                     % [-] (1,n) Pseudo-gradient contribution of orders from 2 to k
     grad(c,:)      = grad(c,:) + deltaGrad(c,:);                                % [-] (1,n) Pseudo-gradient
