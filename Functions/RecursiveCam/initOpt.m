@@ -16,23 +16,23 @@ function pp = initOpt(multiple,cislunar,i)
 
 %(modifiable)
 if multiple && ~cislunar
-    pp = generateInitMultiple();
+    pp   = generateInitMultiple(multiple);
+    pp.T = pp.T/pp.Tsc;                                                             % [-]    (1,1) Scaled orbital period
 elseif ~multiple && cislunar
-    pp = generateInitCislunar('perp');
-    pp.Lsc = 384405;                                                            % [km]   (1,1) Distance scaling constant
-    pp.Tsc = 375677;                                                            % [s]    (1,1) Time scaling constant
-    pp.Vsc = pp.Lsc/pp.Tsc;                                                     % [km/s] (1,1) Velocity scaling constant
-    pp.T   = 1;                                                                 % [-]    (1,1) null paramter
+    pp = generateInitNrho('perp');
+    % pp = generateInitLyapunov();
+    % pp = generateInitDro();
+    % pp = generateInitP3Dro();
 else
-    pp = generateInitLeo(i);
+    pp   = generateInitLeo(i);
+    pp.T = pp.T/pp.Tsc;                                                             % [-]    (1,1) Scaled orbital period
 end
+pp.aidaFlag1 = 0;                                                               % atmosphere flag (1:non-rotating, 2:rotating)
+pp.aidaFlag2 = 0;                                                               % SRP flag (1:no shadow, 2:Earth cylindrical shadow, 3:Earth biconical shadow, 4:Earth and Moon cylindrical shadow, 5:Earth biconical and Moon cylindrical shadow, 6:Earth and Moon biconical shadow)
+pp.aidaFlag3 = 0;                                                               % third body flag (1:Moon, 2:Moon and Sun)
+pp.gravOrd   = 0;                                                               % Order of the EGM2008 gravitational model
+
 %(not modifiable)
-if ~cislunar 
-    pp.Lsc = pp.primary.a;                                                      % [km]   (1,1) Distance scaling constant
-    pp.Vsc = sqrt(pp.mu/pp.Lsc);                                                % [km/s] (1,1) Velocity scaling constant
-    pp.Tsc = pp.Lsc/pp.Vsc;                                                     % [s]    (1,1) Time scaling constant
-    pp.T       = 2*pi/pp.primary.n/pp.Tsc;                                      % [-]    (1,1) Scaled orbital period
-end
 pp.Asc     = pp.Vsc/pp.Tsc;                                                     % [km/s2]   (1,1) Acceleration scaling constant
 pp.scaling = [pp.Lsc*ones(3,1); pp.Vsc*ones(3,1)];                              % [km km/s] (6,1) Vector of scaling constants
 pp.et      = 478548000/pp.Tsc;                                                  % [-]       (1,1) Scaled initial ephemeris time
@@ -49,9 +49,4 @@ for k = 1:pp.n_conj
     pp.P(:,:,k) = (r2e_s*pp.secondary(k).C0(1:3,1:3)*r2e_s' + ... 
                     r2e_p*pp.primary.C0(1:3,1:3)*r2e_p')/pp.Lsc^2;              % [-] (3,3) Rotated position combined covariance matrix
 end
-% (modifiable)
-pp.aidaFlag1 = 0;                                                               % atmosphere flag (1:non-rotating, 2:rotating)
-pp.aidaFlag2 = 0;                                                               % SRP flag (1:no shadow, 2:Earth cylindrical shadow, 3:Earth biconical shadow, 4:Earth and Moon cylindrical shadow, 5:Earth biconical and Moon cylindrical shadow, 6:Earth and Moon biconical shadow)
-pp.aidaFlag3 = 0;                                                               % third body flag (1:Moon, 2:Moon and Sun)
-pp.gravOrd   = 0;                                                               % Order of the EGM2008 gravitational model
 end

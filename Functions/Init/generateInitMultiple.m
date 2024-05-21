@@ -1,7 +1,6 @@
-function pp = generateInitMultiple()
+function pp = generateInitMultiple(n_conj)
 
 mu     = 398600.4418;    % [km^3/s^2]
-n_conj = 2;
 
 % Primary spacecraft
 primary.C0     = zeros(6);       % [km^2] [km^2/s^2] Covariance at TCA
@@ -19,17 +18,15 @@ primary.A_drag = 1;               % [m^2] drag surface area
 primary.Cd     = 2.2;             % [-] shape coefficient for drag
 primary.A_srp  = 1;               % [m^2] SRP surface area
 primary.Cr     = 1.31;            % [-] shape coefficient for SRP
-primary.x0  = [6776.60657981063;
-              -866.861692415755;
-              -1150.36431998111;
-               1.57704416507791;
-               4.46511210712407;
-               5.92540389971189];
+primary.x0     = [6776.60657981063;
+                 -866.861692415755;
+                 -1150.36431998111;
+                  1.57704416507791;
+                  4.46511210712407;
+                  5.92540389971189];
 
 %% Secondary structure
 secondary = struct();
-velAng    = deg2rad([40, 62, 12, 100, 18, 90, 94, 20, 143, 78]); % angle of rotation between primary and secondary velocity. The axis of rotation is the radial direction
-angBool   = true;
 absState = [6776.61802593467	-1440.51210611316	-2817.91718231172	6890.03879334383	-2817.86325949035;
 -866.842252923163	4078.24903940634	3808.91684412513	-435.867557689529	-3808.91011641834;
 -1150.37176534588	5412.03586588377	5054.57013291070	-578.299524009674	-5054.57785095697;
@@ -53,6 +50,9 @@ end
 
 pp = struct( ...
             'mu',        mu, ...
+            'Lsc',       primary.a, ...                                         % [km]   (1,1) Distance scaling constant
+            'Vsc',       sqrt(mu/primary.a), ...                                % [km/s] (1,1) Velocity scaling constant
+            'Tsc',       sqrt(primary.a^3/mu), ...                              % [s]    (1,1) Time scaling constant
             'primary',   primary, ...
             'secondary', secondary, ...
             'T',         T, ...
