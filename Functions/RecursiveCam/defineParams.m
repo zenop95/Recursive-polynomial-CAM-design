@@ -13,12 +13,12 @@ function pp = defineParams(pp,nFire,nRet)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 %% Optimization parameters (modifiable)
-pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 2;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
 pp.objFunction   = 'fuel';
 % pp.objFunction   = 'energy';
 % pp.solvingMethod = 'recursive';                                                 % [str] (1,1) Optimization method (recursive, fmincon)
-% pp.solvingMethod = 'convex';                                                 % [str] (1,1) Optimization method (recursive, fmincon)
+% pp.solvingMethod = 'convex';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 pp.solvingMethod = 'fmincon';                                                
 pp.PoCLim        = 1e-6;                                                        % [-]   (1,1) PoC limit
 pp.nomDist       = 0.200/pp.Lsc;                                                % [-]   (1,1) Relative distance to achieve after 1 orbit
@@ -35,9 +35,10 @@ pp.thrustDirections = repmat([0 1 0]',1,300);                                   
 pp.flagCA           = 1;
 pp.flagTanSep       = 0;
 pp.flagAlt          = 0;
-pp.flagReturn       = 1;
+pp.flagReturn       = 0;
+pp.flagStability    = 1; % only for Cislunar
 %% Maneuvering times (should not be modified)
-if pp.cislunar; nFire = nFire/4.34811305; nRet = nRet/4.34811305; end                                   % transform days into synodic time units
+if pp.cislunar; nFire = nFire/pp.Tsc*86400; nRet = nRet/pp.Tsc*86400; end       % transform days into synodic time units
 nConj      = -pp.tca_sep;                                                       % [-] (1,n_conj) Conjunction times after first TCA
 pp.ns      = sort(unique([nFire, nRet, nConj]),"descend")';                     % [-] (1,N) Build time discretization
 canFire    = ismember(pp.ns,nFire);                                             % [-] (1,N) 1 if the node is a firing node, 0 otherwise
