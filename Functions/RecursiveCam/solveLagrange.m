@@ -1,5 +1,5 @@
-function ctrl = findCtrl(Deltas,DAArrays,ctrl0,k,n_man,m,n_constr)
-% findCtrl computes the Dv at the iteration of the recursive method. It
+function [ctrl,grad] = solveLagrange(Deltas,DAArrays,ctrl0,k,n_man,m,n_constr)
+% solveLagrange computes the Dv at the iteration of the recursive method. It
 % uses a formulation with lagrange multipliers when more than one
 % constraints are used, and the greedy approach in the single constraint
 % case
@@ -20,18 +20,7 @@ function ctrl = findCtrl(Deltas,DAArrays,ctrl0,k,n_man,m,n_constr)
 % E-mail: zpav176@aucklanduni.ac.nz
 %-------------------------------------------------------------------------------
 n         = m*n_man;
-grad      = nan(n_constr,n);
-pseudoH   = nan(n,n,n_constr);
-deltaGrad = nan(n_constr,n); 
-for c = 1:n_constr
-    grad(c,:)      = DAArrays{c,1};                                             % [-] (n,1) Initialize gradient with 1st-order 
-    pseudoH(:,:,c) = DAArrays{c,2}*(k>1);                                       % [-] (n,n) Initialize Hessian with 2nd-order (if first-order set to zeros) 
-    for j = 3:k
-        pseudoH(:,:,c) = pseudoH(:,:,c) + pseudoHessian(ctrl0,DAArrays{c,j},j); % [-] (n,n) Augmented pseudo-Hessian with j-th order contribution
-    end
-    deltaGrad(c,:) = ctrl0'*pseudoH(:,:,c);                                     % [-] (1,n) Pseudo-gradient contribution of orders from 2 to k
-    grad(c,:)      = grad(c,:) + deltaGrad(c,:);                                % [-] (1,n) Pseudo-gradient
-end
+grad = psuedoGradient(DAArrays,ctrl0,k,n_constr,n);
 
 if n_constr == 1
     gradUnit  = normalize(grad,'norm');                                         % [-] (1,n) Pseudo-gradient direction

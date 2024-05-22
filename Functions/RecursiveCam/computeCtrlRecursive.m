@@ -32,20 +32,38 @@ for c = 1:n_constr
     end
 end
 %% First-order Dv
-Y0p   = findCtrl(Deltas,DAArrays,zeros(n,1),1,n_man,m,n_constr);            % [-] (n,1) 1st-order greedy solution of the polynomial constraint
-Yp    = Y0p;                                                                    % [-] (n,1) Initialize linearization point for 2nd-order solution
+switch lower(pp.solvingMethod)
+    case 'lagrange'
+        Y0p   = findCtrl(Deltas,DAArrays,zeros(n,1),1,n_man,m,n_constr) + u;    % [-] (n,1) 1st-order greedy solution of the polynomial constraint
+    case 'convex'
+        Y0p  = solveConvex(DeltasUp,DeltasLo,DAArrays,zeros(n,1),1,pp) + u;     % [-] (n,1) 1st-order convex solution of the polynomial constraint
+end
 
 %% Higher-orders Dv
 for k = 2:DAorder
     err  = 1;                                                                   % [-] (1,1) Initialize convergence variable
+    DErr = 1;
+    alpha = [0,1,0.1,0.05];
     iter = 0;                                                                   % [-] (1,1) Initialize iteration counter
+    ps_grad = [];
     while err > tol && iter < maxIter
         iter = iter + 1;                                                        % [-] (1,1) Update iteration number
-        Yp  = findCtrl(Deltas,DAArrays,Y0p-u,k,n_man,m,n_constr) + u;       % [-] (n,1) kth-order greedy solution of the polynomial constraint
+        switch lower(pp.solvingMethod)
+            case 'lagrange'
+                [Yp,ps_grad(iter,:)] = solveLagrange(Deltas,DAArrays,Y0p-u,k,n_man,m,n_constr);      % [-] (n,1) kth-order greedy solution of the polynomial constraint
+            case 'convex'
+                Yp  = solveConvex(DeltasUp,DeltasLo,DAArrays,Y0p,k,pp) + u;             % [-] (n,1) kth-order greedy solution of the polynomial constraint
+        end
+        Yp = Yp + u;
         err  = norm(Yp-Y0p);                                                    % [-] (n,1) Compute convergence variable at iteration iter
-        Y0p = Yp;                                                               % [-] (n,1) Update linearization point for kth-order solution
         er(iter) = err;
+        Ys(:,iter) = Yp;
+        if iter > 1
+            DErr(iter) = er(iter-1) - err;
+        end
+        % Y0p = (1-alpha(k))*Y0p + alpha(k)*Yp;                         % [-] (n,1) Update linearization point for kth-order solution
+        Y0p = Yp;                         % [-] (n,1) Update linearization point for kth-order solution
     end
 end
-yf = reshape(Yp,[],n_man).*scale;                                                   % [-] (m,N) Reshape final solution to epress it node-wise
+yf = reshape(Yp,[],n_man).*scale;                                               % [-] (m,N) Reshape final solution to epress it node-wise
 end
