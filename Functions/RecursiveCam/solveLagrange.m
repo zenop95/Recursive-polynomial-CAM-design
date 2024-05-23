@@ -1,4 +1,4 @@
-function [ctrl,grad] = solveLagrange(Deltas,DAArrays,ctrl0,k,n_man,m,n_constr)
+function ctrl = solveLagrange(Deltas,DAArrays,ctrl0,k,pp)
 % solveLagrange computes the Dv at the iteration of the recursive method. It
 % uses a formulation with lagrange multipliers when more than one
 % constraints are used, and the greedy approach in the single constraint
@@ -19,7 +19,10 @@ function [ctrl,grad] = solveLagrange(Deltas,DAArrays,ctrl0,k,n_man,m,n_constr)
 % Author: Zeno Pavanello, 2024
 % E-mail: zpav176@aucklanduni.ac.nz
 %-------------------------------------------------------------------------------
-n         = m*n_man;
+n_constr = pp.n_constr;
+n_man    = pp.n_man;
+m        = pp.m;
+n        = m*n_man;
 grad = psuedoGradient(DAArrays,ctrl0,k,n_constr,n);
 
 if n_constr == 1
@@ -28,7 +31,7 @@ if n_constr == 1
     ctrlNorm  = Deltas/gradNorm;                                                % [-] (1,1) Recursive control norm
     ctrl      = ctrlNorm*gradUnit';                                             % [-] (1,n) Recursive control solution
 else    
-    scale  = normOfVec(abs(grad'))';
+    scale  = 1;%normOfVec(abs(grad'))';
     Deltas = Deltas./scale;
     A      = [2*eye(n), grad'; grad./scale, zeros(n_constr)];
     b      = [zeros(n,1); Deltas];

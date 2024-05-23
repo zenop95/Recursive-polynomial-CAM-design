@@ -127,9 +127,9 @@ int main(void)
     AIDAScaledDynamics<DA> aidaCartDyn(gravmodel, gravOrd, AIDA_flags, Bfactor, SRPC);
 
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), xRet(6); 
+    AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), xRet(6), poc(n_conj); 
     AlgebraicMatrix<DA> xTca(6,n_conj);
-    DA metric, poc_tot, alpha, beta;
+    DA poc_tot, alpha, beta;
     // Define ballistic primary's position at first TCA 
     for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
     // backpropagation from first TCA
@@ -243,13 +243,13 @@ if (constraintFlags[0] == 1) {
         vv = 0;
         // Compute PoC for the single conjunction, according to the required model
         if (pocType == 0) {
-            metric = astro::ConstPoC(r_rel,P_B,HBR[k]);}
+            poc[k] = astro::ConstPoC(r_rel,P_B,HBR[k]);}
         else if (pocType == 1) {
-            metric = astro::ChanPoC(r_rel,P_B,HBR[k],3);}
+            poc[k] = astro::ChanPoC(r_rel,P_B,HBR[k],3);}
         else {
             throw std::runtime_error("the metric flag must be in the interval [1,3] and the PoC type must be in the interval [0,1]");}
         // Probability of no collision
-        noCollisions = noCollisions*(1.0 - metric);
+        noCollisions = noCollisions*(1.0 - poc[k]);
     }
 
     // Final PoC comprehensive of all the conjunctions
@@ -295,26 +295,27 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
 
     // write the DA expansion of PoC in output
     if (constraintFlags[0] == 1) {
-        constPart   << cons(poc_tot)  << endl;
+        if (n_conj > 1) {
+            for (k = 0; k < n_conj; k ++) {
+                constraints << log10(poc[k]) << endl;
+            }
+        }
         constraints << poc_tot << endl;
     }
 
     // write the DA expansion of return in output
     if (constraintFlags[1] == 1) {
-        constPart   << cons(tan)      << endl;
         constraints << tan    << endl;
     }
 
     // write the DA expansion of return in output
     if (constraintFlags[2] == 1) {
-        constPart   << cons(radial) << endl;
         constraints << radial       << endl;
     }
 
     // write the DA expansion of return in output
     if (constraintFlags[3] == 1) {
         for (j = 0; j < 6; j ++) {
-        constPart   << cons(xRet[j])  << endl;
         constraints << xRet[j]        << endl;
         }
     }

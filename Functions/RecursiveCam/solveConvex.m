@@ -46,13 +46,6 @@ end
 %% Specify linear part of constraint
 prob.a   = [grad, zeros(n_constr,n_man)];
 
-% %% Specify quadratic part of constraint
-% [row,col]   = ind2sub(n,1:n^2);
-% prob.qcsubk = ones(n^2,1);
-% prob.qcsubi = col;
-% prob.qcsubj = row;
-% prob.qcval  = 2*reshape(pseudoH,n^2,1);
-
 %% Specify constraint upper and lower bounds
 prob.blc = DeltasLo;
 prob.buc = DeltasUp;
