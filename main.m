@@ -23,8 +23,8 @@ cislunar = 0;                                                                   
 pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
 % fireTimes = [0.5 0 -0.5 -1.99];                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 returnTime = -1;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-% fireTimes = 2.5;                                                              % [-] Example of bi-impulsive maneuvers
-fireTimes = [0.5 -0.5 -0.9999 -0.8];                                            % [-] Example of bi-impulsive maneuvers
+fireTimes  = [2.5];                                                             % [-] Example of bi-impulsive maneuvers
+% fireTimes = [0.5 -0.5];                                                       % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
@@ -76,18 +76,14 @@ end
 [lim,coeff,timeSubtr,xBall] = propDA(pp.DAorder,u,scale,0,pp);
 metric = coeff(1).C(1);
 %% Optimization
-switch pp.solvingMethod
-    case 'recursive'
+if any(strcmpi(pp.solvingMethod,{'lagrange','convex','newton'}))
         yF = computeCtrlRecursive(coeff,u,scale,pp);
 
-    case 'convex'
-        yF = computeCtrlConvex(coeff,u,scale,pp);
-
-    case 'fmincon'
+elseif strcmpi(pp.solvingMethod,'fmincon')
         yF = computeCtrlNlp(coeff,u,scale,pp);
 
-    otherwise 
-        error('The solving method should be either recursive or fmincon')
+else
+    error('The solving method should be either lagrange, fmincon, or convex')
 end
 
 if pp.fixedDir                                                                  % [-] (3,n_man) Build control matrix node-wise in the case of fixed direction
@@ -108,14 +104,14 @@ simTime = toc - timeSubtr - timeSubtr1;
 
 
 %% Validation
-% metricValPoly = eval_poly(coeffPoC.C,coeffPoC.E,reshape(yF./scale,1,[]), ...    
-%                             pp.DAorder);
-% metricValPoly = 10^metricValPoly;
-distValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...    
-                            pp.DAorder)*pp.Lsc;
+metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...    
+                            pp.DAorder);
+metricValPoly = 10^metricValPoly;
+% distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF./scale,1,[]), ...    
+                            % pp.DAorder)*pp.Lsc;
 
-[~,~,~,x,~,xRet0] = propDA(1,ctrl,scale,1,pp);                                      % Validate the solution by forward propagating and computing the real PoC
-lim       = 10^lim;
+[~,~,~,x,xRet0] = propDA(1,ctrl,scale,1,pp);                                  % Validate the solution by forward propagating and computing the real PoC
+lim               = 10^lim;
 
 %% PostProcess
 postProcess(xBall,x,xRet0,lim,ctrl,simTime,pp)

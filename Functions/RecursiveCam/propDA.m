@@ -1,4 +1,4 @@
-function [lim,coeff,timeSubtr,xTca,PoC0,xRet0] = ...
+function [lim,coeff,timeSubtr,xTca,xRet0] = ...
               propDA(DAorder,u,scale,validateFlag,pp)
 % propDA performs the DA propagation to build the NLP
 % 
@@ -94,13 +94,13 @@ end
 fclose(fid);
 aidaInit(pp);                                                         % Initialize AiDA dynamics (not needeed in paper)
 timeSubtr1 = toc(bb);                                                           % Exlude writing time from computation time measure
-
+xRet0 = [];
 %% Run the C++ Executable to perform the DA propagation
 if ~validateFlag
     !wsl ./CppExec/polyProp
 elseif validateFlag
     !wsl ./CppExec/validatePoly
-    lim=[];coeff=[];timeSubtr=[];PoC0=[];xRet0=[];
+    lim=[];coeff=[];timeSubtr=[];
     x    = reshape(load("write_read/constPart.dat"),6,pp.n_conj+1);             % If validating we only care about the TCA positions
     if any(pp.isRet); xRet0 = x(:,end); end
     xTca  = x(:,1:end-1);
@@ -113,8 +113,6 @@ a         = load("write_read/constPart.dat");
 for k = 1:n_conj
     xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
-PoC0  = [];
-xRet0 = [];
 timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
 lim = log10(PoCLim);
 

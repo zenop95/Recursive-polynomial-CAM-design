@@ -140,7 +140,6 @@ hold off
 % Ellipse B-plane
 for k = 1:pp.n_conj
     xb     = xBall(:,k);
-    xb(:,1) = pp.x_pTCA;
     x      = xManTca(:,k);
     x_s    = x_sTCA(:,k);
     e2b    = eci2Bplane(xb(4:6),x_s(4:6));

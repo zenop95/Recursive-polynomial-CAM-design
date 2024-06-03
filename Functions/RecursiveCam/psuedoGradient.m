@@ -1,4 +1,4 @@
-function grad = psuedoGradient(DAArrays,ctrl0,k,n_constr,n)
+function [grad] = psuedoGradient(DAArrays,ctrl0,k,n_constr,n)
 % pseudoGradient computes the gradient given high-order tensors and a Delta-v.
 % INPUT:  DAArrays = [-] All the high-order tensors
 %         ctrl0    = [-] Linearization point of the control

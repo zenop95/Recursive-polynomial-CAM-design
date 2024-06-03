@@ -36,7 +36,7 @@ for c = 1:n_constr
 end
 %% First-order Dv
 switch lower(pp.solvingMethod)
-    case 'lagrange'
+    case {'lagrange','newton'}
         Y0   = solveLagrange(DeltasUp,DAArrays,zeros(n,1),1,pp) + u;    % [-] (n,1) 1st-order greedy solution of the polynomial constraint
     case 'convex'
         Y0  = solveConvex(DeltasUp,DeltasLo,DAArrays,zeros(n,1),1,pp) + u;     % [-] (n,1) 1st-order convex solution of the polynomial constraint
@@ -52,22 +52,23 @@ for k = 2:DAorder
     while err > tol && iter < maxIter
         iter = iter + 1;                                                        % [-] (1,1) Update iteration number
         if strcmpi(pp.solvingMethod,'lagrange')
-            Yp = solveLagrange(DeltasUp,DAArrays,Y0,k,pp) + u;   % [-] (n,1) kth-order Lagrange solution of the polynomial constraint
+            Yp = solveLagrange(DeltasUp,DAArrays,Y0,k,pp) + u;                  % [-] (n,1) kth-order Lagrange solution of the polynomial constraint
         
         elseif strcmpi(pp.solvingMethod,'convex')
-            Yp  = solveConvex(DeltasUp,DeltasLo,DAArrays,Y0,k,pp) + u;         % [-] (n,1) kth-order convex solution of the polynomial constraint
+            Yp  = solveConvex(DeltasUp,DeltasLo,DAArrays,Y0,k,pp) + u;          % [-] (n,1) kth-order convex solution of the polynomial constraint
+        
         elseif strcmpi(pp.solvingMethod,'newton')
-            Yp = solveNewton(DeltasUp,DAArrays,Y0,k,n_man,m,n_constr) + u;     % [-] (n,1) kth-order Lagrange solution of the polynomial constraint
+            Yp = solveNewton(DeltasUp,DAArrays,Y0,k,pp) + u;                    % [-] (n,1) kth-order Lagrange solution of the polynomial constraint
         
         end
 
-        err  = norm(Yp-Y0);                                                    % [-] (n,1) Compute convergence variable at iteration iter
+        err  = norm(Yp-Y0);                                                     % [-] (n,1) Compute convergence variable at iteration iter
         er(iter) = err;
         Ys(:,iter) = Yp;
         if iter > 1
             DErr(iter) = er(iter-1) - err;
         end
-        Y0 = (1-alpha)*Y0 + alpha*Yp;                                         % [-] (n,1) Update linearization point for kth-order solution
+        Y0 = (1-alpha)*Y0 + alpha*Yp;                                           % [-] (n,1) Update linearization point for kth-order solution
     end
     Yord(:,k) = Y0;
 end

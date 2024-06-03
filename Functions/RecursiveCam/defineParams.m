@@ -15,9 +15,10 @@ function pp = defineParams(pp,nFire,nRet)
 %% Optimization parameters (modifiable)
 pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
-pp.objFunction   = 'fuel';
-% pp.objFunction   = 'energy';
-pp.solvingMethod = 'recursive';                                                 % [str] (1,1) Optimization method (recursive, fmincon)
+% pp.objFunction   = 'fuel';
+pp.objFunction   = 'energy';
+pp.solvingMethod = 'lagrange';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
+% pp.solvingMethod = 'newton';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'convex';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'fmincon';                                                
 pp.PoCLim        = 1e-6;                                                        % [-]   (1,1) PoC limit
@@ -58,7 +59,8 @@ if nRet == 0; pp.isRet = zeros(pp.N,1); end
 pp.isConj   = ismember(pp.ns,nConj);                                             % [-] (1,N) 1 if the node is a conjunction, 0 otherwise
 pp.t        = pp.ns*pp.T;                                                        % [-] (1,N) Time before TCA for each node (orbits for LEO, a-dimensional time units for Cislunar)
 pp.n_man    = sum(pp.canFire);                                                   % [-] (1,1) Total number of firing nodes
-pp.n_constr = pp.flagCA + pp.flagTanSep + pp.flagAlt + 6*pp.flagReturn;
+pp.n_constr = pp.flagCA*(1 + pp.n_conj*(pp.n_conj > 1))  + pp.flagTanSep ...
+                                         + pp.flagAlt + 6*pp.flagReturn;
 
 %% Reference for return
 r2e_p         = rtn2eci(pp.x_pTCA(1:3),pp.x_pTCA(4:6));                         % [-] (3,3) RTN to ECI rotation matrix for primary in Earth Orbit 
@@ -68,7 +70,10 @@ pp.xReference = pp.x_pTCA;% + [r2e_p*[pp.nomDist; 0; 0]; 0; 0; 0];
 %% Targets of the constraints
 limUp      = [];
 limLo      = [];
-if pp.flagCA;     limUp   = log10(pp.PoCLim);       limLo = -inf;        end
+if pp.flagCA    
+    limUp = log10(pp.PoCLim)*ones(1 + pp.n_conj*(pp.n_conj > 1),1);       
+    limLo = -inf(1 + pp.n_conj*(pp.n_conj > 1),1);        
+end
 if pp.flagTanSep; limUp   = [limUp; -.1/pp.Lsc];   limLo = [limLo; -.2/pp.Lsc]; end
 if pp.flagAlt;    limUp   = [limUp; 0];             limLo = [limLo; 0]; end
 if pp.flagReturn; limUp   = [limUp; pp.xReference]; limLo = [limLo; pp.xReference]; end
