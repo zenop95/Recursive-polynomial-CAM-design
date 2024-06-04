@@ -45,6 +45,11 @@ scale = ones(m,n_man);                                                          
 ctrl  = nan(3,n_man);                                                           % [-] (3,N)  Initialized ctrl of the optimized trajectory
 
 %% Propagation
+timeSubtr0 = 0;
+if pp.flagStability && pp.cislunar
+    [CG,timeSubtr0] = Cauchy_Green_prop(1,u,pp);
+end
+
 timeSubtr1 = 0;
 tic
 % If the filtering routine is adpoted, first perform a first-order
