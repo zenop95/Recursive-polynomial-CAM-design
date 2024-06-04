@@ -1,4 +1,4 @@
-function [] = postProcess(xBall,xMan,lim,ctrl,simTime,pp)
+function [] = postProcess(xBall,xManTca,xManRet,lim,ctrl,simTime,pp)
 % postProcess plots the relevant data 
 % 
 % INPUT: 
@@ -41,7 +41,7 @@ end
 PoC = nan(pp.n_conj,1);
 for k = 1:pp.n_conj
     xb     = xBall(:,k);
-    x      = xMan(:,k);
+    x      = xManTca(:,k);
     x_s    = x_sTCA(:,k);
     e2b    = eci2Bplane(xb(4:6),x_s(4:6));
     e2b    = e2b([1 3],:);
@@ -51,6 +51,15 @@ for k = 1:pp.n_conj
     PoC(k) = poc_Chan(pp.HBR(k),PB,smd,3);                                        % [-] (1,1) PoC computed with Chan's formula
 end
 poc_tot = PoCTot(PoC);
+
+% Validate return
+if pp.flagReturn || pp.flagTanSep
+    errRetEci = xManRet - pp.xReference;
+    r2e = rtn2eci(xManRet(1:3),xManRet(4:6));
+    errRetRtn = r2e'*errRetEci(1:3);
+    tanErr = errRetRtn(2)*pp.Lsc;
+end
+
 disp(['Solver: ', pp.solvingMethod])
 disp(['Computation time ',num2str(simTime), ' s'])
 n   = size(ctrl,2);
@@ -67,7 +76,13 @@ else
     disp(['Total Delta-v = ',num2str(normOfVec(ctrl)*dt_lt*Vsc*1e6), ' mm/s'])
 end
 disp(['PoC after validation ',num2str(poc_tot)]);
-
+if pp.flagTanSep
+    disp(['Tangential distance in return ',num2str(tanErr*1e3), ' m']);
+end
+if pp.flagReturn
+    disp(['Position error in return ',num2str(norm(errRetEci(1:3))*pp.Lsc*1e3), ' m']);
+    disp(['Velocity error in return ',num2str(norm(errRetEci(4:6))*pp.Vsc*1e6), ' mm/s']);
+end
 disp(['Limit: ',num2str(lim)])
 ctrlNorm = normOfVec(ctrl);
 
@@ -112,7 +127,7 @@ else
     ylabel('$a$ [mm/s2]')
 end
 if ~pp.cislunar
-    xlabel('Number of orbits to TCA [-]')
+    xlabel('Orbits to TCA [-]')
 else
     xlabel('Time to TCA [days]')
 end
@@ -125,8 +140,7 @@ hold off
 % Ellipse B-plane
 for k = 1:pp.n_conj
     xb     = xBall(:,k);
-    xb(:,1) = pp.x_pTCA;
-    x      = xMan(:,k);
+    x      = xManTca(:,k);
     x_s    = x_sTCA(:,k);
     e2b    = eci2Bplane(xb(4:6),x_s(4:6));
     e2b    = e2b([1 3],:);

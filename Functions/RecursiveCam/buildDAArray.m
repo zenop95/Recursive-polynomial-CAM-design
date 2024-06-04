@@ -32,7 +32,7 @@ for i = 1:length(C)
 
     indices = cell(1, n);                                                       % Initialize indices cell array for the coefficient C
     for j = 1:n
-        indices{j} = perm(:, j);                                                % All possible combinations of the indeces
+        indices{j} = perm(:, j);                                                % All possible combinations of the indices
     end
     linear_indices = sub2ind(size(DAArray), indices{:});                        % [-] Convert the tensor indices to linear indeces to associate with coefficients
     DAArray(linear_indices) = C(i)/k;                                           % [-] Assign value scaled by number of permutations because the coefficient C includes the contribution of every permutation

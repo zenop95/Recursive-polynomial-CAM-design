@@ -47,8 +47,8 @@ int main(void)
         nodes >> m;         // Number of DA variables per node
 	nodes.close();
     AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(3,n_man), rsDum(3,n_conj), vsDum(3,n_conj), xTca(6,n_conj);
-    AlgebraicVector<double> xdum(6), x0(6), ctrl(3), ctrlRtn(3), t(N), HBR(n_conj);
-    AlgebraicVector<int>    canFire(N), isConj(N);
+    AlgebraicVector<double> xdum(6), x0(6), ctrl(3), ctrlRtn(3), t(N), HBR(n_conj), xRet(6);
+    AlgebraicVector<int>    canFire(N), isConj(N), isRet(N);
     ifstream Input;
 	Input.open("./write_read/initial_state.dat");
         Input >> N;               // Number of nodes
@@ -74,6 +74,7 @@ int main(void)
             Input >> t[i];
             Input >> canFire[i];
             Input >> isConj[i];
+            Input >> isRet[i];
         }
 	Input.close();
 
@@ -132,6 +133,9 @@ int main(void)
             }        
             k ++;
         }
+        if (isRet[i+1] == 1) {
+            xRet = x0;
+        }
     }
         
     //open the output files
@@ -142,6 +146,9 @@ int main(void)
         for (j = 0; j < 6 ; j++) {
         constPart  << xTca.at(j,k) << endl;
         }
+    }
+    for (j = 0; j < 6 ; j++) {
+        constPart  << xRet[j] << endl;
     }
     constPart.close();
 

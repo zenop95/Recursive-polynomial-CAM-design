@@ -1,4 +1,4 @@
-function pp = defineParams(pp,tMan)
+function pp = defineParams(pp,nFire,nRet)
 % defineParams defines the optimization parameters for the polynomial 
 % optimization.
 % 
@@ -13,12 +13,16 @@ function pp = defineParams(pp,tMan)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 %% Optimization parameters (modifiable)
-pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 3;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
-pp.solvingMethod = 'recursive';                                                 % [str] (1,1) Optimization method (recursive, fmincon)
-% pp.solvingMethod = 'recursiveLagrange';                                         % [str] (1,1) Optimization method (recursive, fmincon)
+% pp.objFunction   = 'fuel';
+pp.objFunction   = 'energy';
+pp.solvingMethod = 'lagrange';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
+% pp.solvingMethod = 'newton';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
+% pp.solvingMethod = 'convex';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'fmincon';                                                
 pp.PoCLim        = 1e-6;                                                        % [-]   (1,1) PoC limit
+pp.nomDist       = 0.200/pp.Lsc;                                                % [-]   (1,1) Relative distance to achieve after 1 orbit
 
 %% Operational constraints (modifiable)
 pp.lowThrust        = 0;                                                        % [bool]   (1,1) Low-thrust flag
@@ -31,17 +35,17 @@ maxMag              = 0.1;                                                      
 thrustMagnitude     = 0.1;                                                      % [mm/s^2] (1,1) Maximum acceleration if fixedMag = true
 pp.thrustMagnitude  = thrustMagnitude/pp.Asc/1e6;                               % [-]      (1,1) Scaled maximum acceleration
 pp.thrustDirections = repmat([0 1 0]',1,300);                                   % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
-if pp.lowThrust
-    pp.maxMag = maxMag/pp.Asc/1e6;
-else
-    pp.maxMag = maxMag/pp.Vsc/1e6;
-end
+pp.flagCA           = 1;
+pp.flagTanSep       = 0;
+pp.flagAlt          = 0;
+pp.flagReturn       = 0;
+pp.flagStability    = 1; % only for Cislunar
 %% Maneuvering times (should not be modified)
-nFire      = tMan;
-if pp.cislunar; nFire = nFire/4.34811305; end                                   % transform days into synodic time units
-nConj      = -pp.tca_sep;                                                       % [-] (1,n_conj) conjunction times after first TCA
-pp.ns      = sort(unique([nFire, nConj]),"descend")';                           % [-] (1,N) Build time discretization
+if pp.cislunar; nFire = nFire/pp.Tsc*86400; nRet = nRet/pp.Tsc*86400; end       % transform days into synodic time units
+nConj      = -pp.tca_sep;                                                       % [-] (1,n_conj) Conjunction times after first TCA
+pp.ns      = sort(unique([nFire, nRet, nConj]),"descend")';                     % [-] (1,N) Build time discretization
 canFire    = ismember(pp.ns,nFire);                                             % [-] (1,N) 1 if the node is a firing node, 0 otherwise
+isRet      = ismember(pp.ns,nRet);                                              % [-] (1,N) 1 if the node is a return node, 0 otherwise
 % If low-thrust model is usde, the last node of each firing window is idle
 if pp.lowThrust
     for i = 2:length(pp.ns)-1
@@ -50,10 +54,32 @@ if pp.lowThrust
         end
     end
 end
-pp.N       = length(pp.ns);                                                     % [-] (1,1) Total number of nodes
-pp.canFire = canFire;                                                           % [-] (1,N) 1 if the node is a firing node, 0 otherwise
-pp.isConj  = ismember(pp.ns,nConj);                                             % [-] (1,N) 1 if the node is a conjunction, 0 otherwise
-pp.t       = pp.ns*pp.T;                                                        % [-] (1,N) Time before TCA for each node (orbits for LEO, a-dimensional time units for Cislunar)
-pp.n_man   = sum(pp.canFire);                                                   % [-] (1,1) Total number of firing nodes
+pp.N        = length(pp.ns);                                                     % [-] (1,1) Total number of nodes
+pp.canFire  = canFire;                                                           % [-] (1,N) 1 if the node is a firing node, 0 otherwise
+pp.isRet    = isRet;                                                             % [-] (1,N) 1 if the node is a firing node, 0 otherwise
+if nRet == 0; pp.isRet = zeros(pp.N,1); end 
+pp.isConj   = ismember(pp.ns,nConj);                                             % [-] (1,N) 1 if the node is a conjunction, 0 otherwise
+pp.t        = pp.ns*pp.T;                                                        % [-] (1,N) Time before TCA for each node (orbits for LEO, a-dimensional time units for Cislunar)
+pp.n_man    = sum(pp.canFire);                                                   % [-] (1,1) Total number of firing nodes
+pp.n_constr = pp.flagCA*(1 + pp.n_conj*(pp.n_conj > 1))  + pp.flagTanSep ...
+                                         + pp.flagAlt + 6*pp.flagReturn;
+
+%% Reference for return
+r2e_p         = rtn2eci(pp.x_pTCA(1:3),pp.x_pTCA(4:6));                         % [-] (3,3) RTN to ECI rotation matrix for primary in Earth Orbit 
+% pp.xReference = pp.x_pTCA + [r2e_p*[0; 20/pp.Lsc; 0]; 0; 0; 0];
+pp.xReference = pp.x_pTCA;% + [r2e_p*[pp.nomDist; 0; 0]; 0; 0; 0];
+
+%% Targets of the constraints
+limUp      = [];
+limLo      = [];
+if pp.flagCA    
+    limUp = log10(pp.PoCLim)*ones(1 + pp.n_conj*(pp.n_conj > 1),1);       
+    limLo = -inf(1 + pp.n_conj*(pp.n_conj > 1),1);        
+end
+if pp.flagTanSep; limUp   = [limUp; -.1/pp.Lsc];   limLo = [limLo; -.2/pp.Lsc]; end
+if pp.flagAlt;    limUp   = [limUp; 0];             limLo = [limLo; 0]; end
+if pp.flagReturn; limUp   = [limUp; pp.xReference]; limLo = [limLo; pp.xReference]; end
+pp.limUp = limUp;
+pp.limLo = limLo;
 
 end

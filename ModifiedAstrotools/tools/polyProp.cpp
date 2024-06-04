@@ -47,8 +47,8 @@ int main(void)
 	nodes.close();
     // Initialize variable
     AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
-    AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), HBR(n_conj), magnitude(n_man);
-    AlgebraicVector<int>    canFire(N), isConj(N);
+    AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3);
+    AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(4);
     // Write input from .dat
 	Input.open("./write_read/initial_state.dat");
         Input >> N;               // Number of nodes
@@ -66,7 +66,7 @@ int main(void)
             Input >> xdum[j];           // Write dummy variable for the primary's ECI state at the first conjunction from input
         }
         for (k = 0; k < n_conj; k ++) {
-            Input >> HBR[k];            // Combined Hard Body Radius for each conjunction
+            Input >> HBR[k];            // Combined Hard Body radialius for each conjunction
         }
         for (k = 0; k < n_conj; k ++) {
             for (j = 0; j < 3; j ++) {
@@ -76,6 +76,12 @@ int main(void)
                 Input >> vsDum.at(j,k); // Write secondary's ECI velocity at each conjunction from input
             }   
         }
+        for (j = 0; j < 3; j ++) {
+                Input >> rRef[j]; // Write reference ECI position for return from input
+            }
+        for (j = 0; j < 3; j ++) {
+                Input >> vRef[j]; // Write reference ECI velocity for return from input
+            }
         for (k = 0; k < n_conj; k ++) {
             for (j = 0; j < 9; j ++) {
                 Input >> cov.at(j,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
@@ -89,6 +95,9 @@ int main(void)
                 Input >> directions.at(j,i); // Write maneuver direction in RTN if the direction is fixed
             }
         }
+        for (i = 0; i < 4; i ++) {
+            Input >> constraintFlags[i];
+        }
         for (i = 0; i < n_man; i ++) {
             for (j = 0; j < m; j ++) {
                 Input >> ctrlDum.at(j,i);   // Write dummy reference control from input ({0 0 0} if ballistic trajectory)
@@ -98,6 +107,7 @@ int main(void)
             Input >> t[i];                  // Write node times before conjunction (if negative it means that there are more than one encounters and nodes are needed after the first encounter)
             Input >> canFire[i];            // Define if node i is a firing node
             Input >> isConj[i];             // Define if node i is a conjunction node
+            Input >> isRet[i];              // Define if node i is a return node
         }
     Input.close();
     // initialize execution time counter
@@ -117,9 +127,9 @@ int main(void)
     AIDAScaledDynamics<DA> aidaCartDyn(gravmodel, gravOrd, AIDA_flags, Bfactor, SRPC);
 
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3); 
+    AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), xRet(6), poc(n_conj); 
     AlgebraicMatrix<DA> xTca(6,n_conj);
-    DA metric, poc_tot, alpha, beta;
+    DA poc_tot, alpha, beta;
     // Define ballistic primary's position at first TCA 
     for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
     // backpropagation from first TCA
@@ -127,7 +137,7 @@ int main(void)
         x0     = RK78Sc(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, tca, tca - t[0], 1.0, Lsc, 0, gravOrd, aidaCartDyn); // Earth Orbit
     }
     else if (dyn == 1) {
-        x0     = RK78Cis(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[0], CR3BPsyn, 0.012150668, 0.0); // Cislunar
+        x0     = RK78Cis(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[0], CR3BPsyn, musc, 0.0); // Cislunar
     }
     else {throw std::runtime_error("The dynamics flag should be 0 for Earth orbit and 1 for Cislunar");}
     jj     = 0;
@@ -188,7 +198,7 @@ int main(void)
             x0 = RK78Sc(6, x0, ctrl, tca - t[i], tca - t[i+1], 1.0, Lsc, 0, gravOrd, aidaCartDyn);   // forward propagation to the next node
         }
         else {
-            x0 = RK78Cis(6, x0, ctrl, -t[i], -t[i+1], CR3BPsyn, 0.012150668, 0.0); // forward propagation to the next node
+            x0 = RK78Cis(6, x0, ctrl, -t[i], -t[i+1], CR3BPsyn, musc, 0.0); // forward propagation to the next node
         }
         // If the next node is a conjunction node, save the state in a DA variable
         if (isConj[i+1] == 1) {
@@ -197,8 +207,12 @@ int main(void)
             }        
             k = k + 1;
         }
+        else if (isRet[i+1] == 1) {
+            xRet = x0;
+        }
     }
 
+if (constraintFlags[0] == 1) {
     // Compute the total PoC resulting from the multiple conjunctions
     DA noCollisions = 1.0;
     for (k = 0; k < n_conj; k ++) {
@@ -229,25 +243,48 @@ int main(void)
         vv = 0;
         // Compute PoC for the single conjunction, according to the required model
         if (pocType == 0) {
-            metric = astro::ConstPoC(r_rel,P_B,HBR[k]);}
+            poc[k] = astro::ConstPoC(r_rel,P_B,HBR[k]);}
         else if (pocType == 1) {
-            metric = astro::ChanPoC(r_rel,P_B,HBR[k],3);}
+            poc[k] = astro::ChanPoC(r_rel,P_B,HBR[k],3);}
         else {
             throw std::runtime_error("the metric flag must be in the interval [1,3] and the PoC type must be in the interval [0,1]");}
         // Probability of no collision
-        noCollisions = noCollisions*(1.0 - metric);
-}
+        noCollisions = noCollisions*(1.0 - poc[k]);
+    }
 
     // Final PoC comprehensive of all the conjunctions
     poc_tot = log10(1.0 - noCollisions);
-    time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
+}
 
+DA tan, radial;
+if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
+    // Return constraint (scalar as tangential distance from other spacecraft GRACE)
+    AlgebraicVector<DA> rRet(3), vRet(3), distRel(3);
+    for (j = 0; j < 3 ; j ++) {
+        rRet[j] = xRet[j];
+        vRet[j] = xRet[j+3];
+    }      
+    r2e     = astro::rtn2eci(cons(xRet));
+    distRel = r2e.transpose()*(rRet-rRef);
+    radial  = distRel[0]; // radial displacement with respect to reference
+    tan     = distRel[1]; // tangential displacement with respect to reference
+}
+
+// stability of the monodromy matrix (Cauchy-Green Tensor) after an orbital period
+// if (constraintFlags[4] == 1 || dyn == 1) {
+//     ctrl = {0.0*DA(1), 0.0*DA(1), 0.0*DA(1)};
+//     x0 = RK78Cis(6, x0, ctrl, -t[end], -t[end] +     1, CR3BPsyn, 0.012150668, 0.0); // forward propagation to the next node
+//     AlgebraicMatrix<double> STM = astro::stmDace(x0, 3, 6);
+//     AlgebraicMatrix<double> CG = STM.transpose()*STM;
+// }
+
+    time1   = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     //open the output files
-    ofstream constPart, metricPoly;
+    ofstream constPart, constraints;
     constPart.open("./write_read/constPart.dat");
     constPart << setprecision(18);
-    metricPoly.open("./write_read/metricPoly.dat");
-    metricPoly << setprecision(18);
+    constraints.open("./write_read/constraints.dat");
+    constraints << setprecision(18);
 
     // write TCA states in ECI coordinates into output
     for (k = 0; k < n_conj ; k++) {
@@ -255,10 +292,36 @@ int main(void)
         constPart  << cons(xTca.at(j,k)) << endl;
         }
     }
-    // write ballistic PoC in output (not valid for fixed magnitude)
-    constPart  << cons(poc_tot)  << endl;
+
     // write the DA expansion of PoC in output
-    metricPoly << poc_tot << endl;
+    if (constraintFlags[0] == 1) {
+        if (n_conj > 1) {
+            for (k = 0; k < n_conj; k ++) {
+                constraints << log10(poc[k]) << endl;
+            }
+        }
+        constraints << poc_tot << endl;
+    }
+
+    // write the DA expansion of return in output
+    if (constraintFlags[1] == 1) {
+        constraints << tan    << endl;
+    }
+
+    // write the DA expansion of return in output
+    if (constraintFlags[2] == 1) {
+        constraints << radial       << endl;
+    }
+
+    // write the DA expansion of return in output
+    if (constraintFlags[3] == 1) {
+        for (j = 0; j < 6; j ++) {
+        constraints << xRet[j]        << endl;
+        }
+    }
+    if (constraintFlags[4] == 1) {
+        
+    }
 
     // Do not consider writing time when calculating execution time
     time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
@@ -270,5 +333,5 @@ int main(void)
     timeOut << timeSubtr << endl;
     timeOut.close();
     constPart.close();
-    metricPoly.close();
+    constraints.close();
 }

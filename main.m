@@ -21,13 +21,14 @@ set(0,'defaultfigurecolor',[1 1 1])
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
-% fireTimes = [4.4 4.6,3.4 3.6,2.4 2.6,1.4 1.6,0.4 0.6];                                                              % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-fireTimes = 2.5;                                                          % [-] Example of bi-impulsive maneuvers
-% fireTimes = [0.49,0.51];                                                          % [-] Example of bi-impulsive maneuvers
+% fireTimes = [0.5 0 -0.5 -1.99];                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+returnTime = -1;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+fireTimes  = [2.5];                                                             % [-] Example of bi-impulsive maneuvers
+% fireTimes = [0.5 -0.5];                                                       % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
-pp = defineParams(pp,fireTimes);                                                % [-] (1,1) Include optimization paramters to parameters structure
+pp          = defineParams(pp,fireTimes,returnTime);                            % [-] (1,1) Include optimization paramters to parameters structure
 
 %% Non-user defined
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,12 +45,17 @@ scale = ones(m,n_man);                                                          
 ctrl  = nan(3,n_man);                                                           % [-] (3,N)  Initialized ctrl of the optimized trajectory
 
 %% Propagation
+timeSubtr0 = 0;
+if pp.flagStability && pp.cislunar
+    [CG,timeSubtr0] = Cauchy_Green_prop(1,u,pp);
+end
+
 timeSubtr1 = 0;
 tic
 % If the filtering routine is adpoted, first perform a first-order
 % propagation to find the most sensitive maneuvering times
 if pp.filterMans
-    [~,~,coeffPoC,timeSubtr1] = propDA(1,u,scale,0,pp);
+    [~,~,coeffPoC,~,timeSubtr1] = propDA(1,u,scale,0,0,pp);
     gradVec = buildDAArray(coeffPoC.C,coeffPoC.E,1);
     for j = 1:n_man
         grads(j) = norm(gradVec(1+m*(j-1):m*j));
@@ -73,25 +79,17 @@ if pp.filterMans
 end
 aa=tic;
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
-[lim,coeffPoC,timeSubtr,xBall,metric] = propDA(pp.DAorder,u,scale,0,pp);
-timeProp = toc(aa)-timeSubtr;
+[lim,coeff,timeSubtr,xBall] = propDA(pp.DAorder,u,scale,0,pp);
+metric = coeff(1).C(1);
 %% Optimization
-switch pp.solvingMethod
-    case 'recursive'
-        yF = computeCtrlGreedy(lim,metric,coeffPoC,u, ...
-                                   pp.DAorder,scale,n_man);
-    case 'recursiveLagrange'
-        yF = computeCtrlLagrange(lim,metric,coeffPoC,u, ...
-                                   pp.DAorder,scale,n_man,m);
-    case 'fmincon'
-        yF = computeCtrlNlp(lim,coeffPoC,u,n_man,m,scale);
-%     case 'global'  % working badly
-%         yF = computeDvGlobal(lim,coeffPoC,n_man,m,scale);
-% 
-%     case 'moment-relaxation' %not working
-%         yF = computeDvMomRel(lim,coeffPoC,n_man,m,scale);
-    otherwise 
-        error('The solving method should be either recursive or fmincon')
+if any(strcmpi(pp.solvingMethod,{'lagrange','convex','newton'}))
+        yF = computeCtrlRecursive(coeff,u,scale,pp);
+
+elseif strcmpi(pp.solvingMethod,'fmincon')
+        yF = computeCtrlNlp(coeff,u,scale,pp);
+
+else
+    error('The solving method should be either lagrange, fmincon, or convex')
 end
 
 if pp.fixedDir                                                                  % [-] (3,n_man) Build control matrix node-wise in the case of fixed direction
@@ -112,12 +110,14 @@ simTime = toc - timeSubtr - timeSubtr1;
 
 
 %% Validation
-% metricValPoly = eval_poly(coeffPoC.C,coeffPoC.E,reshape(yF./scale,1,[]), ...    
-%                             pp.DAorder);
-% metricValPoly = 10^metricValPoly;
+metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...    
+                            pp.DAorder);
+metricValPoly = 10^metricValPoly;
+% distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF./scale,1,[]), ...    
+                            % pp.DAorder)*pp.Lsc;
 
-[~,~,~,x] = propDA(1,ctrl,scale,1,pp);                                      % Validate the solution by forward propagating and computing the real PoC
-lim       = 10^lim;
+[~,~,~,x,xRet0] = propDA(1,ctrl,scale,1,pp);                                  % Validate the solution by forward propagating and computing the real PoC
+lim               = 10^lim;
 
 %% PostProcess
-postProcess(xBall,x,lim,ctrl,simTime,pp)
+postProcess(xBall,x,xRet0,lim,ctrl,simTime,pp)
