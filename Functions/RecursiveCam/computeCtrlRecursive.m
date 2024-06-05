@@ -46,7 +46,7 @@ end
 iter = 0;                                                                       % [-] (1,1) Initialize iteration counter
 Yord = Y0;
 for k = 2:DAorder
-    err  = 1;                                                                       % [-] (1,1) Initialize convergence variable
+    err  = 1;                                                                   % [-] (1,1) Initialize convergence variable
     DErr = 1;
     alpha = 0.9;
     while err > tol && iter < maxIter

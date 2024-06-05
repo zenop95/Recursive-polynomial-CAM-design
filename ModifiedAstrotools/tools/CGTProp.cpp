@@ -42,10 +42,8 @@ int main(void)
         Input >> n_conj;          // Number of conjunctions
         Input >> n_man;           // Number of control nodes
         Input >> m;               // Number of DA variables per node
-        Input >> dyn;             // Dynamics model (0 Earth Orbit, 1 Cislunar)
         Input >> lowThrust_flag;  // Low thrust dynamics flag
         Input >> order;           // Expansion order
-        Input >> pocType;         // PoC model (0 Alfriend, 1 Chan)
         Input >> tca;             // Ephemeris time at conjunction
         Input >> Lsc;             // Length scale
         Input >> musc;            // Gravitational constant
@@ -80,45 +78,23 @@ int main(void)
     AIDAScaledDynamics<DA> aidaCartDyn(gravmodel, gravOrd, AIDA_flags, Bfactor, SRPC);
 
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrl(3), xRet(6),; 
+    AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrl(3), xRet(6); 
     // Define ballistic primary's position at first TCA 
     for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
     // backpropagation from first TCA
     x0     = RK78Cis(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[0], CR3BPsyn, musc, 0.0); // Cislunar
     jj     = 0;
     kk     = 0;
-    // Propagations at each of the N discretization nodes included in t
-    for (i = 0; i < N-1; i ++) {
-        // If the node is a firing node, include the control in the form of a DA vector variable
-       if (canFire[i] == 1) {
-            // RTN to ECI transformation used to have the output control in RTN coordinates
-            r2e     = astro::rtn2eci(cons(x0));
-            // Both direction and magnitude of the control are optimized
-            for (j = 0; j < 3 ; j++) { 
-                jj ++;
-                ctrl[j] = ctrlDum.at(j,kk) + DA(jj);
-            }
-            kk ++;
-            if (lowThrust_flag == 0) {
-                for (j = 3; j < 6; j ++) {
-                    x0[j] = x0[j] + ctrl[j-3];
-                } 
-                ctrl = {0.0*DA(1), 0.0*DA(1), 0.0*DA(1)};
-            }
-        }
-        else {ctrl = {DA(1)*0, DA(1)*0, DA(1)*0};}
 
-        x0 = RK78Cis(6, x0, ctrl, -t[i], -t[i+1], CR3BPsyn, musc, 0.0); // forward propagation to the next node
-
-        if (isRet[i+1] == 1) {
-            xRet = x0;
-        }
-    }
+    
 
     // stability of the monodromy matrix (Cauchy-Green Tensor) after an orbital period
+    for (j = 0; j < 3 ; j++) {
+        x0[j+3] = x0[j+3] + DA(j+1);
+    }    
     ctrl = {0.0*DA(1), 0.0*DA(1), 0.0*DA(1)};
-    x0 = RK78Cis(6, x0, ctrl, -t[end], -t[end] + 1, CR3BPsyn, musc, 0.0); // forward propagation to the next node
-    AlgebraicMatrix<double> STM = astro::stmDace(x0, 3*n_man, 6);
+    x0 = RK78Cis(6, x0, ctrl, t[N- 1], t[N], CR3BPsyn, musc, 0.0); // forward propagation to the next node
+    AlgebraicMatrix<double> STM = astro::stmDace(x0, 3, 6);
     AlgebraicMatrix<double> CG = STM.transpose()*STM;
 
     time1   = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
