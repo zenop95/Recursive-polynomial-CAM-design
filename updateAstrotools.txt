@@ -1,1 +1,0 @@
-cd && sudo cp -r yourFolder/Recursive-polynomial-CAM-design/ModifiedAstrotools/* astrotools && cd astrotools/ && cmake --build _build -- -j3 && sudo cp -r _build/tools/* yourFolder/Recursive-polynomial-CAM-design/CppExec/
