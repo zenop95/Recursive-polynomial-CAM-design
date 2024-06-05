@@ -13,7 +13,7 @@ function pp = defineParams(pp,nFire,nRet)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 %% Optimization parameters (modifiable)
-pp.DAorder       = 3;                                                           % [-]   (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
 % pp.objFunction   = 'fuel';
 pp.objFunction   = 'energy';
@@ -39,7 +39,7 @@ pp.flagCA           = 1;
 pp.flagTanSep       = 0;
 pp.flagAlt          = 0;
 pp.flagReturn       = 0;
-pp.flagStability    = 1; % only for Cislunar
+pp.flagStability    = 0; % only for Cislunar
 %% Maneuvering times (should not be modified)
 if pp.cislunar; nFire = nFire/pp.Tsc*86400; nRet = nRet/pp.Tsc*86400; end       % transform days into synodic time units
 nConj      = -pp.tca_sep;                                                       % [-] (1,n_conj) Conjunction times after first TCA

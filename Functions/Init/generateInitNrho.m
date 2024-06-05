@@ -26,11 +26,11 @@ if strcmpi(conj,'parallel')
        0.00130390551665015; 0.0370542702726203; 0.000488964568743807];          % parallel case
 else
     x0s = [337489.082821275;
-                         0;
-           -74008.45829412;
-       0.00818586179084693;
-         0.232625087737658;
-        0.0030696981715676];        % perpendicular case
+                          0;
+            -74008.45829412;
+        0.00818586179084693;
+          0.232625087737658;
+         0.0030696981715676];        % perpendicular case
 end
 secondary.tca      = 1;         % [s] TCA of conjunction w.r.t. initial time t0 = 0
 secondary.x0       = x0s;         

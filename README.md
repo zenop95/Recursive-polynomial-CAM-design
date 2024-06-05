@@ -31,7 +31,7 @@ In defineParams.m
 The parameters of the optimization are defined in lines 16-20: the order of the polynomial expansion, the type of PoC model approximation, the method to solve the NLP (recursive or fmincon) and the reuqired PoC limit to be respected. Moreover, one can select the required operational constraints in lines 23-30.
 
 
-To run the codes, the first thing is to download this repository and install the required Differential Algebra tool, DACE, which is publicly available at https://github.com/dacelib/dace. Afterwards, download this repository and unzip it to the preferred location. Unzip "astrotools.m" in your ubuntu bash where also DACE should be installed. The astrotools tools should be compiled using a command similar to the one in "updateAstrotools.txt", which also copies the required executables in the proper folder "CppExec", where they are needed for the codes to run.
+To run the codes, the first thing is to download this repository and install the required Differential Algebra tool, DACE, which is publicly available at https://github.com/dacelib/dace. Afterwards, download this repository and unzip it to the preferred location. Compile the executables from validatePoly.cpp and polyProp.cpp via CMAKE. The CMakeLists.txt can be used to this end. The executables should be placed in the folder ./CppExec, so, after installing cmake in your bash, it is advisable to run "cmake .." and "make" inside this folder.
 
 DOI: 10.5281/zenodo.11169701
 
