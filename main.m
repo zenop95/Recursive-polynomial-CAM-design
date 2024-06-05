@@ -24,9 +24,9 @@ pp = initOpt(multiple,cislunar,1);                                              
 % fireTimes = [0.5 0 -0.5 -1.99];                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 returnTime = 0;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 % fireTimes  = 2.5;                                                                 % [-] Example of bi-impulsive maneuvers
-% fireTimes = [0.5 2.5];                                                       % [-] Example of bi-impulsive maneuvers
+fireTimes = [0.5 2.5];                                                       % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
-fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
+% fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
 pp          = defineParams(pp,fireTimes,returnTime);                            % [-] (1,1) Include optimization paramters to parameters structure
 
