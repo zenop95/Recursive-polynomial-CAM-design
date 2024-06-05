@@ -27,9 +27,6 @@ else
     pp   = generateInitLeo(i);
     pp.T = pp.T/pp.Tsc;                                                             % [-]    (1,1) Scaled orbital period
 end
-pp.aidaFlag1 = 0;                                                               % atmosphere flag (1:non-rotating, 2:rotating)
-pp.aidaFlag2 = 0;                                                               % SRP flag (1:no shadow, 2:Earth cylindrical shadow, 3:Earth biconical shadow, 4:Earth and Moon cylindrical shadow, 5:Earth biconical and Moon cylindrical shadow, 6:Earth and Moon biconical shadow)
-pp.aidaFlag3 = 0;                                                               % third body flag (1:Moon, 2:Moon and Sun)
 pp.gravOrd   = 0;                                                               % Order of the EGM2008 gravitational model
 
 %(not modifiable)

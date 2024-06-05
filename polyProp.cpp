@@ -6,38 +6,21 @@
 #include <ctime>
 #include <fstream>
 #include <iomanip>
-#include <cspice/SpiceUsr.h>
-#include "dynorb/DynClass.h"
-#include "astro/AstroLibrary.h"
-#include "astro/AstroRoutines.h"
-#include "dynorb/AIDA.h"
-#include "dynorb/AIDAwrappers.h"
+#include "camRoutines.h"
 #include <chrono>
 
 using namespace std;
 using namespace DACE;
 using namespace std::chrono;
+using namespace cam;
 
 int main(void)
 {
-    int j, jj, kk, i, k, vv, flag1, flag2, flag3, gravOrd, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn;
-	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, musc;
+    int j, jj, kk, i, k, vv, flag1, flag2, flag3, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn;
+	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, musc, gravOrd;
 
     long time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
-    // AIDA initialization input file
-    ifstream aidaParams;
-	aidaParams.open("./write_read/AIDA_init.dat");
-        aidaParams >> flag1;	     // Luni-solar model	
-        aidaParams >> flag2;	     // Atmosphere model	
-        aidaParams >> flag3;	     // SRP model
-        aidaParams >> gravOrd;	     //	Maximum order of the gravitational potential considered
-        aidaParams >> mass;	         //	Mass of the spacecraft
-        aidaParams >> A_drag;	     // Equivalent drag area of the spacecraft	 
-        aidaParams >> Cd;            // Aerodynmic coefficient of the spacecraft
-        aidaParams >> A_srp;         // Equivalent SRP area of the spacecraft	
-        aidaParams >> Cr;            // SRP coefficient of the spacecraft	
-	aidaParams.close();
-  
+    
     ifstream nodes, Input;
 	nodes.open("./write_read/initial_state.dat");
         nodes >> N;         // Number of nodes
@@ -62,6 +45,7 @@ int main(void)
         Input >> tca;             // Ephemeris time at conjunction
         Input >> Lsc;             // Length scale
         Input >> musc;            // Gravitational constant
+        Input >> gravOrd;            // Gravitational constant
         for (j = 0; j < 6; j ++) {
             Input >> xdum[j];           // Write dummy variable for the primary's ECI state at the first conjunction from input
         }
@@ -116,15 +100,6 @@ int main(void)
     // Initialize DA     
     DA::init(order, m*n_man);
     DA::setEps(1e-30);
-    // Initialize AIDA    
-    string kern = "./data/kernel.txt";
-    ConstSpiceChar*FileKernel = kern.c_str();
-    furnsh_c (FileKernel);
-    string gravmodel  = "./data/gravmodels/egm2008";
-    int AIDA_flags[3] = {flag1,flag2,flag3};
-    double Bfactor    = Cd*A_drag/mass;
-    double SRPC       = Cr*A_srp/mass;
-    AIDAScaledDynamics<DA> aidaCartDyn(gravmodel, gravOrd, AIDA_flags, Bfactor, SRPC);
 
     // Initialize DA variables
     AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), xRet(6), poc(n_conj); 
@@ -132,12 +107,22 @@ int main(void)
     DA poc_tot, alpha, beta;
     // Define ballistic primary's position at first TCA 
     for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
+
     // backpropagation from first TCA
     if (dyn == 0) {
-        x0     = RK78Sc(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, tca, tca - t[0], 1.0, Lsc, 0, gravOrd, aidaCartDyn); // Earth Orbit
+        if (gravOrd == 0) {
+            x0     = RK78(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[0], keplerPropAcc, 1.0, Lsc); // Earth Orbit
+        }
+        else if (gravOrd == 2) {
+            x0     = RK78(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[0], J2dynamics, 1.0, Lsc); // Earth Orbit
+        }        
+        else if (gravOrd == 4) {
+            x0     = RK78(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[0], J2_J4dynamics, 1.0, Lsc); // Earth Orbit
+        }
+        else {throw std::runtime_error("The gravOrd flag should be 0, 2, or 4");}
     }
     else if (dyn == 1) {
-        x0     = RK78Cis(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[0], CR3BPsyn, musc, 0.0); // Cislunar
+        x0     = RK78(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[0], CR3BPsyn, musc, Lsc); // Cislunar Orbit
     }
     else {throw std::runtime_error("The dynamics flag should be 0 for Earth orbit and 1 for Cislunar");}
     jj     = 0;
@@ -148,7 +133,7 @@ int main(void)
         // If the node is a firing node, include the control in the form of a DA vector variable
        if (canFire[i] == 1) {
             // RTN to ECI transformation used to have the output control in RTN coordinates
-            r2e     = astro::rtn2eci(cons(x0));
+            r2e     = rtn2eci(cons(x0));
             // Both direction and magnitude of the control are optimized
             if (m == 3) {
                 for (j = 0; j < 3 ; j++) { 
@@ -195,10 +180,19 @@ int main(void)
         // If the node is a ballistic node, do no include the control
         else {ctrl = {DA(1)*0, DA(1)*0, DA(1)*0};}
         if (dyn == 0) {
-            x0 = RK78Sc(6, x0, ctrl, tca - t[i], tca - t[i+1], 1.0, Lsc, 0, gravOrd, aidaCartDyn);   // forward propagation to the next node
+            if (gravOrd == 0) {
+                x0 = RK78(6, x0, ctrl, tca - t[i], tca - t[i+1], keplerPropAcc, 1.0, Lsc); // Earth Orbit
+            }
+            else if (gravOrd == 2) {
+                x0 = RK78(6, x0, ctrl, tca - t[i], tca - t[i+1], J2dynamics, 1.0, Lsc); // Earth Orbit
+            }        
+            else if (gravOrd == 4) {
+                x0 = RK78(6, x0, ctrl, tca - t[i], tca - t[i+1], J2_J4dynamics, 1.0, Lsc); // Earth Orbit
+            }
+            else {throw std::runtime_error("The gravOrd flag should be 0, 2, or 4");}
         }
         else {
-            x0 = RK78Cis(6, x0, ctrl, -t[i], -t[i+1], CR3BPsyn, musc, 0.0); // forward propagation to the next node
+            x0 = RK78(6, x0, ctrl, tca - t[i], tca - t[i+1], CR3BPsyn, musc, Lsc); // Cislunar Orbit
         }
         // If the next node is a conjunction node, save the state in a DA variable
         if (isConj[i+1] == 1) {
@@ -230,7 +224,7 @@ if (constraintFlags[0] == 1) {
             rs[i] = rsDum.at(i,k);
         }
         // B-plane transformations
-        toB = astro::Bplane(cons(v),vs); // DCM from ECI to B-plane
+        toB = Bplane(cons(v),vs); // DCM from ECI to B-plane
         rB  = toB*r;                     // Primary position in the B-plane (3D)
         rsB = toB*rs;                    // Secondary position in the B-plane (3D)
         P_B3 = toB*P*toB.transpose();    // Combined covariance in the B-plane (3D)
@@ -243,9 +237,9 @@ if (constraintFlags[0] == 1) {
         vv = 0;
         // Compute PoC for the single conjunction, according to the required model
         if (pocType == 0) {
-            poc[k] = astro::ConstPoC(r_rel,P_B,HBR[k]);}
+            poc[k] = ConstPoC(r_rel,P_B,HBR[k]);}
         else if (pocType == 1) {
-            poc[k] = astro::ChanPoC(r_rel,P_B,HBR[k],3);}
+            poc[k] = ChanPoC(r_rel,P_B,HBR[k],3);}
         else {
             throw std::runtime_error("the metric flag must be in the interval [1,3] and the PoC type must be in the interval [0,1]");}
         // Probability of no collision
@@ -264,7 +258,7 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
         rRet[j] = xRet[j];
         vRet[j] = xRet[j+3];
     }      
-    r2e     = astro::rtn2eci(cons(xRet));
+    r2e     = rtn2eci(cons(xRet));
     distRel = r2e.transpose()*(rRet-rRef);
     radial  = distRel[0]; // radial displacement with respect to reference
     tan     = distRel[1]; // tangential displacement with respect to reference
@@ -274,7 +268,7 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
 // if (constraintFlags[4] == 1 || dyn == 1) {
 //     ctrl = {0.0*DA(1), 0.0*DA(1), 0.0*DA(1)};
 //     x0 = RK78Cis(6, x0, ctrl, -t[end], -t[end] +     1, CR3BPsyn, 0.012150668, 0.0); // forward propagation to the next node
-//     AlgebraicMatrix<double> STM = astro::stmDace(x0, 3, 6);
+//     AlgebraicMatrix<double> STM = stmDace(x0, 3, 6);
 //     AlgebraicMatrix<double> CG = STM.transpose()*STM;
 // }
 

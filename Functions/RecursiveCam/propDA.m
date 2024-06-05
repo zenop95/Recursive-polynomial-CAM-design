@@ -47,6 +47,7 @@ fprintf(fid, '%2i\n',     pocType);
 fprintf(fid, '%40.16f\n', et);
 fprintf(fid, '%40.16f\n', Lsc);
 fprintf(fid, '%40.16f\n', mu);
+fprintf(fid, '%40.16f\n', pp.gravOrd);
 for j = 1:6 
     fprintf(fid, '%40.16f\n', x_pTCA(j));
 end
@@ -92,7 +93,6 @@ for i = 1:N
     fprintf(fid, '%2i\n', pp.isRet(i));
 end
 fclose(fid);
-aidaInit(pp);                                                         % Initialize AiDA dynamics (not needeed in paper)
 timeSubtr1 = toc(bb);                                                           % Exlude writing time from computation time measure
 xRet0 = [];
 %% Run the C++ Executable to perform the DA propagation

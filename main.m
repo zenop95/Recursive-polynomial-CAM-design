@@ -22,11 +22,11 @@ multiple = 0;                                                                   
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
 % fireTimes = [0.5 0 -0.5 -1.99];                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-returnTime = -1;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-fireTimes  = [2.5];                                                             % [-] Example of bi-impulsive maneuvers
-% fireTimes = [0.5 -0.5];                                                       % [-] Example of bi-impulsive maneuvers
+returnTime = 0;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+% fireTimes  = 2.5;                                                                 % [-] Example of bi-impulsive maneuvers
+% fireTimes = [0.5 2.5];                                                       % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
-% fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
+fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
 pp          = defineParams(pp,fireTimes,returnTime);                            % [-] (1,1) Include optimization paramters to parameters structure
 
@@ -37,7 +37,7 @@ n_man = pp.n_man;                                                               
 if N == 1 && pp.lowThrust; error(['The algorithm needs ' ...
         'at least two nodes to define the low-thrust window']); end
 if pp.fixedMag && pp.fixedDir; error(['Both magnitude and direction ' ...
-        '                  cannot be fixed at the same time']); end
+                            'cannot be fixed at the same time']); end
 
 m     = 3 - pp.fixedMag - 2*pp.fixedDir;  pp.m  = m;                            % [-] (1,1)  Number of optimization variables per node
 u     = zeros(m,n_man);                                                         % [-] (m,N)  Ctrl of the unperturbed trajectory
