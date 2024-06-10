@@ -13,7 +13,7 @@ function x = propCr3bp2dNoCtrl(x0,t,varargin)
 if nargin == 4 
     mu = varargin{1}; 
 else 
-    mu = 0.012150668; 
+    mu = 0.012150668;
 end
 options = odeset('AbsTol',1e-11);
 str     = ode45(@(t,y) grav(y,mu),[0,t],x0,options);
