@@ -41,3 +41,11 @@ CppExec/CMakeFiles/3.22.1/CMakeSystem.cmake
 CppExec/CMakeFiles/3.22.1/CMakeDetermineCompilerABI_CXX.bin
 CppExec/CMakeFiles/3.22.1/CMakeCXXCompiler.cmake
 CppExec/CMakeCache.txt
+CppExec/CGTProp
+*.o
+*.d
+*.cmake
+*.internal
+*.make
+*.ts
+*.txt
