@@ -33,3 +33,5 @@ target_link_libraries(polyProp PUBLIC dace::dace)
 add_executable(validatePoly validatePoly.cpp)
 target_link_libraries(validatePoly PUBLIC dace::dace)
 
+add_executable(CGTProp CGTProp.cpp)
+target_link_libraries(CGTProp PUBLIC dace::dace)
