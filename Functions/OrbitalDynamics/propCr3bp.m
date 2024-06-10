@@ -37,6 +37,5 @@ function dS = grav(state,mu)
     dS(4) = (2*V(2) + x - (1-mu)*(x+mu)/r1^3 - mu*(x+mu-1)/r2^3) + u(1);
     dS(5) = (-2*V(1) + y - (1-mu)*y/r1^3 - mu*y/r2^3) + u(2);
     dS(6) = (-(1-mu)*z/r1^3 - mu*z/r2^3) + u(3);
-    dS(3) = 0; dS(6) = 0;
     
 end
