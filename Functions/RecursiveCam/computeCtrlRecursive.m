@@ -45,10 +45,11 @@ end
 %% Higher-orders Dv
 iter = 0;                                                                       % [-] (1,1) Initialize iteration counter
 Yord = Y0;
+Yp = Y0;
 for k = 2:DAorder
     err  = 1;                                                                   % [-] (1,1) Initialize convergence variable
     DErr = 1;
-    alpha = 0.9;
+    alpha = .1;
     while err > tol && iter < maxIter
         iter = iter + 1;                                                        % [-] (1,1) Update iteration number
         if strcmpi(pp.solvingMethod,'lagrange')

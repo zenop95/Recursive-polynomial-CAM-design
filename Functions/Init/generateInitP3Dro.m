@@ -7,6 +7,11 @@ Vsc     = Lsc/Tsc;
 scale = [Lsc*ones(3,1); Vsc*ones(3,1)];
 x0p   = [1.085651235235736;   0.145497214083628; 0; 
          0.270119506385485;  -0.168117925812907; 0].*scale;
+x(:,1) = x0p([1,2,4,5])./scale([1,2,4,5]);
+% for j = 2:500
+%     x(:,j) = propCr3bp2dNoCtrl(x(:,j-1),[0,0.01],0.012153731135914043);
+% end
+% plot(x(1,1:end-15),x(2,1:end-15),'.')
 primary.x0 = x0p;
 primary.C0 = [[5.5e-2 2.5e-3 1.6e-3;
                2.5e-3 2.8e-2 1.4e-4;
@@ -54,6 +59,6 @@ pp = struct( ...
             'secondary', secondary, ...
             'n_conj',    1, ...
             'tca_sep',   0, ...
-            'T',         1 ...
+            'T',         4.85 ...
             );
 end

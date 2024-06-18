@@ -17,15 +17,19 @@ function pp = initOpt(multiple,cislunar,i)
 %(modifiable)
 if multiple && ~cislunar
     pp   = generateInitMultiple(multiple);
-    pp.T = pp.T/pp.Tsc;                                                             % [-]    (1,1) Scaled orbital period
+    pp.T         = pp.T/pp.Tsc;                                                     % [-]    (1,1) Scaled orbital period
 elseif ~multiple && cislunar
-    pp = generateInitNrho('perp');
+    pp = generateInitHalo();
+    % pp = generateInitLyapunovJpl();
+    % pp = generateInitNrho('perp');
     % pp = generateInitLyapunov();
     % pp = generateInitDro();
     % pp = generateInitP3Dro();
+    pp.T  = 1;                                                     % [-]    (1,1) Scaled orbital period
+
 else
     pp   = generateInitLeo(i);
-    pp.T = pp.T/pp.Tsc;                                                             % [-]    (1,1) Scaled orbital period
+    pp.T         = pp.T/pp.Tsc;                                                     % [-]    (1,1) Scaled orbital period
 end
 pp.gravOrd   = 0;                                                               % Order of the EGM2008 gravitational model
 

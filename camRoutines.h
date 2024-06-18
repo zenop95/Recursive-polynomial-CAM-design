@@ -330,8 +330,8 @@ DACE::AlgebraicVector<T> RK78(const int N, DACE::AlgebraicVector<T> Y0, DACE::Al
     const double BS = 20. * EPS;
 	
     H0_i=1e-14;
-    HS_i=1e+1;
-    H1_i=1e+5;	
+    HS_i=1e+5;
+    H1_i=1e+1;	
 	
 	const double H0=H0_i;
 	const double HS=HS_i;

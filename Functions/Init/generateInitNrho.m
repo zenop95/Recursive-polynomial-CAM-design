@@ -7,6 +7,11 @@ Tsc     = 375677;                                                        % [s]  
 Vsc     = Lsc/Tsc;
 scale = [Lsc*ones(3,1); Vsc*ones(3,1)];
 x0p = [0.877951855; 0; -0.192527194; 0; 0.227333284; 0].*scale;
+x(:,1) = x0p./scale;
+for j = 2:220
+    x(:,j) = propCr3bp(x(:,j-1),zeros(3,1),[0,0.01],0.012150668);
+end
+plot3(x(1,:),x(2,:),x(3,:),'.')
 primary.x0 = x0p;
 primary.C0 = [[5.5e-2 2.5e-3 1.6e-3;
                2.5e-3 2.8e-2 1.4e-4;
@@ -19,7 +24,7 @@ primary.Cd     = 2.2;            % [-] shape coefficient for drag
 primary.A_srp  = 1;              % [m^2] SRP surface area
 primary.Cr     = 1.31;           % [-] shape coefficient for SRP
 primary.cart0 = primary.x0;
-
+primary.T     = 2.152658;
 %% Secondary
 if strcmpi(conj,'parallel')
     x0s = [337790.22030754; 0; -74074.495159392; 
@@ -62,6 +67,6 @@ pp = struct( ...
             'secondary', secondary, ...
             'n_conj',    1, ...
             'tca_sep',   0, ...
-            'T',         1 ...
+            'T',         primary.T ...
             );
 end

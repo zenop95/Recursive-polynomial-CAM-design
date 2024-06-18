@@ -16,15 +16,15 @@ set(0,'DefaultTextFontName','Times', 'DefaultTextFontSize', 14);
 set(0,'DefaultUipanelFontName','Times', 'DefaultUipanelFontSize', 14);
 set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
-
+warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 %% User-defined inputs (modifiable)
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
-cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
+cislunar = 1;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
 % fireTimes = [0.5 0 -0.5 -1.99];                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-returnTime = 0;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-% fireTimes  = 2.5;                                                                 % [-] Example of bi-impulsive maneuvers
-fireTimes = [0.5 2.5];                                                       % [-] Example of bi-impulsive maneuvers
+returnTime = 0;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+fireTimes  = 12;                                                                 % [-] Example of bi-impulsive maneuvers
+% fireTimes = 2.5;                                                        % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
@@ -47,9 +47,10 @@ ctrl  = nan(3,n_man);                                                           
 %% Propagation
 timeSubtr0 = 0;
 if pp.flagStability && pp.cislunar
-    [CG,timeSubtr0] = Cauchy_Green_prop(1,u,pp);
+    [CGDir,timeSubtr0] = Cauchy_Green_prop(1,u,pp);
+    pp.fixedDir         = true;
+    pp.thrustDirections = CGDir(4:6);
 end
-
 timeSubtr1 = 0;
 tic
 % If the filtering routine is adpoted, first perform a first-order
@@ -115,7 +116,6 @@ metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...
 metricValPoly = 10^metricValPoly;
 % distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF./scale,1,[]), ...    
                             % pp.DAorder)*pp.Lsc;
-
 [~,~,~,x,xRet0] = propDA(1,ctrl,scale,1,pp);                                  % Validate the solution by forward propagating and computing the real PoC
 lim               = 10^lim;
 
