@@ -1,5 +1,5 @@
 function [maxEig,timeSubtr] = Cauchy_Green_prop(DAorder,u,pp)
-% propDA performs the DA propagation to build the NLP
+% Cauchy_Green_prop performs the DA propagation
 % 
 % INPUT:
 %        pp = [struct] optimization paramters structure
@@ -48,12 +48,15 @@ b = tic;
 
 %% Extract output from propagation
 s    = load("write_read/constPart.dat");
-STM  = reshape(s,6,6);                                                         
-CGT = STM'*STM;
-[evects,D] = eig(CGT);
-evals = diag(D);
-[~,a] = min(evals);
-maxEig = evects(:,a);
+STMs  = reshape(s,6,6,N-1);
+for i = 1:N-1
+    STM = STMs(:,:,i);
+    CGT = STM'*STM; CGT = CGT(4:6,4:6);
+    [evects,D] = eig(CGT);
+    evals(:,i) = diag(D);
+    [c(i),a(i)] = min(evals(:,i));
+    maxEig(:,i) = evects(:,a(i));
+end
 timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
 
 end

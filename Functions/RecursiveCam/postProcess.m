@@ -132,6 +132,8 @@ else
     xlabel('Time to TCA [days]')
 end
 legend('R','T','N','$|\cdot|$','interpreter','latex')
+if pp.cislunar && ~pp.lowThrust; legend('$\Delta V_x$','$\Delta V_y$','$\Delta V_z$','$||\Delta V||$','interpreter','latex'); end
+if pp.cislunar && pp.lowThrust; legend('u_x','u_y','u_z','$|\cdot|$','interpreter','latex'); end
 grid on
 axis tight
 set(gca,'xdir','reverse')

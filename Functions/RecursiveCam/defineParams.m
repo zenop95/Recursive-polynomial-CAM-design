@@ -13,7 +13,7 @@ function pp = defineParams(pp,nFire,nRet)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 %% Optimization parameters (modifiable)
-pp.DAorder       = 2;                                                           % [-]   (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
 % pp.objFunction   = 'fuel';
 pp.objFunction   = 'energy';
@@ -37,9 +37,10 @@ thrustMagnitude     = 0.1;                                                      
 pp.thrustMagnitude  = thrustMagnitude/pp.Asc/1e6;                               % [-]      (1,1) Scaled maximum acceleration
 pp.thrustDirections = repmat([0 1 0]',1,300);                                   % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
 pp.flagCA           = 1;
+pp.flagPoCTot       = 0;
 pp.flagTanSep       = 0;
 pp.flagAlt          = 0;
-pp.flagReturn       = 0;
+pp.flagReturn       = 1;
 %% Maneuvering times (should not be modified)
 if pp.cislunar; nFire = nFire/pp.Tsc*86400; nRet = nRet/pp.Tsc*86400; end       % transform days into synodic time units
 nConj      = -pp.tca_sep;                                                       % [-] (1,n_conj) Conjunction times after first TCA
@@ -76,7 +77,7 @@ if pp.flagCA
     limUp = log10(pp.PoCLim)*ones(1 + pp.n_conj*(pp.n_conj > 1),1);       
     limLo = -inf(1 + pp.n_conj*(pp.n_conj > 1),1);        
 end
-if pp.flagTanSep; limUp   = [limUp; -.1/pp.Lsc];   limLo = [limLo; -.2/pp.Lsc]; end
+if pp.flagTanSep; limUp   = [limUp; -.1/pp.Lsc];    limLo = [limLo; -.2/pp.Lsc]; end
 if pp.flagAlt;    limUp   = [limUp; 0];             limLo = [limLo; 0]; end
 if pp.flagReturn; limUp   = [limUp; pp.xReference]; limLo = [limLo; pp.xReference]; end
 pp.limUp = limUp;

@@ -7,11 +7,11 @@ Tsc     = 375677;                                                        % [s]  
 Vsc     = Lsc/Tsc;
 scale = [Lsc*ones(3,1); Vsc*ones(3,1)];
 x0p = [0.877951855; 0; -0.192527194; 0; 0.227333284; 0].*scale;
-x(:,1) = x0p./scale;
-for j = 2:220
-    x(:,j) = propCr3bp(x(:,j-1),zeros(3,1),[0,0.01],0.012150668);
-end
-plot3(x(1,:),x(2,:),x(3,:),'.')
+% x(:,1) = x0p./scale;
+% for j = 2:220
+%     x(:,j) = propCr3bp(x(:,j-1),zeros(3,1),[0,0.01],0.012150668);
+% end
+% plot3(x(1,:),x(2,:),x(3,:),'.')
 primary.x0 = x0p;
 primary.C0 = [[5.5e-2 2.5e-3 1.6e-3;
                2.5e-3 2.8e-2 1.4e-4;

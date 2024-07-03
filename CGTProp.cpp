@@ -24,7 +24,6 @@ int main(void)
     ifstream nodes, Input;
 	nodes.open("./write_read/initial_state.dat");
         nodes >> N;         // Number of nodes
-        nodes >> n_conj;    // Number of conjunctions
         nodes >> n_man;     // Number of control nodes
         nodes >> m;         // Number of DA variables per node
 	nodes.close();
@@ -58,32 +57,33 @@ int main(void)
     // Initialize DA variables
     AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrl(3), xRet(6); 
     // Define ballistic primary's position at first TCA 
-    for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
-    // backpropagation from first TCA
-    x0 = RK78(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[0], CR3BPsyn, musc, Lsc); // Cislunar Orbit
-    jj = 0;
-    k  = 0;
-
-    // stability of the monodromy matrix (Cauchy-Green Tensor) after an orbital period
-    for (j = 0; j < 6 ; j++) {
-        x0[j] = x0[j] + DA(j+1);
-    }    
-    ctrl = {0.0*DA(1), 0.0*DA(1), 0.0*DA(1)};
-    x0     = RK78(6, x0, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, T_orbit, CR3BPsyn, musc, Lsc); // Cislunar Orbit
-    AlgebraicMatrix<double> STM = stmDace(x0, 6, 6);
-    time1   = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
+    
     //open the output files
     ofstream constPart;
     constPart.open("./write_read/constPart.dat");
     constPart << setprecision(18);
-    for (j = 0; j < 6 ; j++) {
-    for (k = 0; k < 6 ; k++) {
-        constPart << STM.at(j,k) << endl;
+    for (i = 0; i < N-1 ; i++) {
+        for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
+        // backpropagation from first TCA
+        x0 = RK78(6, xBall, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, - t[i], CR3BPsyn, musc, Lsc); // Cislunar Orbit
+        jj = 0;
+        k  = 0;
+
+        // stability of the monodromy matrix (Cauchy-Green Tensor) after an orbital period
+        for (j = 0; j < 6 ; j++) {
+            x0[j] = x0[j] + DA(j+1);
+        }    
+        ctrl = {0.0*DA(1), 0.0*DA(1), 0.0*DA(1)};
+        x0     = RK78(6, x0, {0.0*DA(1),0.0*DA(1),0.0*DA(1)}, 0.0, T_orbit, CR3BPsyn, musc, Lsc); // Cislunar Orbit
+        AlgebraicMatrix<double> STM = stmDace(x0, 6, 6);
+        time1   = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
+
+        for (j = 0; j < 6 ; j++) {
+        for (k = 0; k < 6 ; k++) {
+            constPart << STM.at(j,k) << endl;
+        }
+        }
     }
-    }
-    // for (k = 0; k < 6 ; k++) {
-    //     constPart << cons(x0[k]) << endl;
-    // }
     constPart.close();
 
     // Do not consider writing time when calculating execution time

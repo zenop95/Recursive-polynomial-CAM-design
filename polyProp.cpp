@@ -107,7 +107,6 @@ int main(void)
     DA poc_tot, alpha, beta;
     // Define ballistic primary's position at first TCA 
     for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
-
     // backpropagation from first TCA
     if (dyn == 0) {
         if (gravOrd == 0) {
@@ -128,6 +127,7 @@ int main(void)
     jj     = 0;
     k      = 0;
     kk     = 0;
+
     // Propagations at each of the N discretization nodes included in t
     for (i = 0; i < N-1; i ++) {
         // If the node is a firing node, include the control in the form of a DA vector variable
@@ -205,7 +205,7 @@ int main(void)
             xRet = x0;
         }
     }
-
+    
 if (constraintFlags[0] == 1) {
     // Compute the total PoC resulting from the multiple conjunctions
     DA noCollisions = 1.0;

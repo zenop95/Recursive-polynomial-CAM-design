@@ -19,17 +19,17 @@ set(0,'defaultfigurecolor',[1 1 1])
 warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 %% User-defined inputs (modifiable)
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
-cislunar = 1;                                                                   % [-]     (1,1) flag to activate cislunar test case
+cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
-% fireTimes = [0.5 0 -0.5 -1.99];                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-returnTime = 0;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-fireTimes  = 12;                                                                 % [-] Example of bi-impulsive maneuvers
+fireTimes = [0.5, -0.5 0];                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+returnTime = -1;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+% fireTimes  = 1;                                                                 % [-] Example of bi-impulsive maneuvers
 % fireTimes = 2.5;                                                        % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
 pp          = defineParams(pp,fireTimes,returnTime);                            % [-] (1,1) Include optimization paramters to parameters structure
-
+pp.PoCLim = pp.PoCLim/max(multiple,1);
 %% Non-user defined
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 N  = pp.N;                                                                      % [-] (1,1) Number of nodes in the propagation
@@ -49,7 +49,7 @@ timeSubtr0 = 0;
 if pp.flagStability && pp.cislunar
     [CGDir,timeSubtr0] = Cauchy_Green_prop(1,u,pp);
     pp.fixedDir         = true;
-    pp.thrustDirections = CGDir(4:6);
+    pp.thrustDirections = CGDir;
 end
 timeSubtr1 = 0;
 tic
@@ -81,6 +81,10 @@ end
 aa=tic;
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
 [lim,coeff,timeSubtr,xBall] = propDA(pp.DAorder,u,scale,0,pp);
+if ~pp.flagPoCTot && multiple > 1
+    coeff(pp.n_conj+1) = [];
+    pp.n_constr = pp.n_constr - 1;
+end
 metric = coeff(1).C(1);
 %% Optimization
 if any(strcmpi(pp.solvingMethod,{'lagrange','convex','newton'}))

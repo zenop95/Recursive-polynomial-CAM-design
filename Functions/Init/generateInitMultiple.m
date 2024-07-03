@@ -43,17 +43,18 @@ xBall = [6776.60657980054	-1440.41220335898	-2817.87147274393	6890.04769213913	-
         4.46511210715953	-0.949088882882253	-1.85669802153613	4.53985855706779	-1.85669800839242;
         5.92540389975895	-1.25948348728602	-2.46392149479167	6.02459578904420	-2.46392147734939];
 tca_sep  = [0 1817.29381948244 7747.41049358302 11573.2922188092 15590.4680302967]/T; % time between the first conjunctions and the consecutive ones (first element must be zero)
-conj_id = [1 3 5 6];
+conj_id = [1 2 3 4 5];
 tca_sep = tca_sep(conj_id(1:n_conj));
 for j = 1:n_conj
     dx = toColumn(B(conj_id(j),3:8))-toColumn(B(conj_id(j),15:20));
-    % secondary(j).x0       = absState(:,j);         
-    secondary(j).x0       = xBall(:,conj_id(j)) - dx;         
+    secondary(j).x0       = absState(:,j);         
+%     secondary(j).x0       = xBall(:,conj_id(j)) - dx;         
     secondary(j).mass     = 260;          % [kg] mass
-    % secondary(j).C0       = [cov(:,:,j) zeros(3,3); zeros(3,6)];            % [km^2] [km^2/s^2] Covariance at TCA
-    secondary(j).C0       = [B(conj_id(j),21) B(conj_id(j),24) B(conj_id(j),25);
-                             B(conj_id(j),24) B(conj_id(j),22) B(conj_id(j),26);
-                             B(conj_id(j),25) B(conj_id(j),26) B(conj_id(j),23)];
+    cov = load("covsStarlink.mat").cov;
+    secondary(j).C0       = [cov(:,:,j) zeros(3,3); zeros(3,6)];            % [km^2] [km^2/s^2] Covariance at TCA
+%     secondary(j).C0       = [B(conj_id(j),21) B(conj_id(j),24) B(conj_id(j),25);
+%                              B(conj_id(j),24) B(conj_id(j),22) B(conj_id(j),26);
+%                              B(conj_id(j),25) B(conj_id(j),26) B(conj_id(j),23)];
     secondary(j).HBR      = primary.HBR + 0.003;         % [km]
     secondary(j).A_drag   = 1;            % [m^2] drag surface area
     secondary(j).Cd       = 2.2;          % [-] shape coefficient for drag
