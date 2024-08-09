@@ -113,8 +113,6 @@ a         = load("write_read/constPart.dat");
 for k = 1:n_conj
     xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
-timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
-lim = log10(PoCLim);
 
 
 coeff  = struct();
@@ -122,4 +120,6 @@ if ~validateFlag
     coeff  = LoadCOSY('write_read/constraints.dat', ...
                    (3-2*pp.fixedDir-pp.fixedMag)*pp.n_man,pp.n_constr,0);
 end
+timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
+lim = log10(PoCLim);
 end

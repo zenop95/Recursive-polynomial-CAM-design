@@ -40,7 +40,7 @@ pp.flagCA           = 1;
 pp.flagPoCTot       = 0;
 pp.flagTanSep       = 0;
 pp.flagAlt          = 0;
-pp.flagReturn       = 1;
+pp.flagReturn       = 0;
 %% Maneuvering times (should not be modified)
 if pp.cislunar; nFire = nFire/pp.Tsc*86400; nRet = nRet/pp.Tsc*86400; end       % transform days into synodic time units
 nConj      = -pp.tca_sep;                                                       % [-] (1,n_conj) Conjunction times after first TCA

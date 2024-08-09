@@ -21,7 +21,7 @@ set(0,'defaultfigurecolor',[1 1 1])
 
 %% Initialization variables
 multiple = 0;
-t_man = [0.5, -0.5 0];
+t_man = [0.5, 0];
 returnTime = -1;                                                           % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 for kk = 5
 for j = 1:2170
@@ -101,5 +101,5 @@ E2B(:,:,j) = e2b;
 % nodeThrust(:,j) = thrustNode;
 end
 clearvars -except errP errV dvs xs PoC compTime PB E2B xSec pp
-save(['simOutput/IAC/rec' num2str(pp.DAorder)])
+save(['simOutput/IAC/2Imp' num2str(pp.DAorder)])
 end

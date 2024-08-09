@@ -18,8 +18,6 @@ int main(void)
 {
     int j, i, k, ii, flag1, flag2, flag3, order, metricFlag, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn;
 	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, dt, musc, gravOrd;
-
-    long time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
  
     ifstream nodes;
 	nodes.open("./write_read/initial_state.dat");
@@ -61,9 +59,6 @@ int main(void)
             Input >> isRet[i];
         }
 	Input.close();
-
-    long time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
-    long timeSubtr = time2 - time1;
     
     if (dyn == 0) {
         if (gravOrd == 0) {
@@ -144,9 +139,4 @@ int main(void)
         constPart  << xRet[j] << endl;
     }
     constPart.close();
-
-    ofstream timeOut;
-    timeOut.open("./write_read/timeOut.dat");
-    timeOut << setprecision(16);
-    timeOut.close();
 }

@@ -541,4 +541,38 @@ DACE::AlgebraicVector<T> RK78(const int N, DACE::AlgebraicVector<T> Y0, DACE::Al
     return Y1;
 
 }
+
+DA findTCA(const AlgebraicVector<DA> xrel, const int nvar){
+
+  AlgebraicVector<DA> rr(3), vv(3), MAPD(nvar), MAPI(nvar), dx(nvar);
+
+  //relative velocities
+  rr[0] = xrel[0]; rr[1] = xrel[1]; rr[2] = xrel[2];
+  vv[0] = xrel[3]; vv[1] = xrel[4]; vv[2] = xrel[5];
+
+  // we want rr to be orthogonal to vv, so dot(rr,vv) = 0
+  DA rvdot = dot(rr,vv);
+  double rvdotcons = cons(rvdot);
+
+  // MAPD = (dot(rr,vv), dxx) = f(dxx, dt)
+  MAPD[0] = rvdot-rvdotcons;
+  for (int i = 1; i < nvar ; i++) {
+    MAPD[i] = DA(i);
+  }
+
+  // MAPI = (dxx, dt) = f(dot(rr,vv), dxx)
+  MAPI = MAPD.invert();
+
+  // we need to evaluate the map in -cons(dot(rr,vv)), dxx
+  dx[0] = - rvdotcons + 0*DA(1);
+  for (int i = 1; i < nvar ; i++){
+      dx[i] = DA(i);}
+  MAPD = MAPI.eval(dx);
+
+  // dt is the last row of the MAPD
+  DA tca = MAPD[nvar - 1];
+
+  return tca;
+}
+
 }

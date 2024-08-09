@@ -21,7 +21,7 @@ warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
-fireTimes = [0.5, -0.5 0];                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+fireTimes = [0.5 1];                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 returnTime = -1;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 % fireTimes  = 1;                                                                 % [-] Example of bi-impulsive maneuvers
 % fireTimes = 2.5;                                                        % [-] Example of bi-impulsive maneuvers
@@ -80,7 +80,9 @@ if pp.filterMans
 end
 aa=tic;
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
+tic
 [lim,coeff,timeSubtr,xBall] = propDA(pp.DAorder,u,scale,0,pp);
+toc - timeSubtr
 if ~pp.flagPoCTot && multiple > 1
     coeff(pp.n_conj+1) = [];
     pp.n_constr = pp.n_constr - 1;
