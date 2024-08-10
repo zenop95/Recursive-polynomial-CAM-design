@@ -154,7 +154,7 @@ for j = 1:pp.n_conj
 end
 legend('R','T','N','$|\cdot|$','interpreter','latex')
 hold off
-saveas(gcf, 'dv', 'epsc') %Save figure
+% saveas(gcf, 'dv', 'epsc') %Save figure
 
 % Ellipse B-plane
 for k = 1:pp.n_conj
@@ -201,7 +201,7 @@ for k = 1:pp.n_conj
     hold off
     axis equal
     box on
-    saveas(gcf, ['bp',num2str(k)], 'epsc') %Save figure
+%     saveas(gcf, ['bp',num2str(k)], 'epsc') %Save figure
 end
 
 end
