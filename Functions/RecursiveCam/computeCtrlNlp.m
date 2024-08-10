@@ -19,8 +19,8 @@ limUp    = pp.limUp;
 limLo    = pp.limLo;
 limLo(limLo == -inf) = -10;
 y0       = reshape(u,1,m*n_man);
-lb       = -5e-5*ones(m*n_man,1);
-ub       =  5e-5*ones(m*n_man,1);
+lb       = -ones(m*n_man,1);
+ub       =  ones(m*n_man,1);
 options  = optimoptions( ...
                        'fmincon',                           ...
                        'Display',               'none',     ...

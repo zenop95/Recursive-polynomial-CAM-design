@@ -15,7 +15,6 @@ function yf = computeCtrlRecursive(coeff,u,scale,pp)
 %-------------------------------------------------------------------------------
 n_constr = pp.n_constr;
 n_man    = pp.n_man;
-m        = pp.m;
 limUp    = pp.limUp;
 limLo    = pp.limLo;
 DAorder  = pp.DAorder;
@@ -27,11 +26,13 @@ DAArrays = cell(n_constr,DAorder);                                              
 DeltasUp = nan(n_constr,1);
 DeltasLo = nan(n_constr,1);
 for c = 1:n_constr
-    DeltasUp(c) = limUp(c) - coeff(c).C(1);                                     % [-] (1,1) Relative ditance for return residual
-    DeltasLo(c) = limLo(c) - coeff(c).C(1);                                     % [-] (1,1) Relative ditance for return residual
-    DAArrays{c,2}  = zeros(n);                                                  % [-] (cell) Initialize second-order in case only first-order is used
+    constPart = coeff(c).C(all(coeff(c).E==0,2));
+    if isempty(constPart); constPart = 0; end
+    DeltasUp(c) = limUp(c) - constPart;                                    % [-] (1,1) Relative ditance for return residual
+    DeltasLo(c) = limLo(c) - constPart;                                    % [-] (1,1) Relative ditance for return residual
+    DAArrays{c,2}  = zeros(n);                                             % [-] (cell) Initialize second-order in case only first-order is used
     for k = 1:DAorder
-        DAArrays{c,k} = buildDAArray(coeff(c).C,coeff(c).E,k);                  % [-] (cell) Build cell arrays for the DA expansion high-order tensors
+        DAArrays{c,k} = buildDAArray(coeff(c).C,coeff(c).E,k);             % [-] (cell) Build cell arrays for the DA expansion high-order tensors
     end
 end
 %% First-order Dv

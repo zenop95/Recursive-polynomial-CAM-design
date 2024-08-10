@@ -28,8 +28,8 @@ n_opt   = (m + 1)*n_man;
 grad = psuedoGradient(DAArrays,ctrl0,k,n_constr,n);
 
 %% Limits
-prob.bux = 1e-4*ones(n_opt,1);
-prob.blx = [-1e-4*ones(n_man*m,1); zeros(n_man,1)];
+prob.bux = ones(n_opt,1);
+prob.blx = [-ones(n_man*m,1); zeros(n_man,1)];
 
 %% Cost function
 switch pp.objFunction
@@ -44,11 +44,11 @@ switch pp.objFunction
 end
 
 %% Specify linear part of constraint
-prob.a   = [grad, zeros(n_constr,n_man)];
+prob.a   = [grad, zeros(n_constr,n_man)]*1e6;
 
 %% Specify constraint upper and lower bounds
-prob.blc = DeltasLo;
-prob.buc = DeltasUp;
+prob.blc = DeltasLo*1e6;
+prob.buc = DeltasUp*1e6;
 
 % %% Ctrl cones
 if strcmpi(pp.objFunction,'fuel')
@@ -63,8 +63,8 @@ param.MSK_DPAR_INTPNT_TOL_PFEAS    = 1e-11;
 % param.MSK_IPAR_INFEAS_REPORT_AUTO = 1;
 % [~,res]         = mosekopt('minimize anapro',prob,param);
 try
-    minorIter.feas  = res.sol.itr.prosta;                                  % [str] Extract state of the optimization solution
-    if strcmpi(minorIter.feas,'unknown')
+    feas  = res.sol.itr.prosta;                                  % [str] Extract state of the optimization solution
+    if strcmpi(feas,'unknown')
         warning('The optimizer could not find an optimal solution')
     end
     ctrl = res.sol.itr.xx(1:n);                                      % [-] (mN,1) Extract optimized vector
