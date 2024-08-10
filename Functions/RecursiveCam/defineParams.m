@@ -22,6 +22,8 @@ pp.solvingMethod = 'lagrange';                                                  
 % pp.solvingMethod = 'convex';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'fmincon';                                                
 pp.PoCLim        = 1e-6;                                                        % [-]   (1,1) PoC limit
+% pp.PoCLim        = 1e-2;                                                        % [-]   (1,1) PoC limit
+% pp.PoCLim        = (1/pp.Lsc)^2;                                               % [-]   (1,1) miss distance limit
 pp.nomDist       = 0.200/pp.Lsc;                                                % [-]   (1,1) Relative distance to achieve after 1 orbit
 
 %% Operational constraints (modifiable)
@@ -32,7 +34,6 @@ pp.fixedMag         = 0;                                                        
 pp.filterMans       = 0;                                                        % [bool]   (1,1) Filtered maneuver flag
 pp.maxMagConstr     = 0;                                                        % [bool]   (1,1) Filtered maneuver flag
 pp.nMans            = 5;                                                        % [bool]   (1,1) Selects how many impulses to use (only valid if filerMans==1)
-maxMag              = 0.1;                                                      % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if MaxMagConstr = true
 thrustMagnitude     = 0.1;                                                      % [mm/s^2] (1,1) Maximum acceleration if fixedMag = true
 pp.thrustMagnitude  = thrustMagnitude/pp.Asc/1e6;                               % [-]      (1,1) Scaled maximum acceleration
 pp.thrustDirections = repmat([0 1 0]',1,300);                                   % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
@@ -41,6 +42,11 @@ pp.flagPoCTot       = 0;
 pp.flagTanSep       = 0;
 pp.flagAlt          = 0;
 pp.flagReturn       = 0;
+pp.flagErrReturn    = 0;
+pp.flagCtrlMax      = 0;
+ctrlMax             = 0.01;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
+pp.ctrlMax          = ctrlMax/(pp.Asc*pp.lowThrust + pp.Vsc*~pp.lowThrust)/1e6;
+% pp.ctrlMax          = 1;                                                   
 %% Maneuvering times (should not be modified)
 if pp.cislunar; nFire = nFire/pp.Tsc*86400; nRet = nRet/pp.Tsc*86400; end       % transform days into synodic time units
 nConj      = -pp.tca_sep;                                                       % [-] (1,n_conj) Conjunction times after first TCA
@@ -63,7 +69,7 @@ pp.isConj   = ismember(pp.ns,nConj);                                            
 pp.t        = pp.ns*pp.T;                                                        % [-] (1,N) Time before TCA for each node (orbits for LEO, a-dimensional time units for Cislunar)
 pp.n_man    = sum(pp.canFire);                                                   % [-] (1,1) Total number of firing nodes
 pp.n_constr = pp.flagCA*(1 + pp.n_conj*(pp.n_conj > 1))  + pp.flagTanSep ...
-                                         + pp.flagAlt + 6*pp.flagReturn;
+              + pp.flagAlt + 6*pp.flagReturn + pp.flagErrReturn;% + pp.n_man;
 
 %% Reference for return
 r2e_p         = rtn2eci(pp.x_pTCA(1:3),pp.x_pTCA(4:6));                         % [-] (3,3) RTN to ECI rotation matrix for primary in Earth Orbit 
@@ -73,13 +79,20 @@ pp.xReference = pp.x_pTCA;% + [r2e_p*[pp.nomDist; 0; 0]; 0; 0; 0];
 %% Targets of the constraints
 limUp      = [];
 limLo      = [];
-if pp.flagCA    
-    limUp = log10(pp.PoCLim)*ones(1 + pp.n_conj*(pp.n_conj > 1),1);       
-    limLo = -inf(1 + pp.n_conj*(pp.n_conj > 1),1);        
+if pp.flagCA
+    if pp.pocType == 3
+        limUp = pp.PoCLim*ones(1 + pp.n_conj*(pp.n_conj > 1),1);       
+        limLo = inf(1 + pp.n_conj*(pp.n_conj > 1),1);
+    else
+        limUp = log10(pp.PoCLim)*ones(1 + pp.n_conj*(pp.n_conj > 1),1);       
+        limLo = -inf(1 + pp.n_conj*(pp.n_conj > 1),1);
+    end
 end
-if pp.flagTanSep; limUp   = [limUp; -.1/pp.Lsc];    limLo = [limLo; -.2/pp.Lsc]; end
-if pp.flagAlt;    limUp   = [limUp; 0];             limLo = [limLo; 0]; end
-if pp.flagReturn; limUp   = [limUp; pp.xReference]; limLo = [limLo; pp.xReference]; end
+if pp.flagTanSep;    limUp   = [limUp; -.1/pp.Lsc];     limLo = [limLo; -.2/pp.Lsc]; end
+if pp.flagAlt;       limUp   = [limUp; 0];              limLo = [limLo; 0]; end
+if pp.flagErrReturn; limUp   = [limUp; 0];              limLo = [limLo; 0]; end
+if pp.flagReturn;    limUp   = [limUp; pp.xReference];  limLo = [limLo; pp.xReference]; end
+if pp.flagCtrlMax;   limUp = [limUp; ones(pp.n_man,1)]; limLo = [limLo; zeros(pp.n_man,1)]; end 
 pp.limUp = limUp;
 pp.limLo = limLo;
 
