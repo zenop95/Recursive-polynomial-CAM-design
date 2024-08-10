@@ -16,8 +16,8 @@ using namespace cam;
 
 int main(void)
 {
-    int j, jj, kk, i, k, vv, flag1, flag2, flag3, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn;
-	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, musc, gravOrd;
+    int j, jj, kk, i, k, vv, flag1, flag2, flag3, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd;
+	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, musc, ctrlMax;
 
     long time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     
@@ -31,7 +31,7 @@ int main(void)
     // Initialize variable
     AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
     AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3);
-    AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(4);
+    AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(6);
     // Write input from .dat
 	Input.open("./write_read/initial_state.dat");
         Input >> N;               // Number of nodes
@@ -46,6 +46,7 @@ int main(void)
         Input >> Lsc;             // Length scale
         Input >> musc;            // Gravitational constant
         Input >> gravOrd;            // Gravitational constant
+        Input >> ctrlMax;            // ctrlMax
         for (j = 0; j < 6; j ++) {
             Input >> xdum[j];           // Write dummy variable for the primary's ECI state at the first conjunction from input
         }
@@ -79,7 +80,7 @@ int main(void)
                 Input >> directions.at(j,i); // Write maneuver direction in RTN if the direction is fixed
             }
         }
-        for (i = 0; i < 4; i ++) {
+        for (i = 0; i < 6; i ++) {
             Input >> constraintFlags[i];
         }
         for (i = 0; i < n_man; i ++) {
@@ -164,10 +165,10 @@ int main(void)
             kk ++;
             // In Cislunar optimization do not tranform to RTN because we are in the synodic frame
             if (dyn == 0) {
-                ctrl = r2e*ctrlRtn;
+                ctrl = r2e*ctrlRtn*ctrlMax;
             }
             else {
-                ctrl = ctrlRtn;
+                ctrl = ctrlRtn*ctrlMax;
             }
             // If impulsive, the control is added to the velocity part of the state and the acceleration is null
             if (lowThrust_flag == 0) {
@@ -205,7 +206,6 @@ int main(void)
             xRet = x0;
         }
     }
-    
 if (constraintFlags[0] == 1) {
     // Compute the total PoC resulting from the multiple conjunctions
     DA noCollisions = 1.0;
@@ -240,6 +240,10 @@ if (constraintFlags[0] == 1) {
             poc[k] = ConstPoC(r_rel,P_B,HBR[k]);}
         else if (pocType == 1) {
             poc[k] = ChanPoC(r_rel,P_B,HBR[k],3);}
+        else if (pocType == 2) {
+            poc[k] = MaxPoC(r_rel,P_B,HBR[k]);}
+        else if (pocType == 3) {
+            poc[k] = dot(r_rel,r_rel);}
         else {
             throw std::runtime_error("the metric flag must be in the interval [1,3] and the PoC type must be in the interval [0,1]");}
         // Probability of no collision
@@ -247,7 +251,12 @@ if (constraintFlags[0] == 1) {
     }
 
     // Final PoC comprehensive of all the conjunctions
-    poc_tot = log10(1.0 - noCollisions);
+    if (pocType == 3) {
+        poc_tot = poc[0];
+    }
+    else {
+        poc_tot = log10(1.0 - noCollisions);
+    }
 }
 
 DA tan, radial;
@@ -291,7 +300,12 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     if (constraintFlags[0] == 1) {
         if (n_conj > 1) {
             for (k = 0; k < n_conj; k ++) {
+            if  (pocType == 3) {
+                constraints << poc[k] << endl;
+            }
+            else {    
                 constraints << log10(poc[k]) << endl;
+            }
             }
         }
         constraints << poc_tot << endl;
@@ -313,10 +327,16 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
         constraints << xRet[j]        << endl;
         }
     }
+
     if (constraintFlags[4] == 1) {
-        
+        constraints << pow(xRet - xdum, 2)  << endl;
     }
 
+    if (constraintFlags[5] == 1) {
+        for (j = 0; j < n_man; j ++) {
+            constraints << DA(1 + j*m)*DA(1 + j*m) + DA(2 + j*m)*DA(2 + j*m) + DA(3 + j*m)*DA(3 + j*m) << endl;
+        }
+    }
     // Do not consider writing time when calculating execution time
     time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     timeSubtr = timeSubtr + time2 - time1;

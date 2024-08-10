@@ -16,8 +16,8 @@ using namespace cam;
 
 int main(void)
 {
-    int j, i, k, ii, flag1, flag2, flag3, order, metricFlag, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn;
-	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, dt, musc, gravOrd, ctrlMax;
+    int j, i, k, ii, flag1, flag2, flag3, order, metricFlag, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd;
+	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, dt, musc, ctrlMax;
  
     ifstream nodes;
 	nodes.open("./write_read/initial_state.dat");

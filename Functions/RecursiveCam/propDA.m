@@ -47,7 +47,8 @@ fprintf(fid, '%2i\n',     pocType);
 fprintf(fid, '%40.16f\n', et);
 fprintf(fid, '%40.16f\n', Lsc);
 fprintf(fid, '%40.16f\n', mu);
-fprintf(fid, '%40.16f\n', pp.gravOrd);
+fprintf(fid, '%2i\n',     pp.gravOrd);
+fprintf(fid, '%40.16f\n', pp.ctrlMax);
 for j = 1:6 
     fprintf(fid, '%40.16f\n', x_pTCA(j));
 end
@@ -82,6 +83,8 @@ if ~validateFlag
     fprintf(fid, '%2i\n', pp.flagTanSep);
     fprintf(fid, '%2i\n', pp.flagAlt);
     fprintf(fid, '%2i\n', pp.flagReturn);
+    fprintf(fid, '%2i\n', pp.flagErrReturn);
+    fprintf(fid, '%2i\n', pp.flagCtrlMax);
 end
 for i = 1:length(u) 
     fprintf(fid, '%40.16f\n', u(i));
@@ -112,6 +115,12 @@ b = tic;
 a         = load("write_read/constPart.dat");                                                         
 for k = 1:n_conj
     xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
+end
+timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
+if pp.pocType == 3
+    lim = PoCLim;
+else
+    lim = log10(PoCLim);
 end
 
 

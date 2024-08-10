@@ -56,6 +56,106 @@ template<typename T> AlgebraicVector<T> keplerPropAcc(AlgebraicVector<T> x, Alge
 
 //---------------------------------------------------------------------
 
+template<typename T, typename U> DACE::AlgebraicVector<T> 
+	KeplerProp(const DACE::AlgebraicVector<T>& rv, const U& t, const double mu){
+
+    int ord =  DACE::DA::getMaxOrder();
+
+    DACE::AlgebraicVector<T> rv_fin(6);
+    DACE::AlgebraicVector<T> rr0(3), vv0(3);
+    for (int i=0; i<3; i++) {
+        rr0[i] = rv[i];
+        vv0[i] = rv[i+3];
+    }
+    DACE::AlgebraicVector<T> hh = DACE::cross(rr0,vv0);
+    T h = DACE::vnorm(hh);
+    T r0 = DACE::vnorm(rr0);
+    T v0 = DACE::vnorm(vv0);
+
+    T a = mu/(2*mu/r0 -v0*v0);
+    T p = h*h/mu;
+    T sigma0 = DACE::dot(rr0,vv0)/std::sqrt(mu);
+
+    double tol = 1.0;
+    int iter = 0;
+    double scl = 1e-4;
+
+    T F, Ft, G, Gt;
+
+    if (DACE::cons(a)>0) {
+
+        T MmM0 = t * sqrt(mu/a/a/a);
+        T EmE0 = DACE::cons(MmM0);
+
+        while ( tol>1e-13 || iter < ord + 1) {
+			iter++;
+			T fx0 = -(MmM0) + (EmE0) + (sigma0)/sqrt((a))*
+				(1 - cos((EmE0))) - (1-(r0)/(a)) * sin((EmE0));
+			T fxp = 1 + (sigma0)/sqrt((a)) * sin((EmE0)) - 
+				(1-(r0)/(a)) * cos((EmE0));
+			tol = std::fabs(DACE::cons(fx0/fxp));
+			EmE0 = EmE0 - fx0/fxp;
+        }
+
+
+        T theta = 2*atan2_mod(sqrt(a*p)*tan(EmE0/2), r0 + sigma0*sqrt(a)*tan(EmE0/2));
+        T r = p*r0 / (r0 + (p-r0)*cos(theta) - sqrt(p)*sigma0*sin(theta));
+
+        //{compute the Lagrangian coefficients}
+        F = 1 - a/r0 * (1 - cos(EmE0)) ;
+        G = a*sigma0/sqrt(mu)*(1 - cos(EmE0)) + r0 * sqrt(a/mu) * sin(EmE0);
+        Ft = - sqrt(mu*a)/(r*r0) * sin(EmE0);
+        Gt = 1 - a/r * (1-cos(EmE0));
+    }
+    else {
+        std::cout << "Negative semimajor axis" << std::endl;
+        T NmN0 = t*sqrt(-mu/a/a/a);
+        T HmH0 = 0.0;
+
+
+        while(tol>1e-14 || iter < ord + 1){
+            iter ++;
+            T fx0 = - (NmN0) - (HmH0) + (sigma0)/sqrt((-a)) * 
+				(-1 + cosh((HmH0))) + (1-(r0)/(a)) * sinh((HmH0)) ;
+            T fxp = -1 + (sigma0)/sqrt((-a))*sinh((HmH0)) + 
+				(1-(r0)/(a))*cosh((HmH0));
+            tol = std::abs(DACE::cons(fx0/fxp));
+            HmH0 = HmH0 - fx0/fxp;
+        }
+
+
+        for( iter=0; iter<ord; iter++){
+            T fx0 = - (NmN0) - HmH0 + (sigma0)/sqrt((-a)) * 
+				(-1 + cosh(HmH0)) + (1-(r0)/(a)) * sinh(HmH0) ;
+            T fxp = -1 + (sigma0)/sqrt((-a))*sinh(HmH0) + 
+				(1-(r0)/(a))*cosh(HmH0);
+            HmH0 = HmH0 - fx0/fxp;
+        }
+
+        //{DACE::DA expansion of HmH0 parameter}
+        double Htemp, DE = 1.0;
+
+        F = 1 - a/r0 * (1 - cosh(HmH0));
+        G = a*sigma0/sqrt(mu)*(1 - cosh(HmH0)) + r0 * sqrt(-a/mu) * sinh(HmH0);
+
+        DACE::AlgebraicVector<T> rv_temp(3);
+        for (int i=0; i<3; i++) {
+            rv_temp[i] = F * rr0[i] + G * vv0[i];
+        }
+        T r = DACE::vnorm(rv_temp);
+        Ft = - sqrt(mu*(-a))/(r*r0) * sinh(HmH0);
+        Gt = 1 - a/r*(1-cosh(HmH0));
+    }
+
+    for (int i=0 ; i<3; i++) {
+        rv_fin[i] = F * rr0[i] + G * vv0[i];
+        rv_fin[i+3] = Ft * rr0[i] + Gt * vv0[i];
+    }
+    return rv_fin;
+}
+
+//---------------------------------------------------------------------
+
 template<typename T> AlgebraicVector<T> CR3BPsyn(AlgebraicVector<T> x, AlgebraicVector<T> u, double t, double mu, double Lsc)
 {
     
@@ -218,7 +318,7 @@ template<typename T> T ConstPoC(AlgebraicVector<T> r, AlgebraicMatrix<double> P,
 
 template<typename T> T MaxPoC(AlgebraicVector<T> r, AlgebraicMatrix<double> P, double R){
   
-    // Constant PoC on B-plane
+    // Maximum PoC on B-plane
     AlgebraicMatrix<double> P_inv(2,2);
     double det = det2(P);
     P_inv = P.inv();
@@ -575,4 +675,233 @@ DA findTCA(const AlgebraicVector<DA> xrel, const int nvar){
   return tca;
 }
 
+template<typename T> AlgebraicVector<T> cart2kep(const AlgebraicVector<T>& rv, const double mu)
+{
+    AlgebraicVector<T> kep(6);
+    
+    AlgebraicVector<T> rr(3), vv(3);
+    for (int i = 0; i < 3; i++)
+    {
+        rr[i] = rv[i];
+        vv[i] = rv[i + 3];
+    }
+    
+    T r = rr.vnorm();
+    T v = vv.vnorm();
+    AlgebraicVector<T> h = cross(rr, vv);
+    
+    kep[0] = mu / (2.0 * (mu / r - pow(v, 2) / 2.0));
+    
+    T h1sqr = pow(h[0], 2);
+    T h2sqr = pow(h[1], 2);
+    
+    T RAAN;
+    if (cons(h1sqr + h2sqr) == 0.0)
+    {
+        RAAN = 0.0;
+    }
+    else
+    {
+        T sinOMEGA = h[0] / sqrt(h1sqr + h2sqr);
+        T cosOMEGA = -1.0*h[1] / sqrt(h1sqr + h2sqr);
+        if (cons(cosOMEGA) >= 0.0)
+        {
+            if (cons(sinOMEGA) >= 0.0)
+            {
+                RAAN = asin(h[0] / sqrt(h1sqr + h2sqr));
+            }
+            else
+            {
+                RAAN = 2.0 * M_PI + asin(h[0] / sqrt(h1sqr + h2sqr));
+            }
+        }
+        else
+        {
+            if (cons(sinOMEGA) >= 0.0)
+            {
+                RAAN = acos(-1.0*h[1] / sqrt(h1sqr + h2sqr));
+            }
+            else
+            {
+                RAAN = 2.0 * M_PI - acos(-1.0*h[1] / sqrt(h1sqr + h2sqr));
+            }
+        }
+    }
+    
+    //RAAN = real(RAAN);
+    
+    AlgebraicVector<T> ee = 1.0 / mu*(cross(vv, h)) - rr / vnorm(rr);
+    T e = vnorm(ee);
+    T i = atan2_mod(sqrt(h[0]*h[0]+h[1]*h[1]),h[2]);
+    // T i = acos(h[2] / vnorm(h));
+
+    kep[1] = e;
+    kep[2] = i;
+    kep[3] = RAAN;
+    
+    T omega;
+    T theta;
+    if (cons(e) <= 1.0e-8 && cons(i) < 1.0e-8)
+    {
+        e = 0.0;
+        omega = atan2_mod(rr[1], rr[0]);
+        theta = 0.0;
+        kep[4] = omega;
+        kep[5] = theta;
+        return kep;
+    }
+    
+    if (cons(e) <= 1.0e-8 && cons(i) >= 1.0e-8)
+    {
+        omega = 0;
+        AlgebraicVector<T> P(3), Q(3), W(3);
+        P[0] = cos(omega)*cos(RAAN) - sin(omega)*sin(i)*sin(RAAN);
+        P[1] = -1.0*sin(omega)*cos(RAAN) - cos(omega)*cos(i)*sin(RAAN);
+        P[2] = sin(RAAN)*sin(i);
+        Q[0] = cos(omega)*sin(RAAN) + sin(omega)*cos(i)*cos(RAAN);
+        Q[1] = -1.0*sin(omega)*sin(RAAN) + cos(omega)*cos(i)*cos(RAAN);
+        Q[2] = -1.0*cos(RAAN)*sin(i);
+        W[0] = sin(omega)*sin(i);
+        W[1] = cos(omega)*sin(i);
+        W[2] = cos(i);
+        AlgebraicVector<T> rrt = P*rr[0] + Q*rr[1] + W*rr[2];
+        theta = atan2_mod(rrt[1], rrt[0]);
+        kep[4] = omega;
+        kep[5] = theta;
+        return kep;
+    }
+    
+    T dotRxE = dot(rr, ee);
+    T RxE = vnorm(rr)*vnorm(ee);
+    if (abs(cons(dotRxE)) > abs(cons(RxE)) && abs(cons(dotRxE)) - abs(cons(RxE)) < abs(numeric_limits<double>::epsilon()*cons(dotRxE)))
+    {
+        dotRxE -= numeric_limits<double>::epsilon()*dotRxE;
+    }
+    theta = acos(dotRxE / RxE);
+    
+    if (cons(dot(rr, vv)) < 0.0)
+    {
+        theta = 2.0 * M_PI - theta;
+    }
+    
+    if (cons(i) <= 1.0e-8 && cons(e) >= 1.0e-8)
+    {
+        i = 0.0;
+        omega = atan2_mod(ee[1], ee[0]);
+        kep[4] = omega;
+        kep[5] = theta;
+        return kep;
+    }
+    
+    T sino = rr[2] / r / sin(i);
+    T coso = (rr[0] * cos(RAAN) + rr[1] * sin(RAAN)) / r;
+    T argLat;
+
+    if (cons(coso) >= 0.0)
+    {
+        if (cons(sino) >= 0.0)
+        {
+            argLat = asin(rr[2] / r / sin(i));
+        }
+        else
+        {
+            argLat = 2.0 * M_PI + asin(rr[2] / r / sin(i));
+        }
+    }
+    else
+    {
+        if (cons(sino) >= 0.0)
+        {
+            argLat = acos((rr[0] * cos(RAAN) + rr[1] * sin(RAAN)) / r);
+        }
+        else
+        {
+            argLat = 2.0 * M_PI - acos((rr[0] * cos(RAAN) + rr[1] * sin(RAAN)) / r);
+        }
+    }
+    //argLat = real(argLat);
+    omega = argLat - theta;
+    
+    if (cons(omega) < 0.0)
+    {
+        omega = omega + 2.0 * M_PI;
+    }
+    //omega = real(omega);
+    
+    kep[4] = omega;
+    kep[5] = theta;
+    
+    return kep;
+}
+
+
+template <typename T> AlgebraicVector<T> mee2cart(AlgebraicVector<T> & Mee, const double mu)
+{
+    T p       = Mee[0];
+    T f       = Mee[1];
+    T g       = Mee[2];
+    T h       = Mee[3];
+    T k       = Mee[4];
+    T L       = Mee[5];
+
+    T q           = 1.0 + f * cos(L) + g * sin(L);
+    T r           = p / q;
+    T alpha2      = h*h - k*k;
+    T chi2        = h*h + k*k;
+    T s2          = 1.0 + chi2;
+
+    DACE::AlgebraicVector<T> res(6);
+    res[0] = r / s2 * ( cos(L) + alpha2 * cos(L) + 2 * h * k * sin(L) );
+    res[1] = r / s2 * ( sin(L) - alpha2 * sin(L) + 2 * h * k * cos(L) );
+    res[2] = 2 * r / s2 * ( h * sin(L) - k * cos(L) );
+    res[3] = - 1 / s2 * sqrt(mu/p) * ( sin(L) + alpha2 * sin(L) - 2 * h * k * cos(L) + g - 2 * f * h * k + alpha2 * g );
+    res[4] = - 1 / s2 * sqrt(mu/p) * ( -cos(L) + alpha2 * cos(L) + 2 * h * k * sin(L) - f + 2 * g * h * k + alpha2 * f );
+    res[5] = 2 / s2 * sqrt(mu/p) * ( h * cos(L) + k * sin(L) + f * h + g * k);
+    
+    return res;
+}
+
+template <typename T> AlgebraicVector<T> coe2mee(AlgebraicVector<T> & coe)
+{
+
+AlgebraicVector<T> mee(6); 
+T a       = coe[0];
+T ecc     = coe[1];
+T in      = coe[2];
+T Om      = coe[3];
+T om      = coe[4];
+T theta   = coe[5];
+T dL;
+double consL;
+
+T p = a * ( 1 - ecc*ecc);
+T f = ecc * cos(om + Om);
+T g = ecc * sin(om + Om);
+T h = tan(in/2) * cos(Om);
+T k = tan(in/2) * sin(Om);
+T L = Om + om + theta;
+
+// Keep the anomaly between 0 and 2pi
+if (abs(cons(L)) > 6.28318530718) {
+  consL = std::fmod(cons(L), 6.28318530718);
+  dL = L - cons(L);
+  L = consL + dL;
+}
+if (cons(L) < 0.0) {
+  L = L + 6.28318530718;
+}
+mee = {p, f, g, h, k, L};
+
+return mee;
+}
+
+template <typename T> AlgebraicVector<T> cart2mee(AlgebraicVector<T> & rv, const double mu)
+{
+    double consMee;
+    AlgebraicVector<T> coe(6), mee(6);
+    coe = cart2kep(rv, mu);
+
+    mee = coe2mee(coe);
+    return mee;
+}
 }

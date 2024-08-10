@@ -21,20 +21,17 @@ Lsc        = pp.Lsc;
 Vsc        = pp.Vsc;
 x_sTCA     = pp.x_sTCA;
 P          = pp.P;
+pp.t       = -pp.t;
 %nodes for low-thrust
 if pp.lowThrust
     t_lt            = pp.t; 
-    t_lt(pp.isConj) = [];
+%     t_lt(pp.isConj) = [];
     dt_lt           = diff(t_lt); 
     dt_lt           = abs(dt_lt(pp.canFire));
     s               = strfind(pp.canFire',[1 0]) + 1; % Nodes in which the thruster is shut-off
-    if length(s) > 1
-        for j = 1:length(s)-1
-            tt(:,j) = linspace(pp.t(s(j))-1e-6,pp.t(s(j)+1)+1e-6,2); 
-        end
-        ttt = [reshape(tt,[],1);pp.t(end-1)-1e-6];
-    else
-        ttt = pp.t(s)-1e-6;
+    ttt = [];
+    for j = 1:length(s)
+        ttt = [ttt; pp.t(s(j))-1e-6];
     end
 end
 % compute PoC after maneuver
@@ -48,12 +45,23 @@ for k = 1:pp.n_conj
     PB     = e2b*P(:,:,k)*e2b';
     p      = e2b*(x(1:3)-x_s(1:3));
     smd    = dot(p,PB\p);
-    PoC(k) = poc_Chan(pp.HBR(k),PB,smd,3);                                        % [-] (1,1) PoC computed with Chan's formula
+    switch pp.pocType
+    case 0
+        PoC(k) = constantPc(p,PB,pp.HBR(k));                                   % [-] (1,1) PoC computed with Chan's formula
+    case 1
+        PoC(k) = poc_Chan(pp.HBR(k),PB,smd,3);                                 % [-] (1,1) PoC computed with Chan's formula
+    case 2
+        PoC(k) = maximumPc(p,PB,pp.HBR(k));                                   % [-] (1,1) PoC computed with Chan's formula
+    case 3
+        PoC(k) = norm(p)*pp.scaling(1);                                   % [-] (1,1) PoC computed with Chan's formula
+    otherwise
+        error('invalid PoC type')
+    end
 end
 poc_tot = PoCTot(PoC);
 
 % Validate return
-if pp.flagReturn || pp.flagTanSep
+if pp.flagReturn || pp.flagErrReturn || pp.flagTanSep
     errRetEci = xManRet - pp.xReference;
     r2e = rtn2eci(xManRet(1:3),xManRet(4:6));
     errRetRtn = r2e'*errRetEci(1:3);
@@ -79,14 +87,18 @@ disp(['PoC after validation ',num2str(poc_tot)]);
 if pp.flagTanSep
     disp(['Tangential distance in return ',num2str(tanErr*1e3), ' m']);
 end
-if pp.flagReturn
+if pp.flagReturn || pp.flagErrReturn
     disp(['Position error in return ',num2str(norm(errRetEci(1:3))*pp.Lsc*1e3), ' m']);
     disp(['Velocity error in return ',num2str(norm(errRetEci(4:6))*pp.Vsc*1e6), ' mm/s']);
 end
-disp(['Limit: ',num2str(lim)])
+if pp.pocType == 3
+    disp(['Limit: ',num2str(sqrt(lim)*pp.Lsc), ' km'])
+else
+    disp(['Limit: ',num2str(lim)])
+end
 ctrlNorm = normOfVec(ctrl);
 
-figure()
+figure('Renderer', 'painters', 'Position', [300 300 560 150])
 if ~pp.lowThrust
     ctrl(ctrl==0) = nan;
     if ~pp.cislunar
@@ -102,10 +114,10 @@ if ~pp.lowThrust
     plot(t(ctrlNorm==0),ctrlNorm(ctrlNorm==0),'color','k')
     ylabel('$\Delta v$ [mm/s]')
 else
-    ctrl = ctrl*pp.Asc*1e6;
+    ctrlN = ctrl*pp.Asc*1e6;
     for i = 2:pp.N
         if ~pp.canFire(i) && pp.canFire(i-1)
-            ctrl = [ctrl(:,1:i-1) zeros(3,1) ctrl(:,i:end)];
+            ctrlN = [ctrlN(:,1:i-1) zeros(3,1) ctrlN(:,i:end)];
         end
     end
     [t,o] = sort([pp.t;ttt],'descend');
@@ -114,12 +126,12 @@ else
     else
         t  = t*pp.Tsc/86400;
     end
-    ctrl  = [ctrl, zeros(3,length(ttt)+1)];
-    ctrl  = ctrl(:,o);
-    xq = linspace(t(1),t(end),100000);
-    ctrlInt(1,:) = interp1(t,ctrl(1,:),xq,'next');
-    ctrlInt(2,:) = interp1(t,ctrl(2,:),xq,'next');
-    ctrlInt(3,:) = interp1(t,ctrl(3,:),xq,'next');
+    ctrlN  = [ctrlN, zeros(3,length(t)-size(ctrlN,2))];
+    ctrlN  = ctrlN(:,o);
+    xq = linspace(t(1),t(end),1000);
+    ctrlInt(1,:) = interp1(t,ctrlN(1,:),xq,'previous');
+    ctrlInt(2,:) = interp1(t,ctrlN(2,:),xq,'previous');
+    ctrlInt(3,:) = interp1(t,ctrlN(3,:),xq,'previous');
     ctrlNorm = normOfVec(ctrlInt);
     plot(xq,ctrlInt','LineWidth',2)
     hold on
@@ -127,17 +139,22 @@ else
     ylabel('$a$ [mm/s2]')
 end
 if ~pp.cislunar
-    xlabel('Orbits to TCA [-]')
+    xlabel('Number of orbits [-]')
 else
     xlabel('Time to TCA [days]')
 end
-legend('R','T','N','$|\cdot|$','interpreter','latex')
 if pp.cislunar && ~pp.lowThrust; legend('$\Delta V_x$','$\Delta V_y$','$\Delta V_z$','$||\Delta V||$','interpreter','latex'); end
 if pp.cislunar && pp.lowThrust; legend('u_x','u_y','u_z','$|\cdot|$','interpreter','latex'); end
 grid on
 axis tight
-set(gca,'xdir','reverse')
+yl = ylim;
+conjs = pp.t(pp.isConj)/pp.T;
+for j = 1:pp.n_conj
+    plot(conjs(j)*ones(1,2),yl,'k--')
+end
+legend('R','T','N','$|\cdot|$','interpreter','latex')
 hold off
+saveas(gcf, 'dv', 'epsc') %Save figure
 
 % Ellipse B-plane
 for k = 1:pp.n_conj
@@ -152,6 +169,11 @@ for k = 1:pp.n_conj
         smdLim   = -2*log(2*pp.PoCLim*sqrt(det(PB))/pp.HBR(k)^2);        % [-] (1,1) SMD limit computed with Alfriend and Akella's formula
     case 1
         smdLim   = PoC2SMD(PB, pp.HBR(k), pp.PoCLim, 3, 1, 1e-3, 200);   % [-] (1,1) SMD limit computed with Chan's formula
+    case 2
+        smdLim   = pp.HBR(k)^2/(exp(1)*sqrt(det(PB))*pp.PoCLim);                         % [-] (1,1) SMD limit computed with Maximum formula
+    case 3
+        smdLim   = pp.PoCLim;                                               % [-]   (1,1) PoC limit;     % [-] (1,1) SMD limit computed with Miss distance
+        PB       = eye(2);
     otherwise
         error('invalid PoC type')
     end
@@ -166,7 +188,7 @@ for k = 1:pp.n_conj
     for j = 1:length(tt)
         ellB(:,j) = cov2b*ellCov(:,j);
     end
-    figure()
+    figure('Renderer', 'painters', 'Position', [300 300 560 300])
     hold on    
     pOldB = e2b*(xb(1:3)-x_s(1:3))*Lsc;
     pNewB = e2b*(x(1:3)-x_s(1:3))*Lsc;
@@ -178,6 +200,8 @@ for k = 1:pp.n_conj
     ylabel('$\xi$ [km]')
     hold off
     axis equal
+    box on
+    saveas(gcf, ['bp',num2str(k)], 'epsc') %Save figure
 end
 
 end
