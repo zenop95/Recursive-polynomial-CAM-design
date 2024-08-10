@@ -16,20 +16,21 @@ set(0,'DefaultTextFontName','Times', 'DefaultTextFontSize', 14);
 set(0,'DefaultUipanelFontName','Times', 'DefaultUipanelFontSize', 14);
 set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
+set(groot,'defaultAxesTickLabelInterpreter','latex');  
 warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 %% User-defined inputs (modifiable)
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
-pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
-fireTimes = [0.5 1];                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+pp = initOpt(multiple,cislunar,2);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
+fireTimes = [2.5];                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 returnTime = -1;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 % fireTimes  = 1;                                                                 % [-] Example of bi-impulsive maneuvers
 % fireTimes = 2.5;                                                        % [-] Example of bi-impulsive maneuvers
-% fireTimes = linspace(2.4,2.6,2);                                              % [-] Example of single low-thrust arc
-% fireTimes = [linspace(1.4,1.6,3) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
+% fireTimes = linspace(1.4,1.6,2);                                              % [-] Example of single low-thrust arc
+% fireTimes = [linspace(1.4,1.6,2) linspace(0.6,0.4,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
 pp          = defineParams(pp,fireTimes,returnTime);                            % [-] (1,1) Include optimization paramters to parameters structure
-pp.PoCLim = pp.PoCLim/max(multiple,1);
+% pp.PoCLim   = pp.PoCLim/max(multiple,1);
 %% Non-user defined
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 N  = pp.N;                                                                      % [-] (1,1) Number of nodes in the propagation
@@ -80,12 +81,14 @@ if pp.filterMans
 end
 aa=tic;
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
-tic
+
 [lim,coeff,timeSubtr,xBall] = propDA(pp.DAorder,u,scale,0,pp);
-toc - timeSubtr
 if ~pp.flagPoCTot && multiple > 1
     coeff(pp.n_conj+1) = [];
     pp.n_constr = pp.n_constr - 1;
+elseif pp.flagPoCTot && multiple > 1
+    coeff(1:pp.n_conj) = [];
+    pp.n_constr = pp.n_constr - pp.n_conj;
 end
 metric = coeff(1).C(1);
 %% Optimization
@@ -114,16 +117,31 @@ else
     ctrl = yF;                                                                  % [-] (3,n_man) Build control matrix node-wise in the general case
 end
 simTime = toc - timeSubtr - timeSubtr1;     
-
+ctrl = pp.ctrlMax*ctrl;
 
 %% Validation
 metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...    
                             pp.DAorder);
-metricValPoly = 10^metricValPoly;
 % distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF./scale,1,[]), ...    
                             % pp.DAorder)*pp.Lsc;
 [~,~,~,x,xRet0] = propDA(1,ctrl,scale,1,pp);                                  % Validate the solution by forward propagating and computing the real PoC
-lim               = 10^lim;
+if pp.pocType ~= 3
+    metricValPoly = 10^metricValPoly;
+    lim           = 10^lim;
+end
+%% find TCA
+fid = fopen('write_read/initial_state.dat', 'w');
+for j = 1:6 
+    fprintf(fid, '%40.16f\n', x(j));
+end
+for j = 1:6
+    fprintf(fid, '%40.16f\n', pp.x_sTCA(j));
+end
+fclose(fid);
+!wsl ./CppExec/findTca
+tca = load("write_read/tcaOut.dat")*pp.Tsc                                                         
 
 %% PostProcess
+
+
 postProcess(xBall,x,xRet0,lim,ctrl,simTime,pp)
