@@ -49,3 +49,4 @@ CppExec/CGTProp
 *.make
 *.ts
 *.txt
+CppExec/findTca
