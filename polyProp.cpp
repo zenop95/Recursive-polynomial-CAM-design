@@ -16,7 +16,7 @@ using namespace cam;
 
 int main(void)
 {
-    int j, jj, kk, i, k, vv, flag1, flag2, flag3, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd;
+    int nvar, j, jj, kk, i, k, vv, flag1, flag2, flag3, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd;
 	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, musc, ctrlMax;
 
     long time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
@@ -51,15 +51,15 @@ int main(void)
             Input >> xdum[j];           // Write dummy variable for the primary's ECI state at the first conjunction from input
         }
         for (k = 0; k < n_conj; k ++) {
-            Input >> HBR[k];            // Combined Hard Body radialius for each conjunction
-        }
-        for (k = 0; k < n_conj; k ++) {
             for (j = 0; j < 3; j ++) {
                 Input >> rsDum.at(j,k); // Write secondary's ECI position at each conjunction from input
             }
             for (j = 0; j < 3; j ++) {
                 Input >> vsDum.at(j,k); // Write secondary's ECI velocity at each conjunction from input
             }   
+        }
+        for (k = 0; k < n_conj; k ++) {
+            Input >> HBR[k];            // Combined Hard Body radialius for each conjunction
         }
         for (j = 0; j < 3; j ++) {
                 Input >> rRef[j]; // Write reference ECI position for return from input
@@ -98,12 +98,13 @@ int main(void)
     // initialize execution time counter
     long time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     long timeSubtr = time2 - time1;
-    // Initialize DA     
-    DA::init(order, m*n_man);
+    // Initialize DA    
+    nvar = m*n_man + n_conj; 
+    DA::init(order, nvar);
     DA::setEps(1e-30);
 
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), xRet(6), poc(n_conj); 
+    AlgebraicVector<DA> x0(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), xRet(6), poc(n_conj); 
     AlgebraicMatrix<DA> xTca(6,n_conj);
     DA poc_tot, alpha, beta;
     // Define ballistic primary's position at first TCA 
@@ -197,6 +198,21 @@ int main(void)
         }
         // If the next node is a conjunction node, save the state in a DA variable
         if (isConj[i+1] == 1) {
+            DA dt = 0.0 + DA(nvar);
+            ctrl = {DA(1)*0, DA(1)*0, DA(1)*0};
+            xs0[0] = rsDum.at(0,0) + DA(1)*0; xs0[1] = rsDum.at(1,0) + DA(1)*0; xs0[2] = rsDum.at(2,0) + DA(1)*0;
+            xs0[3] = vsDum.at(0,0) + DA(1)*0; xs0[4] = vsDum.at(1,0) + DA(1)*0; xs0[5] = vsDum.at(2,0) + DA(1)*0; 
+            x0  = KeplerProp(x0, dt, 1.0);
+            xsf = KeplerProp(xs0, dt, 1.0);
+            DA tca = findTCA(x0 - xsf, nvar);
+            AlgebraicVector<DA> dx(nvar);
+            for (int i = 0; i < nvar-1; i++) {
+                dx[i] = DA(i+1);}
+            dx[nvar-1] = tca;
+            x0  = x0.eval(dx);
+            xsf = xsf.eval(dx);
+            dt  = dt.eval(dx);
+
             for (j = 0; j < 6 ; j ++) {
                 xTca.at(j,k) = x0[j];
             }        
@@ -295,6 +311,7 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
         constPart  << cons(xTca.at(j,k)) << endl;
         }
     }
+    constPart  << cons(tca) << endl;
 
     // write the DA expansion of PoC in output
     if (constraintFlags[0] == 1) {

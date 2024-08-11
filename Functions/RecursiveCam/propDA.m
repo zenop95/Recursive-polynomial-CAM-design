@@ -1,4 +1,4 @@
-function [lim,coeff,timeSubtr,xTca,xRet0] = ...
+function [lim,coeff,timeSubtr,xTca,xRet0,deltaTca] = ...
               propDA(DAorder,u,scale,validateFlag,pp)
 % propDA performs the DA propagation to build the NLP
 % 
@@ -52,14 +52,14 @@ fprintf(fid, '%40.16f\n', pp.ctrlMax);
 for j = 1:6 
     fprintf(fid, '%40.16f\n', x_pTCA(j));
 end
+for k = 1:n_conj
+    for j = 1:6
+        fprintf(fid, '%40.16f\n', x_sTCA(j,k));
+    end
+end
 if ~validateFlag
     for k = 1:n_conj
         fprintf(fid, '%40.16f\n', HBR(k));
-    end
-    for k = 1:n_conj
-        for j = 1:6
-            fprintf(fid, '%40.16f\n', x_sTCA(j,k));
-        end
     end
     for j = 1:6
         fprintf(fid, '%40.16f\n', x_ref(j));
@@ -104,7 +104,8 @@ if ~validateFlag
 elseif validateFlag
     !wsl ./CppExec/validatePoly
     lim=[];coeff=[];timeSubtr=[];
-    x    = reshape(load("write_read/constPart.dat"),6,pp.n_conj+1);             % If validating we only care about the TCA positions
+    x        = reshape(load("write_read/constPart.dat"),6,pp.n_conj+1);             % If validating we only care about the TCA positions
+    deltaTca = load("write_read/tcaOut.dat")*pp.Tsc;             
     if any(pp.isRet); xRet0 = x(:,end); end
     xTca  = x(:,1:end-1);
     return;

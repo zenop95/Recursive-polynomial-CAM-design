@@ -123,24 +123,10 @@ metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...
                             pp.DAorder);
 % distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF./scale,1,[]), ...    
                             % pp.DAorder)*pp.Lsc;
-[~,~,~,x,xRet0] = propDA(1,ctrl,scale,1,pp);                                  % Validate the solution by forward propagating and computing the real PoC
+[~,~,~,x,xRet0,deltaTca] = propDA(1,ctrl,scale,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
 if pp.pocType ~= 3
     metricValPoly = 10^metricValPoly;
     lim           = 10^lim;
-end
-%% find TCA
-fid = fopen('write_read/initial_state.dat', 'w');
-for j = 1:6 
-    fprintf(fid, '%40.16f\n', x(j));
-end
-for j = 1:6
-    fprintf(fid, '%40.16f\n', pp.x_sTCA(j));
-end
-fclose(fid);
-!wsl ./CppExec/findTca
-tca = load("write_read/tcaOut.dat")*pp.Tsc;                                                         
-
+end                                                     
 %% PostProcess
-
-
-postProcess(xBall,x,xRet0,lim,ctrl,simTime,pp)
+postProcess(xBall,x,xRet0,lim,ctrl,deltaTca,simTime,pp)

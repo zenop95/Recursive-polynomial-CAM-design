@@ -1,4 +1,4 @@
-function [] = postProcess(xBall,xManTca,xManRet,lim,ctrl,simTime,pp)
+function [] = postProcess(xBall,xManTca,xManRet,lim,ctrl,deltaTca,simTime,pp)
 % postProcess plots the relevant data 
 % 
 % INPUT: 
@@ -72,6 +72,8 @@ disp(['Solver: ', pp.solvingMethod])
 disp(['Computation time ',num2str(simTime), ' s'])
 n   = size(ctrl,2);
 disp(['Number of conjunctions: ', num2str(pp.n_conj)])
+disp(['tca shift = ', num2str(deltaTca), ' s'])
+
 if ~pp.lowThrust
     ctrl  = ctrl*Vsc*1e6;
     dv = ctrl;
