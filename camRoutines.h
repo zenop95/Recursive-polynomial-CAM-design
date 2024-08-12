@@ -266,35 +266,6 @@ DACE::AlgebraicMatrix<double> stmDace(DACE::AlgebraicVector<DACE::DA>& x,int nDA
 }
 
 
-template <typename T> AlgebraicMatrix<T> rtn2eci(const AlgebraicVector<T> & rv)
-{
-  AlgebraicVector<T> r(3), v(3), x(3), y(3), z(3);
-  AlgebraicMatrix<T> dcm(3,3);
-  r[0] = rv[0];
-  r[1] = rv[1];
-  r[2] = rv[2];
-  v[0] = rv[3];
-  v[1] = rv[4];
-  v[2] = rv[5];
-
-  z = -r; 
-  z  = z/vnorm(z);
-
-  y = DACE::cross(v,r);
-  y  = y/vnorm(y);
-
-  x =  DACE::cross(y, z);         
-  x  = x/vnorm(x);
-
-  dcm.at(0,0) = -z[0];   dcm.at(0,1) = x[0];   dcm.at(0,2) = -y[0];
-  dcm.at(1,0) = -z[1];   dcm.at(1,1) = x[1];   dcm.at(1,2) = -y[1];
-  dcm.at(2,0) = -z[2];   dcm.at(2,1) = x[2];   dcm.at(2,2) = -y[2];
-
-
-  return dcm;
-}
-
-
 template<typename T> T det2(AlgebraicMatrix<T> M)
 {    
    // computes the determinant of a 2x2 matrix M
@@ -675,6 +646,31 @@ DA findTCA(const AlgebraicVector<DA> xrel, const int nvar){
   return tca;
 }
 
+template <typename T> AlgebraicMatrix<T> rtn2eci(const AlgebraicVector<T> & rv)
+{
+  AlgebraicVector<T> r(3), v(3), x(3), y(3), z(3);
+  AlgebraicMatrix<T> dcm(3,3);
+
+  r[0] = rv[0]; r[1] = rv[1]; r[2] = rv[2]; 
+  v[0] = rv[3]; v[1] = rv[4]; v[2] = rv[5];
+
+  z = -r; 
+  z  = z/vnorm(z);
+
+  y = DACE::cross(v,r);
+  y  = y/vnorm(y);
+
+  x =  DACE::cross(y, z);         
+  x  = x/vnorm(x);
+
+  dcm.at(0,0) = -z[0];   dcm.at(0,1) = x[0];   dcm.at(0,2) = -y[0];
+  dcm.at(1,0) = -z[1];   dcm.at(1,1) = x[1];   dcm.at(1,2) = -y[1];
+  dcm.at(2,0) = -z[2];   dcm.at(2,1) = x[2];   dcm.at(2,2) = -y[2];
+
+
+  return dcm;
+}
+
 template<typename T> AlgebraicVector<T> cart2kep(const AlgebraicVector<T>& rv, const double mu)
 {
     AlgebraicVector<T> kep(6);
@@ -903,5 +899,35 @@ template <typename T> AlgebraicVector<T> cart2mee(AlgebraicVector<T> & rv, const
 
     mee = coe2mee(coe);
     return mee;
+}
+
+
+template <typename T> AlgebraicMatrix<T> CWSTM(double n, T & t)
+{
+    // In RTN
+    T c   = cos(n*t);
+    T s   = sin(n*t);
+    AlgebraicMatrix<T> STM(6);
+
+    STM.at(0,0) = 4-3*c;                                               STM.at(0,3) = s/n;         STM.at(0,4) = 2*(1-c)/n;
+    STM.at(1,0) = 6*(s-n*t);   STM.at(1,1) = 1;                        STM.at(1,3) = 2*(c-1)/n;   STM.at(1,4) = 4*s/n-3*t;
+                                                   STM.at(2,2) = c;                                                           STM.at(2,5) = s/n;
+    STM.at(3,0) = 3*n*s;                                               STM.at(3,3) = c;           STM.at(3,4) = 2*s;
+    STM.at(1,0) = 6*(c-1)*n;                                           STM.at(1,3) = -2*s;        STM.at(1,4) = 4*c-3;
+                                                   STM.at(5,2) = -n*s;                                                        STM.at(5,5) = c;
+
+    return STM;
+}
+
+template <typename T, typename U> AlgebraicMatrix<T> evalDAMatrix(AlgebraicMatrix<T> & mat, U & dx, int nvar)
+{
+    AlgebraicMatrix<T> out(nvar,nvar);
+    for (int i = 0; i < nvar; i++) {
+        for (int j = 0; j < nvar; j++) {
+            out.at(i,j) = mat.at(i,j).eval(dx);
+        }
+    }
+    
+    return out;
 }
 }
