@@ -29,8 +29,8 @@ int main(void)
         nodes >> m;         // Number of DA variables per node
 	nodes.close();
     // Initialize variable
-    AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
-    AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3);
+    AlgebraicMatrix<double> P(3,3), cov(9,n_conj), r2e(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
+    AlgebraicVector<double> xdum(6), metricMap(3), t(N), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3);
     AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(6);
     // Write input from .dat
 	Input.open("./write_read/initial_state.dat");
@@ -104,9 +104,9 @@ int main(void)
     DA::setEps(1e-30);
 
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), xRet(6), poc(n_conj); 
-    AlgebraicMatrix<DA> xTca(6,n_conj);
-    DA poc_tot, alpha, beta;
+    AlgebraicVector<DA> x0(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj); 
+    AlgebraicMatrix<DA> xTca(6,n_conj), P_B3(3,3), P_B(2,2), toB(3,3);
+    DA poc_tot, alpha, beta, tcaNew, tan, radial;
     // Define ballistic primary's position at first TCA 
     for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
     // backpropagation from first TCA
@@ -204,14 +204,13 @@ int main(void)
             xs0[3] = vsDum.at(0,0) + DA(1)*0; xs0[4] = vsDum.at(1,0) + DA(1)*0; xs0[5] = vsDum.at(2,0) + DA(1)*0; 
             x0  = KeplerProp(x0, dt, 1.0);
             xsf = KeplerProp(xs0, dt, 1.0);
-            DA tca = findTCA(x0 - xsf, nvar);
+            tcaNew = findTCA(x0 - xsf, nvar);
             AlgebraicVector<DA> dx(nvar);
             for (int i = 0; i < nvar-1; i++) {
                 dx[i] = DA(i+1);}
-            dx[nvar-1] = tca;
+            dx[nvar-1] = tcaNew;
             x0  = x0.eval(dx);
             xsf = xsf.eval(dx);
-            dt  = dt.eval(dx);
 
             for (j = 0; j < 6 ; j ++) {
                 xTca.at(j,k) = x0[j];
@@ -236,11 +235,11 @@ if (constraintFlags[0] == 1) {
                 P.at(i,j)  = cov.at(vv,k);
                 vv = vv + 1;
             }
-            vs[i] = vsDum.at(i,k);
-            rs[i] = rsDum.at(i,k);
+            rs[i] = xsf[i];
+            vs[i] = xsf[i+3];
         }
         // B-plane transformations
-        toB = Bplane(cons(v),vs); // DCM from ECI to B-plane
+        toB = Bplane(v,vs); // DCM from ECI to B-plane
         rB  = toB*r;                     // Primary position in the B-plane (3D)
         rsB = toB*rs;                    // Secondary position in the B-plane (3D)
         P_B3 = toB*P*toB.transpose();    // Combined covariance in the B-plane (3D)
@@ -275,7 +274,6 @@ if (constraintFlags[0] == 1) {
     }
 }
 
-DA tan, radial;
 if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     // Return constraint (scalar as tangential distance from other spacecraft GRACE)
     AlgebraicVector<DA> rRet(3), vRet(3), distRel(3);
@@ -299,21 +297,21 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
 
     time1   = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     //open the output files
-    ofstream constPart, constraints;
+    ofstream constPart, constraints, tcaOut;
     constPart.open("./write_read/constPart.dat");
     constPart << setprecision(18);
-    constraints.open("./write_read/constraints.dat");
-    constraints << setprecision(18);
-
+    
     // write TCA states in ECI coordinates into output
     for (k = 0; k < n_conj ; k++) {
         for (j = 0; j < 6 ; j++) {
         constPart  << cons(xTca.at(j,k)) << endl;
         }
     }
-    constPart  << cons(tca) << endl;
+    constPart.close();
 
     // write the DA expansion of PoC in output
+    constraints.open("./write_read/constraints.dat");
+    constraints << setprecision(18);
     if (constraintFlags[0] == 1) {
         if (n_conj > 1) {
             for (k = 0; k < n_conj; k ++) {
@@ -354,6 +352,8 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
             constraints << DA(1 + j*m)*DA(1 + j*m) + DA(2 + j*m)*DA(2 + j*m) + DA(3 + j*m)*DA(3 + j*m) << endl;
         }
     }
+    constraints.close();
+
     // Do not consider writing time when calculating execution time
     time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     timeSubtr = timeSubtr + time2 - time1;
@@ -363,6 +363,4 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     timeOut << setprecision(16);
     timeOut << timeSubtr << endl;
     timeOut.close();
-    constPart.close();
-    constraints.close();
 }

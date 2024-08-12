@@ -303,11 +303,11 @@ template<typename T> T det2(AlgebraicMatrix<T> M)
     return det;
 }
 
-template<typename T> T ConstPoC(AlgebraicVector<T> r, AlgebraicMatrix<double> P, double R){
+template<typename T, typename U> T ConstPoC(AlgebraicVector<T> r, AlgebraicMatrix<U> P, double R){
   
     // Constant PoC on B-plane
-    AlgebraicMatrix<double> P_inv(2,2);
-    double det = det2(P);
+    AlgebraicMatrix<U> P_inv(2,2);
+    U det = det2(P);
     P_inv = P.inv();
 
     T smd = r.dot(P_inv*r);
@@ -316,11 +316,11 @@ template<typename T> T ConstPoC(AlgebraicVector<T> r, AlgebraicMatrix<double> P,
     return PoC;
 }
 
-template<typename T> T MaxPoC(AlgebraicVector<T> r, AlgebraicMatrix<double> P, double R){
+template<typename T, typename U> T MaxPoC(AlgebraicVector<T> r, AlgebraicMatrix<U> P, double R){
   
     // Maximum PoC on B-plane
-    AlgebraicMatrix<double> P_inv(2,2);
-    double det = det2(P);
+    AlgebraicMatrix<U> P_inv(2,2);
+    U det = det2(P);
     P_inv = P.inv();
 
     T smd = r.dot(P_inv*r);
@@ -329,7 +329,7 @@ template<typename T> T MaxPoC(AlgebraicVector<T> r, AlgebraicMatrix<double> P, d
     return PoC;
 }
 
-template<typename T>T ChanPoC(AlgebraicVector<T> r, AlgebraicMatrix<double> P, double R, int order){
+template<typename T, typename U>T ChanPoC(AlgebraicVector<T> r, AlgebraicMatrix<U> P, double R, int order){
     
     T xi_exp = r[0];
     T zeta_exp = r[1];

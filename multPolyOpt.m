@@ -20,15 +20,15 @@ set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
 
 %% Initialization variables
-multiple = 0;
-t_man = 2.5;
-returnTime = -1;                                                           % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+% returnTime = -1;                                                           % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 for kk = 5
-for j = 1:1
+for j = 1:2170
+t_man = 2.5;
+multiple = 0;
 j
 pp = initOpt(0,0,j);
 pp.cislunar = 0;
-pp = defineParams(pp,t_man,returnTime);
+pp = defineParams(pp,t_man,0);
 pp.DAorder = kk;
 pp.nMans   = j;                                                            % [bool]   (1,1) Selects how many impulses to use
 N  = pp.N;                                                                      % [-] (1,1) Number of nodes in the propagation
@@ -122,24 +122,24 @@ metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...
                             pp.DAorder);
 % distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF./scale,1,[]), ...    
                             % pp.DAorder)*pp.Lsc;
-[~,~,~,x,xRet0,deltaTca] = propDA(1,ctrl,scale,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
+[~,~,~,x,xRet0,x_sec,deltaTca] = propDA(1,ctrl,scale,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
 if pp.pocType ~= 3
     metricValPoly = 10^metricValPoly;
     lim           = 10^lim;
 end
-errRetEci = xRet0 - pp.xReference;
-errP(j) = norm(errRetEci(1:3))*pp.Lsc*1e3;
-errV(j) = norm(errRetEci(4:6))*pp.Vsc*1e6;
+% errRetEci = xRet0 - pp.xReference;
+% errP(j) = norm(errRetEci(1:3))*pp.Lsc*1e3;
+% errV(j) = norm(errRetEci(4:6))*pp.Vsc*1e6;
 % metricValPoly = 10^metricValPoly;
 lim           = 10^lim;
 dvs(:,:,j) = ctrl*pp.Vsc*1e6;
 xs(:,j)  = x;
-xSec(:,j) = pp.x_sTCA;
+xSec(:,j) = x_sec;
 % nodeThrust(:,j)  = thrustNode;
-e2b    = eci2Bplane(xBall(4:6),pp.x_sTCA(4:6));
+e2b    = eci2Bplane(x(4:6),x_sec(4:6));
 e2b    = e2b([1 3],:);
 PB(:,:,j)     = e2b*pp.P*e2b';
-p      = e2b*(x(1:3)-pp.x_sTCA(1:3));
+p      = e2b*(x(1:3)-x_sec(1:3));
 smd    = dot(p,PB(:,:,j)\p);
 PoC(j) = poc_Chan(pp.HBR,PB(:,:,j),smd,3);                                        % [-] (1,1) PoC computed with Chan's formula
 compTime(j) = simTime;
@@ -147,6 +147,6 @@ E2B(:,:,j) = e2b;
 tcaNewDelta(j) = deltaTca;
 % nodeThrust(:,j) = thrustNode;
 end
-clearvars -except errP errV dvs xs PoC compTime PB E2B xSec pp
-% save(['simOutput/IAC/2Imp' num2str(pp.DAorder)])
+clearvars -except errP errV dvs xs PoC compTime PB E2B xSec tcaNewDelta pp t_man
+save(['simOutput/rec' num2str(pp.DAorder)])
 end

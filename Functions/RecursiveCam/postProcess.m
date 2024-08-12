@@ -1,4 +1,4 @@
-function [] = postProcess(xBall,xManTca,xManRet,lim,ctrl,deltaTca,simTime,pp)
+function [] = postProcess(xBall,xManTca,xManSec,xManRet,lim,ctrl,deltaTca,simTime,pp)
 % postProcess plots the relevant data 
 % 
 % INPUT: 
@@ -19,7 +19,6 @@ function [] = postProcess(xBall,xManTca,xManRet,lim,ctrl,deltaTca,simTime,pp)
 
 Lsc        = pp.Lsc;
 Vsc        = pp.Vsc;
-x_sTCA     = pp.x_sTCA;
 P          = pp.P;
 pp.t       = -pp.t;
 %nodes for low-thrust
@@ -37,12 +36,11 @@ end
 % compute PoC after maneuver
 PoC = nan(pp.n_conj,1);
 for k = 1:pp.n_conj
-    xb     = xBall(:,k);
     x      = xManTca(:,k);
-    x_s    = x_sTCA(:,k);
-    e2b    = eci2Bplane(xb(4:6),x_s(4:6));
+    x_s    = xManSec(:,k);
+    e2b    = eci2Bplane(x(4:6),x_s(4:6));
     e2b    = e2b([1 3],:);
-    PB     = e2b*P(:,:,k)*e2b';
+    PB     = e2b*pp.P(:,:,k)*e2b';
     p      = e2b*(x(1:3)-x_s(1:3));
     smd    = dot(p,PB\p);
     switch pp.pocType
@@ -162,7 +160,7 @@ hold off
 for k = 1:pp.n_conj
     xb     = xBall(:,k);
     x      = xManTca(:,k);
-    x_s    = x_sTCA(:,k);
+    x_s    = xManSec(:,k);
     e2b    = eci2Bplane(xb(4:6),x_s(4:6));
     e2b    = e2b([1 3],:);
     PB     = e2b*P(:,:,k)*e2b';

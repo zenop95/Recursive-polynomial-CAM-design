@@ -21,7 +21,7 @@ warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 %% User-defined inputs (modifiable)
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
-pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
+pp = initOpt(multiple,cislunar,6);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
 returnTime = -1;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 % fireTimes  = 1;                                                                 % [-] Example of bi-impulsive maneuvers
 fireTimes = 2.5;                                                        % [-] Example of bi-impulsive maneuvers
@@ -123,10 +123,11 @@ metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...
                             pp.DAorder);
 % distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF./scale,1,[]), ...    
                             % pp.DAorder)*pp.Lsc;
-[~,~,~,x,xRet0,deltaTca] = propDA(1,ctrl,scale,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
+
+[~,~,~,x,xRet0,x_sec,deltaTca] = propDA(1,ctrl,scale,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
 if pp.pocType ~= 3
     metricValPoly = 10^metricValPoly;
     lim           = 10^lim;
 end                                                     
 %% PostProcess
-postProcess(xBall,x,xRet0,lim,ctrl,deltaTca,simTime,pp)
+postProcess(xBall,x,x_sec,xRet0,lim,ctrl,deltaTca,simTime,pp)

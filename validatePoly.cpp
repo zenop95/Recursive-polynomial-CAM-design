@@ -129,13 +129,14 @@ int main(void)
                 xs0[i] = xsdum[i] + DA(i+1)*0;
             }   
             xp0  = KeplerProp(xp0, dt, 1.0);
-            xs0 = KeplerProp(xs0, dt, 1.0);
+            xs0  = KeplerProp(xs0, dt, 1.0);
             tcaNew = findTCA(xp0 - xs0, 7);
             AlgebraicVector<DA> dx(7);
             for (int i = 0; i < 6; i++) {
                 dx[i] = DA(i+1);}
             dx[6] = tcaNew;
             xp0 = xp0.eval(dx);
+            xs0 = xs0.eval(dx);
             for (j = 0; j < 6 ; j ++) {
                 xTca.at(j,k) = cons(xp0[j]);
             }        
@@ -153,6 +154,11 @@ int main(void)
     for (k = 0; k < n_conj ; k++) {
         for (j = 0; j < 6 ; j++) {
         constPart  << xTca.at(j,k) << endl;
+        }
+    }
+    for (k = 0; k < n_conj ; k++) {
+        for (j = 0; j < 6 ; j++) {
+        constPart  << cons(xs0[j]) << endl;
         }
     }
     for (j = 0; j < 6 ; j++) {
