@@ -16,8 +16,8 @@ using namespace cam;
 
 int main(void)
 {
-    int nvar, j, jj, kk, i, k, vv, flag1, flag2, flag3, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd;
-	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, musc, ctrlMax;
+    int nvar, j, jj, kk, i, ii, k, vv, flag1, flag2, flag3, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd;
+	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, musc, ctrlMax, mean_motion_p, mean_motion_s;
 
     long time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     
@@ -29,7 +29,7 @@ int main(void)
         nodes >> m;         // Number of DA variables per node
 	nodes.close();
     // Initialize variable
-    AlgebraicMatrix<double> P(3,3), cov(9,n_conj), r2e(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
+    AlgebraicMatrix<double> Cp(6,6), Cs(6,6), covp(36,n_conj), covs(36,n_conj), r2e(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
     AlgebraicVector<double> xdum(6), metricMap(3), t(N), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3);
     AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(6);
     // Write input from .dat
@@ -47,6 +47,8 @@ int main(void)
         Input >> musc;            // Gravitational constant
         Input >> gravOrd;            // Gravitational constant
         Input >> ctrlMax;            // ctrlMax
+        Input >> mean_motion_p;        // mean motion primary
+        Input >> mean_motion_s;        // mean motion secondary
         for (j = 0; j < 6; j ++) {
             Input >> xdum[j];           // Write dummy variable for the primary's ECI state at the first conjunction from input
         }
@@ -68,8 +70,13 @@ int main(void)
                 Input >> vRef[j]; // Write reference ECI velocity for return from input
             }
         for (k = 0; k < n_conj; k ++) {
-            for (j = 0; j < 9; j ++) {
-                Input >> cov.at(j,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
+            for (j = 0; j < 36; j ++) {
+                Input >> covp.at(j,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
+            }
+        }
+        for (k = 0; k < n_conj; k ++) {
+            for (j = 0; j < 36; j ++) {
+                Input >> covs.at(j,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
             }
         }
         for (i = 0; i < n_man; i ++) {
@@ -102,10 +109,10 @@ int main(void)
     nvar = m*n_man + n_conj; 
     DA::init(order, nvar);
     DA::setEps(1e-30);
-
+    
     // Initialize DA variables
     AlgebraicVector<DA> x0(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj); 
-    AlgebraicMatrix<DA> xTca(6,n_conj), P_B3(3,3), P_B(2,2), toB(3,3);
+    AlgebraicMatrix<DA> xTca(6,n_conj), P_eci(3,3), P_B3(3,3), P_B(2,2), Pp(3,3), Ps(3,3), toB(3,3), STM_p(6,6), STM_s(6,6), CPropP(6,6), CPropS(6,6), r2ep(3,3), r2es(3,3);
     DA poc_tot, alpha, beta, tcaNew, tan, radial;
     // Define ballistic primary's position at first TCA 
     for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
@@ -196,7 +203,10 @@ int main(void)
         else {
             x0 = RK78(6, x0, ctrl, tca - t[i], tca - t[i+1], CR3BPsyn, musc, Lsc); // Cislunar Orbit
         }
+
         // If the next node is a conjunction node, save the state in a DA variable
+        vv = 0;
+
         if (isConj[i+1] == 1) {
             DA dt = 0.0 + DA(nvar);
             ctrl = {DA(1)*0, DA(1)*0, DA(1)*0};
@@ -205,13 +215,34 @@ int main(void)
             x0  = KeplerProp(x0, dt, 1.0);
             xsf = KeplerProp(xs0, dt, 1.0);
             tcaNew = findTCA(x0 - xsf, nvar);
+            STM_p = CWSTM(mean_motion_p,tcaNew); // CW transformation for the covariance (can be done with YA)
+            STM_s = CWSTM(mean_motion_s,tcaNew); // CW transformation for the covariance (can be done with YA)
+            for (ii = 0; ii < 6 ; ii ++) {
+                for (j = 0; j < 6 ; j ++) {
+                    Cp.at(ii,j)  = covp.at(vv,k);
+                    Cs.at(ii,j)  = covs.at(vv,k);
+                    vv = vv + 1;
+                }
+            }
+            CPropP = STM_p*Cp*STM_p.transpose();
+            CPropS = STM_s*Cs*STM_s.transpose();
+            for (ii = 0; ii < 3 ; ii ++) {
+            for (j = 0; j < 3 ; j ++) {
+                Pp.at(ii,j)  = CPropP.at(ii,j);
+                Ps.at(ii,j)  = CPropS.at(ii,j);
+            }
+            }
+            r2ep = rtn2eci(x0);
+            r2es = rtn2eci(xsf);
+            P_eci = r2ep*Pp*r2ep.transpose() + r2es*Ps*r2es.transpose();
+
             AlgebraicVector<DA> dx(nvar);
-            for (int i = 0; i < nvar-1; i++) {
-                dx[i] = DA(i+1);}
+            for (ii = 0; ii < nvar-1; ii++) {
+                dx[ii] = DA(ii+1);}
             dx[nvar-1] = tcaNew;
             x0  = x0.eval(dx);
             xsf = xsf.eval(dx);
-
+            P_eci = evalDAMatrix(P_eci,dx,3);
             for (j = 0; j < 6 ; j ++) {
                 xTca.at(j,k) = x0[j];
             }        
@@ -228,21 +259,16 @@ if (constraintFlags[0] == 1) {
         // Expanded position and velocity of the primary at conjunction k
         r[0] = xTca.at(0,k);  r[1] = xTca.at(1,k);  r[2] = xTca.at(2,k);   
         v[0] = xTca.at(3,k);  v[1] = xTca.at(4,k);  v[2] = xTca.at(5,k);
-        vv = 0;
         // Build the ECI combined covariance matrix and the secondary's ECI position and velocity from dummy variables
         for (i = 0; i < 3 ; i ++) {
-            for (j = 0; j < 3 ; j ++) {
-                P.at(i,j)  = cov.at(vv,k);
-                vv = vv + 1;
-            }
             rs[i] = xsf[i];
             vs[i] = xsf[i+3];
         }
         // B-plane transformations
-        toB = Bplane(v,vs); // DCM from ECI to B-plane
-        rB  = toB*r;                     // Primary position in the B-plane (3D)
-        rsB = toB*rs;                    // Secondary position in the B-plane (3D)
-        P_B3 = toB*P*toB.transpose();    // Combined covariance in the B-plane (3D)
+        toB  = Bplane(v,vs); // DCM from ECI to B-plane
+        rB   = toB*r;                     // Primary position in the B-plane (3D)
+        rsB  = toB*rs;                    // Secondary position in the B-plane (3D)
+        P_B3 = toB*P_eci*toB.transpose();     // Combined covariance in the B-plane (3D)
 
         // Relative position in the B-plane (2D)
         r_rel[0]    = rB[0] - rsB[0];   r_rel[1]    = rB[2] - rsB[2]; 

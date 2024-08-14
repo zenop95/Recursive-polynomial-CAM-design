@@ -13,7 +13,7 @@ function pp = defineParams(pp,nFire,nRet)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 %% Optimization parameters (modifiable)
-pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 2;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
 % pp.objFunction   = 'fuel';
 pp.objFunction   = 'energy';
@@ -44,7 +44,7 @@ pp.flagAlt          = 0;
 pp.flagReturn       = 0;
 pp.flagErrReturn    = 0;
 pp.flagCtrlMax      = 0;
-ctrlMax             = 100;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
+ctrlMax             = 0.01;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
 pp.ctrlMax          = ctrlMax/(pp.Asc*pp.lowThrust + pp.Vsc*~pp.lowThrust)/1e6;
 % pp.ctrlMax          = 1;                                                   
 %% Maneuvering times (should not be modified)

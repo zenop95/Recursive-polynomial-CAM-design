@@ -38,9 +38,18 @@ PoC = nan(pp.n_conj,1);
 for k = 1:pp.n_conj
     x      = xManTca(:,k);
     x_s    = xManSec(:,k);
+    STMp   = CWStateTransition(pp.primary.n^(3/2),deltaTca/pp.Tsc,0,1);
+    STMs   = CWStateTransition(pp.secondary.n^(3/2),deltaTca/pp.Tsc,0,1);
+    Cpprop = STMp*pp.Cp*STMp';
+    Csprop = STMs*pp.Cs*STMs';
+    Pp    = Cpprop(1:3,1:3);
+    Ps     = Csprop(1:3,1:3);
+    r2ep   = rtn2eci(x(1:3),x(4:6));
+    r2es   = rtn2eci(x_s(1:3),x_s(4:6));
+    P      = r2ep*Pp*r2ep' + r2es*Ps*r2es';
     e2b    = eci2Bplane(x(4:6),x_s(4:6));
     e2b    = e2b([1 3],:);
-    PB     = e2b*pp.P(:,:,k)*e2b';
+    PB     = e2b*P(:,:,k)*e2b';
     p      = e2b*(x(1:3)-x_s(1:3));
     smd    = dot(p,PB\p);
     switch pp.pocType
@@ -106,13 +115,14 @@ if ~pp.lowThrust
     else
         t  = pp.t(pp.canFire)*pp.Tsc/86400;
     end
-    stem(t,ctrl(1,:),'LineWidth',2)
+    stem(-t,ctrl(1,:),'LineWidth',2)
     hold on
-    stem(t,ctrl(2,:),'LineWidth',2)
-    stem(t,ctrl(3,:),'LineWidth',2)
-    stem(t(ctrlNorm~=0),ctrlNorm(ctrlNorm~=0),'color','k','LineWidth',2)
-    plot(t(ctrlNorm==0),ctrlNorm(ctrlNorm==0),'color','k')
+    stem(-t,ctrl(2,:),'LineWidth',2)
+    stem(-t,ctrl(3,:),'LineWidth',2)
+    % stem(-t(ctrlNorm~=0),ctrlNorm(ctrlNorm~=0),'color','k','LineWidth',2)
+    % plot(-t(ctrlNorm==0),ctrlNorm(ctrlNorm==0),'color','k')
     ylabel('$\Delta v$ [mm/s]')
+    set(gca, 'XDir','reverse')
 else
     ctrlN = ctrl*pp.Asc*1e6;
     for i = 2:pp.N
@@ -159,11 +169,6 @@ hold off
 % Ellipse B-plane
 for k = 1:pp.n_conj
     xb     = xBall(:,k);
-    x      = xManTca(:,k);
-    x_s    = xManSec(:,k);
-    e2b    = eci2Bplane(xb(4:6),x_s(4:6));
-    e2b    = e2b([1 3],:);
-    PB     = e2b*P(:,:,k)*e2b';
     switch pp.pocType
     case 0
         smdLim   = -2*log(2*pp.PoCLim*sqrt(det(PB))/pp.HBR(k)^2);        % [-] (1,1) SMD limit computed with Alfriend and Akella's formula
@@ -201,7 +206,6 @@ for k = 1:pp.n_conj
     hold off
     axis equal
     box on
-%     saveas(gcf, ['bp',num2str(k)], 'epsc') %Save figure
 end
 
 end

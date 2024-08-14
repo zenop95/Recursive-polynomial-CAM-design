@@ -17,7 +17,7 @@ using namespace cam;
 int main(void)
 {
     int j, i, k, ii, flag1, flag2, flag3, order, metricFlag, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd;
-	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, dt, musc, ctrlMax;
+	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, dt, musc, ctrlMax, mean_motion_p, mean_motion_s;
  
     ifstream nodes;
 	nodes.open("./write_read/initial_state.dat");
@@ -45,6 +45,8 @@ int main(void)
         Input >> musc;            // Gravitational constant
         Input >> gravOrd;            // Gravitational constant
         Input >> ctrlMax;            // Gravitational constant
+        Input >> mean_motion_p;        // mean motion primary
+        Input >> mean_motion_s;        // mean motion secondary
         for (j = 0; j < 6; j ++) {
             Input >> xdum[j];
         }

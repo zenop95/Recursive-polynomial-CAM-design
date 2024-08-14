@@ -49,6 +49,8 @@ fprintf(fid, '%40.16f\n', Lsc);
 fprintf(fid, '%40.16f\n', mu);
 fprintf(fid, '%2i\n',     pp.gravOrd);
 fprintf(fid, '%40.16f\n', pp.ctrlMax);
+fprintf(fid, '%40.16f\n', pp.primary.n);
+fprintf(fid, '%40.16f\n', pp.secondary.n);
 for j = 1:6 
     fprintf(fid, '%40.16f\n', x_pTCA(j));
 end
@@ -65,9 +67,14 @@ if ~validateFlag
         fprintf(fid, '%40.16f\n', x_ref(j));
     end
     for k = 1:n_conj
-        for j = 1:3 
-            for i = 1:3 
-                fprintf(fid, '%40.16f\n', P(j,i,k));
+        for j = 1:6 
+            for i = 1:6 
+                fprintf(fid, '%40.16f\n', pp.Cp(j,i,k));
+            end
+        end
+        for j = 1:6 
+            for i = 1:6 
+                fprintf(fid, '%40.16f\n', pp.Cs(j,i,k));
             end
         end
     end

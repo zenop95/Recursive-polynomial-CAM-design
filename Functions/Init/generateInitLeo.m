@@ -29,6 +29,8 @@ secondary.C0    = [[B(ind,21) B(ind,24) B(ind,25);
            B(ind,24)  B(ind,22) B(ind,26);
            B(ind,25)  B(ind,26) B(ind,23)] zeros(3,3); 
                                             zeros(3,6)];
+a = cartesian2kepler(x0s);
+secondary.n = a.n;
 secondary.HBR        = B(ind,2)/2 + primary.HBR;         % [km]
 secondary.mass       = 100;          % [kg] mass
 secondary.A_drag     = 1;            % [m^2] drag surface area

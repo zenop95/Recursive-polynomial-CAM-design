@@ -20,9 +20,9 @@ if multiple && ~cislunar
 %     pp   = generateInitMultipleScitech(multiple);
     pp.T         = pp.T/pp.Tsc;                                                     % [-]    (1,1) Scaled orbital period
 elseif ~multiple && cislunar
-    pp = generateInitHalo();
+    % pp = generateInitHalo();
     % pp = generateInitLyapunovJpl();
-%     pp = generateInitNrho('perp');
+    pp = generateInitNrho('perp');
 %     pp = generateInitLyapunov();
     % pp = generateInitDro();
     % pp = generateInitP3Dro();
@@ -39,6 +39,8 @@ pp.Asc     = pp.Vsc/pp.Tsc;                                                     
 pp.scaling = [pp.Lsc*ones(3,1); pp.Vsc*ones(3,1)];                              % [km km/s] (6,1) Vector of scaling constants
 pp.et      = 478548000/pp.Tsc;                                                  % [-]       (1,1) Scaled initial ephemeris time
 pp.x_pTCA  = pp.primary.x0./pp.scaling;                                         % [-]       (6,1) Scaled primary cartesian state at TCA
+pp.primary.n = pp.primary.n*pp.Tsc;
+pp.secondary.n = pp.secondary.n*pp.Tsc;
 for k = 1:pp.n_conj
     pp.x_sTCA(:,k) = pp.secondary(k).x0./pp.scaling;                            % [-] (6,1) Scaled kth secondary cartesian state at TCA
     pp.HBR(k)      = pp.secondary(k).HBR/pp.Lsc;                                % [-] (6,1) Scaled Hard Body Radius of kth secondary
@@ -50,5 +52,8 @@ for k = 1:pp.n_conj
     end
     pp.P(:,:,k) = (r2e_s*pp.secondary(k).C0(1:3,1:3)*r2e_s' + ... 
                     r2e_p*pp.primary.C0(1:3,1:3)*r2e_p')/pp.Lsc^2;              % [-] (3,3) Rotated position combined covariance matrix
+    D = diag(1./pp.scaling);
+    pp.Cp(:,:,k) = D*pp.primary.C0*D;
+    pp.Cs(:,:,k) = D*pp.secondary(k).C0*D;
 end
 end

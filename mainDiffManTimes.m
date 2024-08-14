@@ -7,7 +7,7 @@ addpath(genpath('.\Functions'))
 addpath(genpath('.\CppExec'))
 addpath(genpath('.\OPM'))
 addpath(genpath('.\CDM'))
-addpath(genpath('.\Path'));
+addpath(genpath('..\Path'));
 addpath(genpath('C:\Program Files\Mosek\10.0\toolbox\r2017a'));
 set(0,'DefaultTextInterpreter','latex');
 set(0,'DefaultAxesFontSize',16);
@@ -20,17 +20,18 @@ set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
 
 %% Initialization variables
-% returnTime = -1;                                                           % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-for kk = 2:7
-for j = 1:2170
-t_man = [2.4,2.6];
 multiple = 0;
-j
-pp = initOpt(0,0,j);
+nMan     = 500;
+tMan     = linspace(5.5,0.05,nMan);
+for kk = 2:4
+for j = 1:nMan
+pp = initOpt(0,0,1);
 pp.cislunar = 0;
-pp = defineParams(pp,t_man,0);
+pp = defineParams(pp,tMan(j),0);
+pp.cislunar = 0;
+pp.nMans   = 1;                                                            % [bool]   (1,1) Selects how many impulses to use
+j
 pp.DAorder = kk;
-pp.nMans   = j;                                                            % [bool]   (1,1) Selects how many impulses to use
 N  = pp.N;                                                                      % [-] (1,1) Number of nodes in the propagation
 n_man = pp.n_man;                                                               % [-] (1,1) Number of nodes where the maneuver can be performed
 if N == 1 && pp.lowThrust; error(['The algorithm needs ' ...
@@ -45,39 +46,8 @@ ctrl  = nan(3,n_man);                                                           
 
 %% Propagation
 timeSubtr0 = 0;
-if pp.flagStability && pp.cislunar
-    [CGDir,timeSubtr0] = Cauchy_Green_prop(1,u,pp);
-    pp.fixedDir         = true;
-    pp.thrustDirections = CGDir;
-end
 timeSubtr1 = 0;
-tic
-% If the filtering routine is adpoted, first perform a first-order
-% propagation to find the most sensitive maneuvering times
-if pp.filterMans
-    [~,~,coeffPoC,~,timeSubtr1] = propDA(1,u,scale,0,0,pp);
-    gradVec = buildDAArray(coeffPoC.C,coeffPoC.E,1);
-    for j = 1:n_man
-        grads(j) = norm(gradVec(1+m*(j-1):m*j));
-    end
-    [~,thrustNode] = sort(grads,'descend');                                     % Rank the nodes
-    thrustNode = thrustNode(1:pp.nMans);                                        % Only keep the first nMans nodes
-    % Redefine the problem parameters according to the new nodes definition
-    fireTimes      = pp.ns(thrustNode)';
-    nConj     = -pp.tca_sep;
-    pp.ns      = sort(unique([fireTimes, nConj]),"descend")';
-    canFire    = ismember(pp.ns,fireTimes);
-    pp.canFire = canFire;
-    pp.isConj  = ismember(pp.ns,nConj);
-    pp.t       = pp.ns*pp.T;
-    pp.N       = length(pp.ns);
-    n_man      = pp.nMans;
-    pp.n_man   = n_man;
-    u          = zeros(m,n_man);
-    scale      = ones(m,n_man);
-    ctrl       = nan(3,n_man);
-end
-aa=tic;
+tic;
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
 
 [lim,coeff,timeSubtr,xBall] = propDA(pp.DAorder,u,scale,0,pp);
@@ -127,15 +97,10 @@ if pp.pocType ~= 3
     metricValPoly = 10^metricValPoly;
     lim           = 10^lim;
 end
-% errRetEci = xRet0 - pp.xReference;
-% errP(j) = norm(errRetEci(1:3))*pp.Lsc*1e3;
-% errV(j) = norm(errRetEci(4:6))*pp.Vsc*1e6;
-% metricValPoly = 10^metricValPoly;
 lim           = 10^lim;
-dvs(:,:,j) = ctrl*pp.Vsc*1e6;
+dvs(:,:,j) = squeeze(ctrl*pp.Vsc*1e6);
 xs(:,j)  = x;
 xSec(:,j) = x_sec;
-% nodeThrust(:,j)  = thrustNode;
 STMp   = CWStateTransition(pp.primary.n^(3/2),deltaTca/pp.Tsc,0,1);
 STMs   = CWStateTransition(pp.secondary.n^(3/2),deltaTca/pp.Tsc,0,1);
 Cpprop = STMp*pp.Cp*STMp';
@@ -153,9 +118,115 @@ smd    = dot(p,PB(:,:,j)\p);
 PoC(j) = poc_Chan(pp.HBR,PB(:,:,j),smd,3);                                        % [-] (1,1) PoC computed with Chan's formula
 compTime(j) = simTime;
 E2B(:,:,j) = e2b;
-tcaNewDelta(j) = deltaTca;
-% nodeThrust(:,j) = thrustNode;
+tcaNewDelta(j) = deltaTca;                                      % [-] (1,1) PoC computed with Chan's formula
 end
-clearvars -except errP errV dvs xs PoC compTime PB E2B xSec tcaNewDelta pp t_man
-save(['simOutput/rec' num2str(pp.DAorder)]);
+clearvars -except dvs xs xSec PoC compTime tcaNewDelta pp t_man xBall tMan
+save(['simOutput/diffMan' num2str(pp.DAorder)])
 end
+%%
+nMan = 500;
+for jj = 2:5
+    load(['SimOutput\diffMan',num2str(jj),'.mat'])
+    tca(jj-1,:)     = tcaNewDelta;
+    PoCs(jj-1,:)     = PoC;
+    simTimes(jj-1,:) = compTime;
+    movmeanTime(jj-1,:) = movmean(compTime,100);
+    dv = (squeeze(dvs));
+end
+
+%%
+col1 = [0.56,0.80,0.90];
+col2 = [0.00,0.45,0.74];
+colors = [linspace(col1(1),col2(1),4)', linspace(col1(2),col2(2),4)', linspace(col1(3),col2(3),4)'];
+figure
+colororder(colors)
+subplot(2,1,1)
+scatter(tMan,abs(1e-6-PoCs),5,'filled')
+xticklabels([])
+ylabel('PoC error [-]')
+set(gca, 'XDir','reverse')
+grid on
+axis tight
+legend('$n=2$','$n=3$','$n=4$','$n=5$','interpreter','latex','Orientation','horizontal')
+box on
+
+subplot(2,1,2)
+scatter(tMan,abs(tca(4,:))',5,'filled')
+xlabel('Orbits to TCA [-]')
+ylabel('TCA shift [s]')
+set(gca, 'XDir','reverse')
+grid on
+axis tight
+box on
+
+figure
+plot(tMan,simTimes','.')
+xlabel('Orbits to TCA [-]')
+ylabel('Computation time [s]')
+set(gca, 'XDir','reverse')
+grid on
+
+figure
+plot(tMan,movmeanTime')
+xlabel('Orbits to TCA [-]')
+ylabel('Computation time [s]')
+set(gca, 'XDir','reverse')
+grid on
+
+figure
+scatter(tMan,squeeze(dvs)',5,'filled')
+hold on
+scatter(tMan,normOfVec(squeeze(dvs)),5,'filled')
+legend('R','T','N','$||\cdot||$','Interpreter','Latex','Orientation','horizontal')
+xlabel('Orbits to TCA [-]')
+ylabel('$\Delta v$ [mm/s]')
+grid on
+set(gca, 'XDir','reverse')
+hold off
+box on
+axis tight
+
+%% Ellipse B-plane
+e2b = eci2Bplane(xBall(4:6,1),pp.x_sTCA(4:6));
+e2b = e2b([1 3],:);
+PB  = e2b*pp.P*e2b';
+smdLim   = PoC2SMD(PB, pp.HBR, pp.PoCLim, 3, 1, 1e-3, 200);   % [-] (1,1) SMD limit computed with Chan's formula
+[semiaxes,cov2b] = defineEllipsoid(PB,smdLim);
+a          = semiaxes(1)*pp.Lsc;
+b          = semiaxes(2)*pp.Lsc;
+tt         = 0:0.001:2*pi;
+xx         = a*cos(tt);
+yy         = b*sin(tt);
+ellCov     = [xx; yy];
+ellB       = nan(2,length(tt));
+for k = 1:length(tt)
+    ellB(:,k) = cov2b*ellCov(:,k);
+end
+figure
+hold on    
+pOldB = e2b*(xBall(1:3)-pp.x_sTCA(1:3))*pp.Lsc;
+for j = 1:nMan
+    pNewB(:,j) = e2b*(xs(1:3,j)-xSec(1:3,j))*pp.Lsc;
+end
+plot(ellB(2,:),ellB(1,:),'k');
+plot(pOldB(2),pOldB(1),'k','marker','diamond','HandleVisibility','off')
+s = scatter(pNewB(2,275:321),pNewB(1,275:321),[],tMan(275:321)','filled');
+s.SizeData = 20;
+colormap(flipud(jet));
+grid on 
+xlabel('$\zeta$ [km]')
+ylabel('$\xi$ [km]')
+hold off
+cb = colorbar;
+if pp.cislunar; str = 'Days'; else; str = 'Orbits'; end
+ylabel(cb, [str, ' to TCA [-]'])
+clearvars -except PoC dvs xs pp tMan nMan simTime xBall smdLim
+xlim([-.4,0])
+ylim([0,.15])
+
+
+simTimes(1,1) = nan;
+figure
+A = violin(simTimes',2:5);
+hold off
+xlabel('Expansion order [-]')
