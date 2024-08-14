@@ -13,14 +13,14 @@ function pp = defineParams(pp,nFire,nRet)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 %% Optimization parameters (modifiable)
-pp.DAorder       = 2;                                                           % [-]   (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
 % pp.objFunction   = 'fuel';
 pp.objFunction   = 'energy';
-pp.solvingMethod = 'lagrange';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
+% pp.solvingMethod = 'lagrange';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'newton';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'convex';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
-% pp.solvingMethod = 'fmincon';                                                
+pp.solvingMethod = 'fmincon';                                                
 pp.PoCLim        = 1e-6;                                                        % [-]   (1,1) PoC limit
 % pp.PoCLim        = 1e-2;                                                        % [-]   (1,1) PoC limit
 % pp.PoCLim        = (1/pp.Lsc)^2;                                               % [-]   (1,1) miss distance limit
@@ -44,7 +44,7 @@ pp.flagAlt          = 0;
 pp.flagReturn       = 0;
 pp.flagErrReturn    = 0;
 pp.flagCtrlMax      = 0;
-ctrlMax             = 0.01;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
+ctrlMax             = 100;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
 pp.ctrlMax          = ctrlMax/(pp.Asc*pp.lowThrust + pp.Vsc*~pp.lowThrust)/1e6;
 % pp.ctrlMax          = 1;                                                   
 %% Maneuvering times (should not be modified)

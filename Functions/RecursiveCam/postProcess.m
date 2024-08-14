@@ -42,16 +42,13 @@ for k = 1:pp.n_conj
     STMs   = CWStateTransition(pp.secondary.n^(3/2),deltaTca/pp.Tsc,0,1);
     Cpprop = STMp*pp.Cp*STMp';
     Csprop = STMs*pp.Cs*STMs';
-    Pp    = Cpprop(1:3,1:3);
+    Pp     = Cpprop(1:3,1:3);
     Ps     = Csprop(1:3,1:3);
     r2ep   = rtn2eci(x(1:3),x(4:6));
     r2es   = rtn2eci(x_s(1:3),x_s(4:6));
     P      = r2ep*Pp*r2ep' + r2es*Ps*r2es';
-    e2b    = eci2Bplane(x(4:6),x_s(4:6));
-    e2b    = e2b([1 3],:);
-    PB     = e2b*P(:,:,k)*e2b';
-    p      = e2b*(x(1:3)-x_s(1:3));
-    smd    = dot(p,PB\p);
+    [PB,p,smd] = Bplane(x,x_s,P);    
+    [PBold,pold,smdold] = Bplane(pp.x_pTCA,pp.x_sTCA,pp.P);    
     switch pp.pocType
     case 0
         PoC(k) = constantPc(p,PB,pp.HBR(k));                                   % [-] (1,1) PoC computed with Chan's formula
@@ -115,14 +112,14 @@ if ~pp.lowThrust
     else
         t  = pp.t(pp.canFire)*pp.Tsc/86400;
     end
-    stem(-t,ctrl(1,:),'LineWidth',2)
+    stem(t,ctrl(1,:),'LineWidth',2)
     hold on
-    stem(-t,ctrl(2,:),'LineWidth',2)
-    stem(-t,ctrl(3,:),'LineWidth',2)
-    % stem(-t(ctrlNorm~=0),ctrlNorm(ctrlNorm~=0),'color','k','LineWidth',2)
-    % plot(-t(ctrlNorm==0),ctrlNorm(ctrlNorm==0),'color','k')
+    stem(t,ctrl(2,:),'LineWidth',2)
+    stem(t,ctrl(3,:),'LineWidth',2)
+    stem(t(ctrlNorm~=0),ctrlNorm(ctrlNorm~=0),'color','k','LineWidth',2)
+    plot(t(ctrlNorm==0),ctrlNorm(ctrlNorm==0),'color','k')
     ylabel('$\Delta v$ [mm/s]')
-    set(gca, 'XDir','reverse')
+    % set(gca, 'XDir','reverse')
 else
     ctrlN = ctrl*pp.Asc*1e6;
     for i = 2:pp.N
@@ -195,9 +192,26 @@ for k = 1:pp.n_conj
     end
     figure('Renderer', 'painters', 'Position', [300 300 560 300])
     hold on    
+    e2b    = eci2Bplane(x(4:6),x_s(4:6));
+    e2b    = e2b([1 3],:);
     pOldB = e2b*(xb(1:3)-x_s(1:3))*Lsc;
-    pNewB = e2b*(x(1:3)-x_s(1:3))*Lsc;
     plot(ellB(2,:),ellB(1,:),'k');
+    plot(p(2,:),p(1,:),'o','LineWidth',2);
+    plot(pOldB(2,:),pOldB(1,:),'k','marker','diamond');
+    [semiaxes,cov2b] = defineEllipsoid(PBold,PoC2SMD(PBold, pp.HBR(k), pp.PoCLim, 3, 1, 1e-3, 200));
+    a          = semiaxes(1)*Lsc;
+    b          = semiaxes(2)*Lsc;
+    xx         = a*cos(tt);
+    yy         = b*sin(tt);
+    ellCov     = [xx; yy];
+    ellB       = nan(2,length(tt));
+    for j = 1:length(tt)
+        ellB(:,j) = cov2b*ellCov(:,j);
+    end 
+    e2b    = eci2Bplane(pp.x_pTCA(4:6),pp.x_sTCA(4:6));
+    e2b    = e2b([1 3],:);
+    pNewB = e2b*(x(1:3)-pp.x_sTCA(1:3))*Lsc;
+    plot(ellB(2,:),ellB(1,:),'k--');
     plot(pNewB(2,:),pNewB(1,:),'o','LineWidth',2);
     plot(pOldB(2,:),pOldB(1,:),'k','marker','diamond');
     grid on 
