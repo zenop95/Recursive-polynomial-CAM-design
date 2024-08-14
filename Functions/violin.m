@@ -14,6 +14,8 @@ A.meancolor = 'b';
 A.showViolin = true;
 A.showScatter = false;
 A.violinAlpha = 0.4;
+A.LineColor   = [0 0.4470 0.7410];
+A.violinColor = [0 0.4470 0.7410];
 grid on
 box on
 end
