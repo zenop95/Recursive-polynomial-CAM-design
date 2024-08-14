@@ -1,6 +1,6 @@
 beep off
 format longG
-close all
+% close all
 clear
 addpath(genpath('.\data'))
 addpath(genpath('.\Functions'))
@@ -17,88 +17,78 @@ set(0,'DefaultUipanelFontName','Times', 'DefaultUipanelFontSize', 14);
 set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
 %% load variables
+simFolder = 'SimOutput\impulsive\';
 n = 2170;
 PoCNlp      = nan(6,n);
 PoCRec      = nan(6,n);
 simTimeNlp  = nan(6,n);
 simTimeRec  = nan(6,n);
-normNlp       = nan(6,n);
-normRec       = nan(6,n);
+normNlp     = nan(6,n);
+normRec     = nan(6,n);
 inPlaneNlp  = nan(6,n);
 inPlaneRec  = nan(6,n);
 outPlaneNlp = nan(6,n);
 outPlaneRec = nan(6,n);
 for kk = 2:7
-    load(['SimOutput\singleImpulseEsaCases\nlp',num2str(kk),'.mat'])
-    % load(['SimOutput\singleImpulseEsaCases\nlp',num2str(kk),'_J2.mat'])
-%     load(['SimOutput\doubleImpulseEsaCases\nlp',num2str(kk),'.mat'])
-    PoC(PoC>prctile(PoC,99)) = nan;
-    PoC(PoC<prctile(PoC,1)) = nan;
+    load([simFolder,'nlp',num2str(kk),'.mat'])
+    PoC(PoC>prctile(PoC,95)) = nan;
+    PoC(PoC<prctile(PoC,5)) = nan;
+    tcaNewDelta(tcaNewDelta>prctile(tcaNewDelta,99.95)) = nan;
+    tcaNewDelta(tcaNewDelta<prctile(tcaNewDelta,0.05)) = nan;
+    compTime(compTime>prctile(compTime,99)) = nan;
     PoCNlp(kk-1,:)     = PoC;
-    simTimeNlp(kk-1,:) = simTime;
-    dvn = normOfVec(dvs);
-    dvn(dvn>prctile(dvn,95)) = nan;
-    dvNlp(kk-1,:) = dvn;
-    load(['SimOutput\rec',num2str(kk),'.mat'])
-    % load(['SimOutput\singleImpulseEsaCases\rec',num2str(kk),'_J2.mat'])
-    % load(['SimOutput\doubleImpulseEsaCases\rec',num2str(kk),'.mat'])
-    PoC(PoC>prctile(PoC,99)) = nan;
-    PoC(PoC<prctile(PoC,1)) = nan;
-    PoCRec(kk-1,:)     = PoC;
-    simTimeRec(kk-1,:) = simTime;
+    tcaRec(kk-1,:)     = tcaNewDelta;
+    simTimeNlp(kk-1,:) = compTime;
+    inPlaneNlp(kk-1,:)  = rad2deg(atan(dvs(1,:)'./dvs(2,:)'))';
+    outPlaneNlp(kk-1,:) = rad2deg(atan(dvs(3,:)'./normOfVec(dvs(1:2,:))'))';
     dvn = normOfVec(squeeze(dvs));
-    dvn(dvn>prctile(dvn,95)) = nan;
-    dvRec(kk-1,:) = dvn;
+    dvn(dvn>prctile(dvn,99.9)) = nan;
+    normNlp(kk-1,:)     = dvn;
+    load([simFolder,'rec',num2str(kk),'.mat'])
+    PoC(PoC>prctile(PoC,95)) = nan;
+    PoC(PoC<prctile(PoC,5)) = nan;
+    tcaNewDelta(tcaNewDelta>prctile(tcaNewDelta,99.95)) = nan;
+    tcaNewDelta(tcaNewDelta<prctile(tcaNewDelta,0.05)) = nan;
+    tcaNlp(kk-1,:)     = tcaNewDelta;
+    compTime(compTime>prctile(compTime,99)) = nan;
+    PoCRec(kk-1,:)     = PoC;
+    simTimeRec(kk-1,:) = compTime;
+    inPlaneRec(kk-1,:)  = rad2deg(atan(dvs(1,:)'./dvs(2,:)'))';
+    outPlaneRec(kk-1,:) = rad2deg(atan(dvs(3,:)'./normOfVec(dvs(1:2,:))'))';
+    dvn = normOfVec(squeeze(dvs));
+    dvn(dvn>prctile(dvn,99.9)) = nan;
+    normRec(kk-1,:)     = dvn;  
 end
-% clearvars -except PoCConv simTimeConv PoCNlp simTimeNlp PoCRec simTimeRec dvNlp dvRec n
 alsoNlp = 1;
 %% Violin plots
 figure
-A = violin(PoCRec',2:7);
-A.LineColor   = [0 0.4470 0.7410];
-A.violinColor = [0 0.4470 0.7410];
+A = violin(PoCRec'*1e6-1,2:7);
 hold on
-if alsoNlp
-    B = violin(PoCNlp',2:7);
-    B.LineColor = [0.4940 0.1840 0.5560];
-    B.violinColor = [0.4940 0.1840 0.5560];
-end
-
+% if alsoNlp
+%     B = violin(PoCNlp'-1e-6,2:7);
+%     B.LineColor = [0.4940 0.1840 0.5560];
+%     B.violinColor = [0.4940 0.1840 0.5560];
+%     B.mediancolor = 'r';
+%     B.meancolor   = 'r';
+% end
 hold off
 xlabel('Expansion order [-]')
 ylabel('PoC [-]')
 
-a = 99.9;
-for kk = 2:7
-    load(['SimOutput\singleImpulseEsaCases\rec',num2str(kk),'.mat'])
-    tcaRec(kk-1,:)     = tcaNewDelta;
-    tcaRec(tcaRec>prctile(tcaRec,95)) = nan;
-    tcaRec(tcaRec<prctile(tcaRec,5)) = nan;
-    inPlaneRec(kk-1,:)  = rad2deg(atan(dvs(1,:)'./dvs(2,:)'))';
-    outPlaneRec(kk-1,:) = rad2deg(atan(dvs(3,:)'./normOfVec(dvs(1:2,:))'))';
-    dvn = normOfVec(dvs);
-    dvn(dvn>prctile(dvn,a)) = nan;
-    normRec(kk-1,:)     = normOfVec(dvs);
-    load(['SimOutput\singleImpulseEsaCases\nlp',num2str(kk),'.mat'])
-    tcaNlp(kk-1,:)     = tcaNewDelta;
-    inPlaneNlp(kk-1,:)  = rad2deg(atan(dvs(1,:)'./dvs(2,:)'))';
-    outPlaneNlp(kk-1,:) = rad2deg(atan(dvs(3,:)'./normOfVec(dvs(1:2,:))'))';
-    dvn = normOfVec(dvs);
-    dvn(dvn>prctile(dvn,a)) = nan;
-    normNlp(kk-1,:)     = normOfVec(dvs);
-end
-a = 1;
-
-figure
-A = violin(tcaRec',2:7);
-A.LineColor   = [0 0.4470 0.7410];
-A.violinColor = [0 0.4470 0.7410];
+% figure
+% subplot(3,1,3)
+% A = violin(simTimeRec',2:7);
 % hold on
 % if alsoNlp
-% B = violin(PoCNlp',2:7);
+%     B = violin(simTimeNlp',2:7);
+%     B.LineColor = [0.4940 0.1840 0.5560];
+%     B.violinColor = [0.4940 0.1840 0.5560];
+%     B.mediancolor = 'r';
+%     B.meancolor   = 'r';
 % end
-xlabel('Expansion order [-]')
-ylabel('tca diff [s]')
+% hold off
+% xlabel('Expansion order [-]')
+% ylabel('Computation Time [s]')
 
 %% Define colors
 col1 = [0.9290 0.6940 0.1250];
@@ -132,9 +122,10 @@ yticks(0:10:60)
 yticklabels([])
 ylim([0,63])
 
-%% PoC histograms
-figure()
+% TCA histogram
+figure('Renderer', 'painters', 'Position', [300 300 560 250])
 colororder([colors(1,:);colors(end,:)])
-edges = (9.9:.0005:10.1)*1e-7;
-histograms([PoCRec(5,:);PoCNlp(5,:)],edges)
-xlabel('$PoC$ [-]')
+edges = -1:0.07:1;
+histograms([tcaRec(5,:);tcaNlp(5,:)],edges)
+xlabel('$\Delta t_{CA}$ [s]')
+legend('Recursive','fmincon','interpreter','latex','box','off','Orientation','horizontal')
