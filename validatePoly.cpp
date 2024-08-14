@@ -130,8 +130,15 @@ int main(void)
                 xp0[i] = x0[i] + DA(i+1);
                 xs0[i] = xsdum[i] + DA(i+1)*0;
             }   
-            xp0  = KeplerProp(xp0, dt, 1.0);
-            xs0  = KeplerProp(xs0, dt, 1.0);
+            if (dyn == 0) { 
+                xp0  = KeplerProp(xp0, dt, 1.0);
+                xs0 = KeplerProp(xs0, dt, 1.0);
+            }
+            else {
+                AlgebraicVector<DA> daCtrl = {DA(1)*0, DA(1)*0, DA(1)*0};
+                xp0  = RK78(6, xp0, daCtrl, 0.0 + DA(1)*0, dt, CR3BPsyn, musc, Lsc); // Cislunar Orbit
+                xs0 = RK78(6, xs0, daCtrl, 0.0 + DA(1)*0, dt, CR3BPsyn, musc, Lsc); // Cislunar Orbit
+            }
             tcaNew = findTCA(xp0 - xs0, 7);
             AlgebraicVector<DA> dx(7);
             for (int i = 0; i < 6; i++) {
