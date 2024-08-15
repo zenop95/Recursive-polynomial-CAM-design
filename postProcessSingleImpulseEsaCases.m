@@ -169,14 +169,14 @@ dvLog = log10(abs(dvDiff));
 figure
 % A = iosr.statistics.boxPlot(dvLog');
 A = violin(dvLog');
-A.outliersize = 15;
+% A.outliersize = 15;
 % A = violin(log10(abs(dvs))');
 hold on
 % B = violin(log10(abs(dv1))');    
-B.LineColor = [0.4940 0.1840 0.5560];
-B.violinColor = [0.4940 0.1840 0.5560];
-B.mediancolor = 'r';
-B.meancolor   = 'r';
+% B.LineColor = [0.4940 0.1840 0.5560];
+% B.violinColor = [0.4940 0.1840 0.5560];
+% B.mediancolor = 'r';
+% B.meancolor   = 'r';
 yticks([-10:5:0,1])
 % A.percentile = [10 90]; 
 hold off
