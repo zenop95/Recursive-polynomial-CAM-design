@@ -1,7 +1,7 @@
 %% Define path and set figure properties
 beep off
 format longG
-close all
+% close all
 clear
 addpath(genpath('.\data'))
 addpath(genpath('.\Functions'))
@@ -21,7 +21,7 @@ warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 %% User-defined inputs (modifiable)
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
-pp = initOpt(multiple,cislunar,1);                                           % [struc] (1,1) Initialize paramters structure with conjunction data
+pp = initOpt(multiple,cislunar,1466);                                           % [struc] (1,1) Initialize paramters structure with conjunction data
 returnTime = 0;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 fireTimes  = 2.5;                                                               % [-] Example of bi-impulsive maneuvers
 % fireTimes = [3.5,2.5,1.5,0.5];                                                  % [-] Example of bi-impulsive maneuvers

@@ -187,7 +187,7 @@ box on
 axis tight
 
 %% Ellipse B-plane
-e2b = eci2Bplane(xBall(4:6,1),pp.x_sTCA(4:6));
+e2b = eci2Bplane(xs(4:6,1),xSec(4:6));
 e2b = e2b([1 3],:);
 PB  = e2b*pp.P*e2b';
 smdLim   = PoC2SMD(PB, pp.HBR, pp.PoCLim, 3, 1, 1e-3, 200);   % [-] (1,1) SMD limit computed with Chan's formula

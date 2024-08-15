@@ -196,7 +196,7 @@ for k = 1:pp.n_conj
     e2b    = e2b([1 3],:);
     pOldB = e2b*(xb(1:3)-x_s(1:3))*Lsc;
     plot(ellB(2,:),ellB(1,:),'k');
-    plot(p(2,:),p(1,:),'o','LineWidth',2);
+    plot(p(2,:)*Lsc,p(1,:)*Lsc,'o','LineWidth',2);
     plot(pOldB(2,:),pOldB(1,:),'k','marker','diamond');
     [semiaxes,cov2b] = defineEllipsoid(PBold,PoC2SMD(PBold, pp.HBR(k), pp.PoCLim, 3, 1, 1e-3, 200));
     a          = semiaxes(1)*Lsc;
