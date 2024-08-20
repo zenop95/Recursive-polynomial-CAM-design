@@ -1,4 +1,4 @@
-function yf = computeCtrlRecursive(coeff,u,scale,pp)
+function [yf,iters] = computeCtrlRecursive(coeff,u,scale,pp)
 % computeCtrlRecursive Solves the polynomial CAM optimization problem using a
 % recursive approach with lagrange multiplier formulation
 %
@@ -21,7 +21,7 @@ DAorder  = pp.DAorder;
 u        = reshape(u,[],1);                                                     % [-] (m,n_man) expansion point for the control
 n        = length(u);                                                           % [-] (1,1) Number of scalar control variables
 tol      = 1e-10;                                                               % [-] (1,1) Tolerance for the successive linearizations
-maxIter  = 5e2;                                                                 % [-] (1,1) Maximum number of successive linearizations
+maxIter  = 1e3;                                                                 % [-] (1,1) Maximum number of successive linearizations
 DAArrays = cell(n_constr,DAorder);                                              % [-] (cell) Initialize cell arrays for the DA expansion high-order tensors
 DeltasUp = nan(n_constr,1);
 DeltasLo = nan(n_constr,1);
@@ -47,10 +47,12 @@ end
 iter = 0;                                                                       % [-] (1,1) Initialize iteration counter
 Yord = Y0;
 Yp = Y0;
+iters = nan(7,1);
+iters(1) = 1;
 for k = 2:DAorder
     err  = 1;                                                                   % [-] (1,1) Initialize convergence variable
     DErr = 1;
-    alpha = .1;
+    alpha = 1;
     while err > tol && iter < maxIter
         iter = iter + 1;                                                        % [-] (1,1) Update iteration number
         if strcmpi(pp.solvingMethod,'lagrange')
@@ -73,6 +75,7 @@ for k = 2:DAorder
         Y0 = (1-alpha)*Y0 + alpha*Yp;                                           % [-] (n,1) Update linearization point for kth-order solution
     end
     Yord(:,k) = Y0;
+    iters(k) = iter-sum(iters(1:k-1));
 end
 yf = reshape(Yp,[],n_man).*scale;                                               % [-] (m,N) Reshape final solution to epress it node-wise
 end

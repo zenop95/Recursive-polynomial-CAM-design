@@ -111,9 +111,15 @@ int main(void)
     DA::setEps(1e-30);
     
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj); 
+    AlgebraicVector<DA> x0(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), dx1(3), dx2(3), dx3(3); 
     AlgebraicMatrix<DA> xTca(6,n_conj), P_eci(3,3), P_B3(3,3), P_B(2,2), Pp(3,3), Ps(3,3), toB(3,3), STM_p(6,6), STM_s(6,6), CPropP(6,6), CPropS(6,6), r2ep(3,3), r2es(3,3);
     DA poc_tot, alpha, beta, tcaNew, tan, radial;
+
+    dx1[0] = DA(1); dx1[1] = 0.0; dx1[2] = 0.0;
+    dx2[0] = 0; dx2[1] = DA(2); dx2[2] = 0.0;
+    dx3[0] = 0; dx3[1] = 0.0; dx3[2] = DA(3);
+
+
     // Define ballistic primary's position at first TCA 
     for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
     // backpropagation from first TCA
@@ -323,7 +329,7 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
 
     time1   = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     //open the output files
-    ofstream constPart, constraints, tcaOut;
+    ofstream constPart, constraints, tcaOut, convRad;
     constPart.open("./write_read/constPart.dat");
     constPart << setprecision(18);
     
@@ -352,7 +358,6 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
         constraints << poc_tot << endl;
     }
 
-    // write the DA expansion of return in output
     if (constraintFlags[1] == 1) {
         constraints << tan    << endl;
     }
@@ -380,6 +385,13 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     }
     constraints.close();
 
+    convRad.open("./write_read/convRad.dat");
+    convRad << setprecision(18);
+    convRad << convRadius(poc_tot.eval(dx1),1e-8) << endl;
+    convRad << convRadius(poc_tot.eval(dx2),1e-8) << endl;
+    convRad << convRadius(poc_tot.eval(dx3),1e-8) << endl;    // write the DA expansion of return in output
+
+    convRad.close();
     // Do not consider writing time when calculating execution time
     time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     timeSubtr = timeSubtr + time2 - time1;

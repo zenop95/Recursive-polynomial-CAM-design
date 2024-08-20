@@ -1,6 +1,6 @@
 beep off
 format longG
-% close all
+close all
 clear
 addpath(genpath('.\data'))
 addpath(genpath('.\Functions'))
@@ -19,7 +19,7 @@ set(0,'defaultfigurecolor',[1 1 1])
 %% load variables
 simFolder = 'SimOutput\impulsive\';
 n = 2170;
-y = 2:5;
+y = 2:7;
 yy = length(y);
 PoCNlp      = nan(yy,n);
 PoCRec      = nan(yy,n);
@@ -32,7 +32,7 @@ inPlaneRec  = nan(yy,n);
 outPlaneNlp = nan(yy,n);
 outPlaneRec = nan(yy,n);
 for kk = y
-    load(['SimOutput\tcaFixed\rec',num2str(kk),'.mat'])
+    load([simFolder,'nlp',num2str(kk),'.mat'])
     PoC(PoC>prctile(PoC,95)) = nan;
     PoC(PoC<prctile(PoC,5)) = nan;
     % tcaNewDelta(tcaNewDelta>prctile(tcaNewDelta,99.95)) = nan;
@@ -40,7 +40,8 @@ for kk = y
     % compTime(compTime>prctile(compTime,99)) = nan;
     PoCNlp(kk-1,:)     = PoC;
     tcaRec(kk-1,:)     = nan(2170,1);
-    simTimeNlp(kk-1,:) = simTime;
+    compTime(compTime>prctile(compTime,99)) = nan;
+    simTimeNlp(kk-1,:) = compTime;
     dvs = squeeze(dvs);
     inPlaneNlp(kk-1,:)  = rad2deg(atan(dvs(1,:)'./dvs(2,:)'))';
     outPlaneNlp(kk-1,:) = rad2deg(atan(dvs(3,:)'./normOfVec(dvs(1:2,:))'))';
@@ -48,7 +49,7 @@ for kk = y
     dvn1(dvn1>prctile(dvn1,99.9)) = nan;
     dv1 = dvs;
     normNlp(kk-1,:)     = dvn1;
-    load([simFolder,'rec',num2str(kk),'.mat'])
+    load(['SimOutput\rec',num2str(kk),'.mat'])
     PoC(PoC>prctile(PoC,95)) = nan;
     PoC(PoC<prctile(PoC,5)) = nan;
     tcaNewDelta(tcaNewDelta>prctile(tcaNewDelta,99.95)) = nan;
@@ -63,38 +64,40 @@ for kk = y
     dvn = normOfVec(squeeze(dvs));
     dvn(dvn>prctile(dvn,99.9)) = nan;
     normRec(kk-1,:)     = dvn;  
+    cr(:,:,kk-1)     = convRad*pp.scaling(4)*pp.ctrlMax*1e6;  
 end
-alsoNlp = 1;
+alsoNlp = 0;
 %% Violin plots
-% figure
+figure
+if alsoNlp
+    B = violin(PoCNlp'*1e6-1,y);
+    B.LineColor = [0.4940 0.1840 0.5560];
+    B.violinColor = [0.4940 0.1840 0.5560];
+    B.mediancolor = 'r';
+    B.meancolor   = 'r';
+end
+hold on
+A = violin(PoCRec'*1e6-1,y);
+hold off
+xlabel('Expansion order [-]')
+ylabel('PoC [-]')
+
+figure
+subplot(3,1,1)
 % if alsoNlp
-%     B = violin(PoCNlp'*1e6-1,y);
-%     B.LineColor = [0.4940 0.1840 0.5560];
-%     B.violinColor = [0.4940 0.1840 0.5560];
-%     B.mediancolor = 'r';
-%     B.meancolor   = 'r';
+    B = violin(simTimeNlp',y);
+    B.LineColor = [0.4940 0.1840 0.5560];
+    B.violinColor = [0.4940 0.1840 0.5560];
+    B.mediancolor = 'r';
+    B.meancolor   = 'r';
+    hold on
 % end
-% hold on
-% A = violin(PoCRec'*1e6-1,y);
-% hold off
-% xlabel('Expansion order [-]')
-% ylabel('PoC [-]')
-% 
-% figure
-% subplot(3,1,3)
-% if alsoNlp
-%     B = violin(simTimeNlp',y);
-%     B.LineColor = [0.4940 0.1840 0.5560];
-%     B.violinColor = [0.4940 0.1840 0.5560];
-%     B.mediancolor = 'r';
-%     B.meancolor   = 'r';
-%     hold on
-% end
-% A = violin(simTimeRec',y);
-% hold off
-% xlabel('Expansion order [-]')
-% ylabel('Computation Time [s]')
-% 
+A = violin(simTimeRec',y);
+hold off
+xlabel('Expansion order [-]')
+ylabel('Computation Time [s]')
+
+
 %% Define colors
 col1 = [0.9290 0.6940 0.1250];
 col2 = [0.4940 0.1840 0.5560];
@@ -103,6 +106,66 @@ col4 = [0 0.4470 0.7410];
 colorsRec = [linspace(col3(1),col4(1),yy)', linspace(col3(2),col4(2),yy)', linspace(col3(3),col4(3),yy)'];
 colorsNlp = [linspace(col1(1),col2(1),yy)', linspace(col1(2),col2(2),yy)', linspace(col1(3),col2(3),yy)'];
 colors = [colorsRec;colorsNlp];
+colororder(colors)
+
+crR = squeeze(cr(1,:,:));
+crT = squeeze(cr(2,:,:));
+crN = squeeze(cr(3,:,:));
+
+figure()
+[crRsorted,ord] = sort(crR);
+semilogy(abs(dvs(1,ord(:,4))),'.','LineWidth',1)
+hold on
+semilogy(crRsorted,'LineWidth',2)
+axis tight
+box on
+grid on
+hold off
+ylabel('$\Delta v_R$ [mm/s]')
+xlabel('Conjunction ID [-]')
+
+    figure()
+    [crTsorted,ord] = sort(crT);
+    ddv = abs(dvs(2,ord(:,4)));
+    upB = crTsorted(:,5)';
+    ddvup = ddv; ddvup(ddvup<upB*2) = nan;
+    semilogy(abs(ddv),'b.','LineWidth',1)
+    hold on
+    semilogy(abs(ddvup),'r.','LineWidth',1)
+    semilogy(crTsorted,'LineWidth',2)
+    legend('','','n=2','n=3','n=4','n=5','n=6','n=7','Interpreter','latex','Orientation','horizontal')
+    axis tight
+    box on
+    grid on
+    hold off
+    ylabel('$\Delta v_T$ [mm/s]')
+    xlabel('Conjunction ID [-]')
+    
+    iters = sum(iterationsN(1:5,ord(:,4)),1);
+    iterred = iters; iterred(isnan(ddvup)) = nan;
+    figure()
+    plot(iters,'b.') 
+    hold on 
+    plot(iterred,'r.')
+    hold off
+    axis tight
+    box on
+    grid on
+    hold off
+    ylabel('Iterations [-]')
+    xlabel('Conjunction ID [-]')
+
+figure()
+[crNsorted,ord] = sort(crN);
+semilogy(abs(dvs(3,ord(:,4))),'.','LineWidth',1)
+hold on
+semilogy(crNsorted,'LineWidth',2)
+axis tight
+box on
+grid on
+hold off
+ylabel('$\Delta v_N$ [mm/s]')
+xlabel('Conjunction ID [-]')
 % 
 % %% Delta V histograms
 % figure()
@@ -134,53 +197,53 @@ colors = [colorsRec;colorsNlp];
 % histograms([tcaRec(5,:);tcaNlp(5,:)],edges)
 % xlabel('$\Delta t_{CA}$ [s]')
 % legend('Recursive','fmincon','interpreter','latex','box','off','Orientation','horizontal')
-
-dv1(abs(dv1)>1000) = nan;
-dvDiff = squeeze(dvs) - dv1;
-dv1(:,any(isnan(dv1))) = [];
-dvDiff(abs(dvDiff)>200) = nan;
-dvDiff(:,any(isnan(dvDiff))) = [];
+% 
 
 %% Delta V histograms
-figure()
-edges =  -.2:.02:.2;
-colororder([colors(1,:);colors(end,:)])
-subplot(1,3,1)
-histograms([dvDiff(1,:)],edges)
-xlabel('R [mm/s]')
-ylim([0,90])
-% legend('R','T','N','interpreter','latex','box','off','Orientation','horizontal')
-subplot(1,3,2)
-edges =  -1:.1:1;
-histograms([dvDiff(2,:)],edges)
-xlabel('T [mm/s]')
-yticklabels([])
-ylim([0,90])
-subplot(1,3,3)
-edges =  -.03:.003:.03;
-histograms([dvDiff(3,:)],edges)
-xlabel('N [mm/s]')
-yticks(0:10:60)
-yticklabels([])
-ylim([0,90])
+% dv1(abs(dv1)>1000) = nan;
+% dvDiff = squeeze(dvs) - dv1;
+% dv1(:,any(isnan(dv1))) = [];
+% dvDiff(abs(dvDiff)>200) = nan;
+% dvDiff(:,any(isnan(dvDiff))) = [];
+% figure()
+% edges =  -.2:.02:.2;
+% colororder([colors(1,:);colors(end,:)])
+% subplot(1,3,1)
+% histograms([dvDiff(1,:)],edges)
+% xlabel('R [mm/s]')
+% ylim([0,90])
+% % legend('R','T','N','interpreter','latex','box','off','Orientation','horizontal')
+% subplot(1,3,2)
+% edges =  -1:.1:1;
+% histograms([dvDiff(2,:)],edges)
+% xlabel('T [mm/s]')
+% yticklabels([])
+% ylim([0,90])
+% subplot(1,3,3)
+% edges =  -.03:.003:.03;
+% histograms([dvDiff(3,:)],edges)
+% xlabel('N [mm/s]')
+% yticks(0:10:60)
+% yticklabels([])
+% ylim([0,90])
 
 %%
-dvLog = log10(abs(dvDiff));
-figure
-% A = iosr.statistics.boxPlot(dvLog');
-A = violin(dvLog');
-% A.outliersize = 15;
-% A = violin(log10(abs(dvs))');
-hold on
-% B = violin(log10(abs(dv1))');    
-% B.LineColor = [0.4940 0.1840 0.5560];
-% B.violinColor = [0.4940 0.1840 0.5560];
-% B.mediancolor = 'r';
-% B.meancolor   = 'r';
-yticks([-10:5:0,1])
-% A.percentile = [10 90]; 
-hold off
-xticklabels({'R','T','N'})
-ylabel('$\Delta V$ [log(mm/s)]')
+% dvLog = log10(abs(dvDiff));
+% figure
+% % A = iosr.statistics.boxPlot(dvLog');
+% A = violin(dvLog');
+% % A.outliersize = 15;
+% % A = violin(log10(abs(dvs))');
+% hold on
+% % B = violin(log10(abs(dv1))');    
+% % B.LineColor = [0.4940 0.1840 0.5560];
+% % B.violinColor = [0.4940 0.1840 0.5560];
+% % B.mediancolor = 'r';
+% % B.meancolor   = 'r';
+% yticks([-10:5:0,1])
+% % A.percentile = [10 90]; 
+% hold off
+% xticklabels({'R','T','N'})
+% ylabel('$\Delta V$ [log(mm/s)]')
 
 %%

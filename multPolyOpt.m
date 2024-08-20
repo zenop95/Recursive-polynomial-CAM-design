@@ -1,6 +1,6 @@
 beep off
 format longG
-close all
+% close all
 clear
 addpath(genpath('.\data'))
 addpath(genpath('.\Functions'))
@@ -23,7 +23,7 @@ set(0,'defaultfigurecolor',[1 1 1])
 % returnTime = -1;                                                           % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 for kk = 2:7
 for j = 1:2170
-t_man = [2.4,2.6];
+t_man = [2.5];
 multiple = 0;
 j
 pp = initOpt(0,0,j);
@@ -91,7 +91,7 @@ end
 metric = coeff(1).C(1);
 %% Optimization
 if any(strcmpi(pp.solvingMethod,{'lagrange','convex','newton'}))
-        yF = computeCtrlRecursive(coeff,u,scale,pp);
+        [yF,iters] = computeCtrlRecursive(coeff,u,scale,pp);
 
 elseif strcmpi(pp.solvingMethod,'fmincon')
         yF = computeCtrlNlp(coeff,u,scale,pp);
@@ -154,8 +154,12 @@ PoC(j) = poc_Chan(pp.HBR,PB(:,:,j),smd,3);                                      
 compTime(j) = simTime;
 E2B(:,:,j) = e2b;
 tcaNewDelta(j) = deltaTca;
+iterationsN(:,j) = iters;
+convRad(:,j) = load("write_read\convRad.dat")*pp.scaling(4)*pp.ctrlMax*1e6;
 % nodeThrust(:,j) = thrustNode;
 end
-clearvars -except errP errV dvs xs PoC compTime PB E2B xSec tcaNewDelta pp t_man
+clearvars -except errP errV dvs xs PoC compTime PB E2B xSec tcaNewDelta pp t_man iterationsN convRad
 save(['simOutput/rec' num2str(pp.DAorder)]);
 end
+figure
+semilogy(convRad')
