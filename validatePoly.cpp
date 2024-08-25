@@ -17,7 +17,7 @@ using namespace cam;
 int main(void)
 {
     int j, i, k, ii, flag1, flag2, flag3, order, metricFlag, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd;
-	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, dt, musc, ctrlMax, mean_motion_p, mean_motion_s;
+	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, dt, musc, ctrlMax, mean_motion_p;
  
     ifstream nodes;
 	nodes.open("./write_read/initial_state.dat");
@@ -27,8 +27,8 @@ int main(void)
         nodes >> m;         // Number of DA variables per node
 	nodes.close();
 
-    AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(3,n_man), rsDum(3,n_conj), vsDum(3,n_conj), xTca(6,n_conj);
-    AlgebraicVector<double> xdum(6), xsdum(6), x0(6), ctrl(3), ctrlRtn(3), t(N), HBR(n_conj), xRet(6);
+    AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(3,n_man), xsdum(6,n_conj), rsDum(3,n_conj), vsDum(3,n_conj), xTca(6,n_conj), xsTca(6,n_conj);
+    AlgebraicVector<double> xdum(6), x0(6), ctrl(3), ctrlRtn(3), t(N), HBR(n_conj), xRet(6), mean_motion_s(n_conj);
     AlgebraicVector<int>    canFire(N), isConj(N), isRet(N);
     ifstream Input;
 	Input.open("./write_read/initial_state.dat");
@@ -46,12 +46,16 @@ int main(void)
         Input >> gravOrd;            // Gravitational constant
         Input >> ctrlMax;            // Gravitational constant
         Input >> mean_motion_p;        // mean motion primary
-        Input >> mean_motion_s;        // mean motion secondary
+        for (k = 0; k < n_conj; k ++) {
+            Input >> mean_motion_s[k];        // mean motion secondary
+        }
         for (j = 0; j < 6; j ++) {
             Input >> xdum[j];
         }
-        for (j = 0; j < 6; j ++) {
-            Input >> xsdum[j];
+        for (k = 0; k < n_conj; k ++) {
+            for (j = 0; j < 6; j ++) {
+                Input >> xsdum.at(j,k);
+            }
         }
         for (i = 0; i < n_man; i ++) {
             for (j = 0; j < 3; j ++) {
@@ -67,8 +71,8 @@ int main(void)
 	Input.close();
     DA::init(1, 7);
     DA::setEps(1e-30);
-    AlgebraicVector<DA> xp0(6), xs0(6);
-    DA tcaNew;
+    AlgebraicVector<DA> xp0(6), xs0(6), tcaNew(n_conj);
+
     if (dyn == 0) {
         if (gravOrd == 0) {
             x0 = RK78(6, xdum, {0.0,0.0,0.0}, 0.0, - t[0], keplerPropAcc, 1.0, Lsc); // Earth Orbit
@@ -126,21 +130,22 @@ int main(void)
         }
         if (isConj[i+1] == 1) {
             DA dt = 0.0 + DA(7);
-            for (i = 0; i < 6; i ++) {
-                xp0[i] = x0[i] + DA(i+1);
-                xs0[i] = xsdum[i] + DA(i+1)*0;
+            for (j = 0; j < 6; j ++) {
+                xp0[j] = x0[j] + DA(j+1);
+                xs0[j] = xsdum.at(j,k) + DA(j+1)*0;
             }   
             xp0  = KeplerProp(xp0, dt, 1.0);
             xs0 = KeplerProp(xs0, dt, 1.0);
-            tcaNew = findTCA(xp0 - xs0, 7);
+            tcaNew[k] = findTCA(xp0 - xs0, 7);
             AlgebraicVector<DA> dx(7);
-            for (int i = 0; i < 6; i++) {
-                dx[i] = DA(i+1);}
-            dx[6] = tcaNew;
+            for (int j = 0; j < 6; j++) {
+                dx[j] = DA(j+1);}
+            dx[6] = tcaNew[k];
             xp0 = xp0.eval(dx);
             xs0 = xs0.eval(dx);
             for (j = 0; j < 6 ; j ++) {
                 xTca.at(j,k) = cons(xp0[j]);
+                xsTca.at(j,k) = cons(xs0[j]);
             }        
             k ++;
         }
@@ -160,7 +165,7 @@ int main(void)
     }
     for (k = 0; k < n_conj ; k++) {
         for (j = 0; j < 6 ; j++) {
-        constPart  << cons(xs0[j]) << endl;
+        constPart  << xsTca.at(j,k) << endl;
         }
     }
     for (j = 0; j < 6 ; j++) {
@@ -170,7 +175,9 @@ int main(void)
     ofstream tcaOut;
     tcaOut.open("./write_read/tcaOut.dat");
     tcaOut << setprecision(16);
-    tcaOut  << cons(tcaNew) << endl;
+    for (k = 0; k < n_conj ; k++) {
+        tcaOut  << cons(tcaNew[k]) << endl;
+    }
     tcaOut.close();
     
 }

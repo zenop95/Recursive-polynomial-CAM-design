@@ -50,7 +50,9 @@ fprintf(fid, '%40.16f\n', mu);
 fprintf(fid, '%2i\n',     pp.gravOrd);
 fprintf(fid, '%40.16f\n', pp.ctrlMax);
 fprintf(fid, '%40.16f\n', pp.primary.n);
-fprintf(fid, '%40.16f\n', pp.secondary.n);
+for k = 1:n_conj
+    fprintf(fid, '%40.16f\n', pp.secondary(k).n);
+end
 for j = 1:6 
     fprintf(fid, '%40.16f\n', x_pTCA(j));
 end

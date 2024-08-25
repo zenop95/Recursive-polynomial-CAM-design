@@ -38,17 +38,17 @@ PoC = nan(pp.n_conj,1);
 for k = 1:pp.n_conj
     x      = xManTca(:,k);
     x_s    = xManSec(:,k);
-    STMp   = CWStateTransition(pp.primary.n^(3/2),deltaTca/pp.Tsc,0,1);
-    STMs   = CWStateTransition(pp.secondary.n^(3/2),deltaTca/pp.Tsc,0,1);
-    Cpprop = STMp*pp.Cp*STMp';
-    Csprop = STMs*pp.Cs*STMs';
+    xb     = xBall(:,k);
+    STMp   = CWStateTransition(pp.primary.n^(3/2),deltaTca(k)/pp.Tsc,0,1);
+    STMs   = CWStateTransition(pp.secondary(k).n^(3/2),deltaTca(k)/pp.Tsc,0,1);
+    Cpprop = STMp*pp.Cp(:,:,k)*STMp';
+    Csprop = STMs*pp.Cs(:,:,k)*STMs';
     Pp     = Cpprop(1:3,1:3);
     Ps     = Csprop(1:3,1:3);
     r2ep   = rtn2eci(x(1:3),x(4:6));
     r2es   = rtn2eci(x_s(1:3),x_s(4:6));
     P      = r2ep*Pp*r2ep' + r2es*Ps*r2es';
     [PB,p,smd] = Bplane(x,x_s,P);    
-    [PBold,pold,smdold] = Bplane(pp.x_pTCA,pp.x_sTCA,pp.P);    
     switch pp.pocType
     case 0
         PoC(k) = constantPc(p,PB,pp.HBR(k));                                   % [-] (1,1) PoC computed with Chan's formula
@@ -61,6 +61,44 @@ for k = 1:pp.n_conj
     otherwise
         error('invalid PoC type')
     end
+    switch pp.pocType
+    case 0
+        smdLim   = -2*log(2*pp.PoCLim*sqrt(det(PB))/pp.HBR(k)^2);        % [-] (1,1) SMD limit computed with Alfriend and Akella's formula
+    case 1
+        smdLim   = PoC2SMD(PB, pp.HBR(k), pp.PoCLim, 3, 1, 1e-3, 200);   % [-] (1,1) SMD limit computed with Chan's formula
+    case 2
+        smdLim   = pp.HBR(k)^2/(exp(1)*sqrt(det(PB))*pp.PoCLim);                         % [-] (1,1) SMD limit computed with Maximum formula
+    case 3
+        smdLim   = pp.PoCLim;                                               % [-]   (1,1) PoC limit;     % [-] (1,1) SMD limit computed with Miss distance
+        PB       = eye(2);
+    otherwise
+        error('invalid PoC type')
+    end
+    [semiaxes,cov2b] = defineEllipsoid(PB,smdLim);
+    a          = semiaxes(1)*Lsc;
+    b          = semiaxes(2)*Lsc;
+    tt         = 0:0.001:2*pi;
+    xx         = a*cos(tt);
+    yy         = b*sin(tt);
+    ellCov     = [xx; yy];
+    ellB       = nan(2,length(tt));
+    for j = 1:length(tt)
+        ellB(:,j) = cov2b*ellCov(:,j);
+    end
+    figure('Renderer', 'painters', 'Position', [300 300 560 300])
+    hold on    
+    e2b    = eci2Bplane(x(4:6),x_s(4:6));
+    e2b    = e2b([1 3],:);
+    pOldB = e2b*(xb(1:3)-x_s(1:3))*Lsc;
+    plot(ellB(2,:),ellB(1,:),'k');
+    plot(p(2,:)*Lsc,p(1,:)*Lsc,'o','LineWidth',2);
+    plot(pOldB(2,:),pOldB(1,:),'k','marker','diamond');
+    grid on 
+    xlabel('$\zeta$ [km]')
+    ylabel('$\xi$ [km]')
+    hold off
+    axis equal
+    box on
 end
 poc_tot = PoCTot(PoC);
 
@@ -76,7 +114,7 @@ disp(['Solver: ', pp.solvingMethod])
 disp(['Computation time ',num2str(simTime), ' s'])
 n   = size(ctrl,2);
 disp(['Number of conjunctions: ', num2str(pp.n_conj)])
-disp(['tca shift = ', num2str(deltaTca), ' s'])
+disp(['tca shift = ', num2str(deltaTca(1)), ' s'])
 
 if ~pp.lowThrust
     ctrl  = ctrl*Vsc*1e6;
@@ -162,64 +200,5 @@ end
 legend('R','T','N','$|\cdot|$','interpreter','latex')
 hold off
 % saveas(gcf, 'dv', 'epsc') %Save figure
-
-% Ellipse B-plane
-for k = 1:pp.n_conj
-    xb     = xBall(:,k);
-    switch pp.pocType
-    case 0
-        smdLim   = -2*log(2*pp.PoCLim*sqrt(det(PB))/pp.HBR(k)^2);        % [-] (1,1) SMD limit computed with Alfriend and Akella's formula
-    case 1
-        smdLim   = PoC2SMD(PB, pp.HBR(k), pp.PoCLim, 3, 1, 1e-3, 200);   % [-] (1,1) SMD limit computed with Chan's formula
-    case 2
-        smdLim   = pp.HBR(k)^2/(exp(1)*sqrt(det(PB))*pp.PoCLim);                         % [-] (1,1) SMD limit computed with Maximum formula
-    case 3
-        smdLim   = pp.PoCLim;                                               % [-]   (1,1) PoC limit;     % [-] (1,1) SMD limit computed with Miss distance
-        PB       = eye(2);
-    otherwise
-        error('invalid PoC type')
-    end
-    [semiaxes,cov2b] = defineEllipsoid(PB,smdLim);
-    a          = semiaxes(1)*Lsc;
-    b          = semiaxes(2)*Lsc;
-    tt         = 0:0.001:2*pi;
-    xx         = a*cos(tt);
-    yy         = b*sin(tt);
-    ellCov     = [xx; yy];
-    ellB       = nan(2,length(tt));
-    for j = 1:length(tt)
-        ellB(:,j) = cov2b*ellCov(:,j);
-    end
-    figure('Renderer', 'painters', 'Position', [300 300 560 300])
-    hold on    
-    e2b    = eci2Bplane(x(4:6),x_s(4:6));
-    e2b    = e2b([1 3],:);
-    pOldB = e2b*(xb(1:3)-x_s(1:3))*Lsc;
-    plot(ellB(2,:),ellB(1,:),'k');
-    plot(p(2,:)*Lsc,p(1,:)*Lsc,'o','LineWidth',2);
-    plot(pOldB(2,:),pOldB(1,:),'k','marker','diamond');
-    [semiaxes,cov2b] = defineEllipsoid(PBold,PoC2SMD(PBold, pp.HBR(k), pp.PoCLim, 3, 1, 1e-3, 200));
-    a          = semiaxes(1)*Lsc;
-    b          = semiaxes(2)*Lsc;
-    xx         = a*cos(tt);
-    yy         = b*sin(tt);
-    ellCov     = [xx; yy];
-    ellB       = nan(2,length(tt));
-    for j = 1:length(tt)
-        ellB(:,j) = cov2b*ellCov(:,j);
-    end 
-    e2b    = eci2Bplane(pp.x_pTCA(4:6),pp.x_sTCA(4:6));
-    e2b    = e2b([1 3],:);
-    pNewB = e2b*(x(1:3)-pp.x_sTCA(1:3))*Lsc;
-    plot(ellB(2,:),ellB(1,:),'k--');
-    plot(pNewB(2,:),pNewB(1,:),'o','LineWidth',2);
-    plot(pOldB(2,:),pOldB(1,:),'k','marker','diamond');
-    grid on 
-    xlabel('$\zeta$ [km]')
-    ylabel('$\xi$ [km]')
-    hold off
-    axis equal
-    box on
-end
 
 end

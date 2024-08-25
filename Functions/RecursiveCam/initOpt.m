@@ -40,8 +40,8 @@ pp.scaling = [pp.Lsc*ones(3,1); pp.Vsc*ones(3,1)];                              
 pp.et      = 478548000/pp.Tsc;                                                  % [-]       (1,1) Scaled initial ephemeris time
 pp.x_pTCA  = pp.primary.x0./pp.scaling;                                         % [-]       (6,1) Scaled primary cartesian state at TCA
 pp.primary.n = pp.primary.n*pp.Tsc;
-pp.secondary.n = pp.secondary.n*pp.Tsc;
 for k = 1:pp.n_conj
+    pp.secondary(k).n = pp.secondary(k).n*pp.Tsc;
     pp.x_sTCA(:,k) = pp.secondary(k).x0./pp.scaling;                            % [-] (6,1) Scaled kth secondary cartesian state at TCA
     pp.HBR(k)      = pp.secondary(k).HBR/pp.Lsc;                                % [-] (6,1) Scaled Hard Body Radius of kth secondary
 end

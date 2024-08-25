@@ -17,7 +17,7 @@ using namespace cam;
 int main(void)
 {
     int nvar, j, jj, kk, i, ii, k, vv, flag1, flag2, flag3, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd;
-	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, musc, ctrlMax, mean_motion_p, mean_motion_s;
+	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, musc, ctrlMax, mean_motion_p;
 
     long time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     
@@ -30,7 +30,7 @@ int main(void)
 	nodes.close();
     // Initialize variable
     AlgebraicMatrix<double> Cp(6,6), Cs(6,6), covp(36,n_conj), covs(36,n_conj), r2e(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
-    AlgebraicVector<double> xdum(6), metricMap(3), t(N), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3);
+    AlgebraicVector<double> xdum(6), metricMap(3), t(N), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3), mean_motion_s(n_conj);
     AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(6);
     // Write input from .dat
 	Input.open("./write_read/initial_state.dat");
@@ -48,7 +48,9 @@ int main(void)
         Input >> gravOrd;            // Gravitational constant
         Input >> ctrlMax;            // ctrlMax
         Input >> mean_motion_p;        // mean motion primary
-        Input >> mean_motion_s;        // mean motion secondary
+        for (k = 0; k < n_conj; k ++) {
+            Input >> mean_motion_s[k];        // mean motion secondary
+        }
         for (j = 0; j < 6; j ++) {
             Input >> xdum[j];           // Write dummy variable for the primary's ECI state at the first conjunction from input
         }
@@ -70,13 +72,11 @@ int main(void)
                 Input >> vRef[j]; // Write reference ECI velocity for return from input
             }
         for (k = 0; k < n_conj; k ++) {
-            for (j = 0; j < 36; j ++) {
-                Input >> covp.at(j,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
+            for (vv = 0; vv < 36; vv ++) {
+                Input >> covp.at(vv,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
             }
-        }
-        for (k = 0; k < n_conj; k ++) {
-            for (j = 0; j < 36; j ++) {
-                Input >> covs.at(j,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
+            for (vv = 0; vv < 36; vv ++) {
+                Input >> covs.at(vv,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
             }
         }
         for (i = 0; i < n_man; i ++) {
@@ -106,13 +106,13 @@ int main(void)
     long time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     long timeSubtr = time2 - time1;
     // Initialize DA    
-    nvar = m*n_man + n_conj; 
+    nvar = m*n_man + 1; 
     DA::init(order, nvar);
     DA::setEps(1e-30);
     
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), dx1(3), dx2(3), dx3(3); 
-    AlgebraicMatrix<DA> xTca(6,n_conj), P_eci(3,3), P_B3(3,3), P_B(2,2), Pp(3,3), Ps(3,3), toB(3,3), STM_p(6,6), STM_s(6,6), CPropP(6,6), CPropS(6,6), r2ep(3,3), r2es(3,3);
+    AlgebraicVector<DA> x0(6), x00(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), dx1(3), dx2(3), dx3(3); 
+    AlgebraicMatrix<DA> xTca(6,n_conj), xsTca(6,n_conj), P_eci(3,3), P_B3(3,3), P_B(2,2), Pp(3,3), Ps(3,3), toB(3,3), STM_p(6,6), STM_s(6,6), CPropP(6,6), CPropS(6,6), covsda(9,n_conj), r2ep(3,3), r2es(3,3);
     DA poc_tot, alpha, beta, tcaNew, tan, radial;
 
     dx1[0] = DA(1); dx1[1] = 0.0; dx1[2] = 0.0;
@@ -216,18 +216,18 @@ int main(void)
         if (isConj[i+1] == 1) {
             DA dt = 0.0 + DA(nvar);
             ctrl = {DA(1)*0, DA(1)*0, DA(1)*0};
-            xs0[0] = rsDum.at(0,0) + DA(1)*0; xs0[1] = rsDum.at(1,0) + DA(1)*0; xs0[2] = rsDum.at(2,0) + DA(1)*0;
-            xs0[3] = vsDum.at(0,0) + DA(1)*0; xs0[4] = vsDum.at(1,0) + DA(1)*0; xs0[5] = vsDum.at(2,0) + DA(1)*0; 
-            x0  = KeplerProp(x0, dt, 1.0);
-            xsf = KeplerProp(xs0, dt, 1.0);
-            tcaNew = findTCA(x0 - xsf, nvar);
+            xs0[0] = rsDum.at(0,k) + DA(1)*0; xs0[1] = rsDum.at(1,k) + DA(1)*0; xs0[2] = rsDum.at(2,k) + DA(1)*0;
+            xs0[3] = vsDum.at(0,k) + DA(1)*0; xs0[4] = vsDum.at(1,k) + DA(1)*0; xs0[5] = vsDum.at(2,k) + DA(1)*0; 
+            x00  = KeplerProp(x0, dt, 1.0);
+            xsf  = KeplerProp(xs0, dt, 1.0);
+            tcaNew = findTCA(x00 - xsf, nvar);
             STM_p = CWSTM(mean_motion_p,tcaNew); // CW transformation for the covariance (can be done with YA)
-            STM_s = CWSTM(mean_motion_s,tcaNew); // CW transformation for the covariance (can be done with YA)
+            STM_s = CWSTM(mean_motion_s[k],tcaNew); // CW transformation for the covariance (can be done with YA)
             for (ii = 0; ii < 6 ; ii ++) {
                 for (j = 0; j < 6 ; j ++) {
                     Cp.at(ii,j)  = covp.at(vv,k);
                     Cs.at(ii,j)  = covs.at(vv,k);
-                    vv = vv + 1;
+                    vv ++;
                 }
             }
             CPropP = STM_p*Cp*STM_p.transpose();
@@ -238,20 +238,28 @@ int main(void)
                 Ps.at(ii,j)  = CPropS.at(ii,j);
             }
             }
-            r2ep = rtn2eci(x0);
+            r2ep = rtn2eci(x00);
             r2es = rtn2eci(xsf);
             P_eci = r2ep*Pp*r2ep.transpose() + r2es*Ps*r2es.transpose();
 
             AlgebraicVector<DA> dx(nvar);
-            for (ii = 0; ii < nvar-1; ii++) {
+            for (ii = 0; ii < nvar - 1; ii++) {
                 dx[ii] = DA(ii+1);}
-            dx[nvar-1] = tcaNew;
-            x0  = x0.eval(dx);
+            dx[nvar - 1] = tcaNew;
+            x00  = x00.eval(dx);
             xsf = xsf.eval(dx);
             P_eci = evalDAMatrix(P_eci,dx,3);
+            vv = 0;
+            for (ii = 0; ii < 3 ; ii ++) {
+                for (j = 0; j < 3; j ++) {
+                    covsda.at(vv,k) = P_eci.at(ii,j);
+                    vv ++;
+                }
+            }
             for (j = 0; j < 6 ; j ++) {
-                xTca.at(j,k) = x0[j];
-            }        
+                xTca.at(j,k) = x00[j];
+                xsTca.at(j,k) = xsf[j];
+            }
             k = k + 1;
         }
         else if (isRet[i+1] == 1) {
@@ -263,12 +271,18 @@ if (constraintFlags[0] == 1) {
     DA noCollisions = 1.0;
     for (k = 0; k < n_conj; k ++) {
         // Expanded position and velocity of the primary at conjunction k
-        r[0] = xTca.at(0,k);  r[1] = xTca.at(1,k);  r[2] = xTca.at(2,k);   
-        v[0] = xTca.at(3,k);  v[1] = xTca.at(4,k);  v[2] = xTca.at(5,k);
-        // Build the ECI combined covariance matrix and the secondary's ECI position and velocity from dummy variables
         for (i = 0; i < 3 ; i ++) {
-            rs[i] = xsf[i];
-            vs[i] = xsf[i+3];
+            r[i] = xTca.at(i,k);
+            v[i] = xTca.at(i+3,k);
+            rs[i] = xsTca.at(i,k);
+            vs[i] = xsTca.at(i+3,k);
+        }
+        vv = 0;
+        for (ii = 0; ii < 3 ; ii ++) {
+        for (j = 0; j < 3 ; j ++) {
+            P_eci.at(ii,j) = covsda.at(vv,k);
+            vv ++;
+        }
         }
         // B-plane transformations
         toB  = Bplane(v,vs); // DCM from ECI to B-plane
@@ -277,7 +291,7 @@ if (constraintFlags[0] == 1) {
         P_B3 = toB*P_eci*toB.transpose();     // Combined covariance in the B-plane (3D)
 
         // Relative position in the B-plane (2D)
-        r_rel[0]    = rB[0] - rsB[0];   r_rel[1]    = rB[2] - rsB[2]; 
+        r_rel[0]    = rB[0] - rsB[0];   r_rel[1]    = rB[2] - rsB[2];
         // Combined covariance in the B-plane (2D)
         P_B.at(0,0) = P_B3.at(0,0);     P_B.at(0,1) = P_B3.at(0,2);
         P_B.at(1,0) = P_B3.at(2,0);     P_B.at(1,1) = P_B3.at(2,2);
@@ -296,7 +310,6 @@ if (constraintFlags[0] == 1) {
         // Probability of no collision
         noCollisions = noCollisions*(1.0 - poc[k]);
     }
-
     // Final PoC comprehensive of all the conjunctions
     if (pocType == 3) {
         poc_tot = poc[0];

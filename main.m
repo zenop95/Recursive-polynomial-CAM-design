@@ -23,7 +23,7 @@ multiple = 0;                                                                   
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,1);                                           % [struc] (1,1) Initialize paramters structure with conjunction data
 returnTime = 0;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-fireTimes  = 2.5;                                                               % [-] Example of bi-impulsive maneuvers
+fireTimes  = [2.5 0];                                                               % [-] Example of bi-impulsive maneuvers
 % fireTimes = [3.5,2.5,1.5,0.5];                                                  % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(1.4,1.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(4.4,4.6,2) linspace(3.4,3.6,2) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
@@ -116,7 +116,7 @@ else
     ctrl = yF;                                                                  % [-] (3,n_man) Build control matrix node-wise in the general case
 end
 simTime = toc - timeSubtr - timeSubtr1;     
-convRad = load("write_read\convRad.dat")*pp.scaling(4)*pp.ctrlMax*1e6
+convRad = load("write_read\convRad.dat")*pp.scaling(4)*pp.ctrlMax*1e6;
 ctrl = pp.ctrlMax*ctrl;
 %% Validation
 metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...    

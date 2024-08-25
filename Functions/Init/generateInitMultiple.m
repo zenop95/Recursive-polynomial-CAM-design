@@ -24,7 +24,7 @@ primary.x0     = [6776.60657981063;
                   1.57704416507791;
                   4.46511210712407;
                   5.92540389971189];
-
+primary.n = 1;
 %% Secondary structure
 load("./data/dataConjunctionsESA.mat");
 B   = table2array(data); clear data;
@@ -60,6 +60,7 @@ for j = 1:n_conj
     secondary(j).Cd       = 2.2;          % [-] shape coefficient for drag
     secondary(j).A_srp    = 1;            % [m^2] SRP surface area
     secondary(j).Cr       = 1.31;         % [-] shape coefficient for SRP
+    secondary(j).n = 1;
 end
 %%
 
