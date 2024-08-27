@@ -16,7 +16,7 @@ using namespace cam;
 
 int main(void)
 {
-    int nvar, j, jj, kk, i, ii, k, vv, flag1, flag2, flag3, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd;
+    int nvar, j, jj, kk, i, ii, k, vv, flag1, flag2, flag3, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd, missDistanceFlag;
 	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, musc, ctrlMax, mean_motion_p;
 
     long time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
@@ -47,6 +47,7 @@ int main(void)
         Input >> musc;            // Gravitational constant
         Input >> gravOrd;            // Gravitational constant
         Input >> ctrlMax;            // ctrlMax
+        Input >> missDistanceFlag;        // maneuver on miss distance
         Input >> mean_motion_p;        // mean motion primary
         for (k = 0; k < n_conj; k ++) {
             Input >> mean_motion_s[k];        // mean motion secondary
@@ -111,7 +112,7 @@ int main(void)
     DA::setEps(1e-30);
     
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), x00(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), dx1(3), dx2(3), dx3(3); 
+    AlgebraicVector<DA> x0(6), x00(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), md(n_conj), dx1(3), dx2(3), dx3(3); 
     AlgebraicMatrix<DA> xTca(6,n_conj), xsTca(6,n_conj), P_eci(3,3), P_B3(3,3), P_B(2,2), Pp(3,3), Ps(3,3), toB(3,3), STM_p(6,6), STM_s(6,6), CPropP(6,6), CPropS(6,6), covsda(9,n_conj), r2ep(3,3), r2es(3,3);
     DA poc_tot, alpha, beta, tcaNew, tan, radial;
 
@@ -292,29 +293,29 @@ if (constraintFlags[0] == 1) {
 
         // Relative position in the B-plane (2D)
         r_rel[0]    = rB[0] - rsB[0];   r_rel[1]    = rB[2] - rsB[2];
-        // Combined covariance in the B-plane (2D)
-        P_B.at(0,0) = P_B3.at(0,0);     P_B.at(0,1) = P_B3.at(0,2);
-        P_B.at(1,0) = P_B3.at(2,0);     P_B.at(1,1) = P_B3.at(2,2);
-        vv = 0;
-        // Compute PoC for the single conjunction, according to the required model
-        if (pocType == 0) {
-            poc[k] = ConstPoC(r_rel,P_B,HBR[k]);}
-        else if (pocType == 1) {
-            poc[k] = ChanPoC(r_rel,P_B,HBR[k],3);}
-        else if (pocType == 2) {
-            poc[k] = MaxPoC(r_rel,P_B,HBR[k]);}
-        else if (pocType == 3) {
-            poc[k] = dot(r_rel,r_rel);}
+        if (missDistanceFlag == 1 ) {
+            md[k] = dot(r_rel,r_rel);
+            }
         else {
-            throw std::runtime_error("the metric flag must be in the interval [1,3] and the PoC type must be in the interval [0,1]");}
-        // Probability of no collision
-        noCollisions = noCollisions*(1.0 - poc[k]);
+            // Combined covariance in the B-plane (2D)
+            P_B.at(0,0) = P_B3.at(0,0);     P_B.at(0,1) = P_B3.at(0,2);
+            P_B.at(1,0) = P_B3.at(2,0);     P_B.at(1,1) = P_B3.at(2,2);
+            vv = 0;
+            // Compute PoC for the single conjunction, according to the required model
+            if (pocType == 0) {
+                poc[k] = ConstPoC(r_rel,P_B,HBR[k]);}
+            else if (pocType == 1) {
+                poc[k] = ChanPoC(r_rel,P_B,HBR[k],3);}
+            else if (pocType == 2) {
+                poc[k] = MaxPoC(r_rel,P_B,HBR[k]);}
+            else {
+                throw std::runtime_error("the metric flag must be in the interval [1,3] and the PoC type must be in the interval [0,1]");}
+            // Probability of no collision
+            noCollisions = noCollisions*(1.0 - poc[k]);
+        }
     }
     // Final PoC comprehensive of all the conjunctions
-    if (pocType == 3) {
-        poc_tot = poc[0];
-    }
-    else {
+    if (missDistanceFlag == 0 ) {
         poc_tot = log10(1.0 - noCollisions);
     }
 }
@@ -358,15 +359,13 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     constraints.open("./write_read/constraints.dat");
     constraints << setprecision(18);
     if (constraintFlags[0] == 1) {
-        if (n_conj > 1) {
-            for (k = 0; k < n_conj; k ++) {
-            if  (pocType == 3) {
-                constraints << poc[k] << endl;
-            }
-            else {    
-                constraints << log10(poc[k]) << endl;
-            }
-            }
+        for (k = 0; k < n_conj; k ++) {
+        if  (missDistanceFlag == 1) {
+            constraints << md[k] << endl;
+        }
+        else {    
+            constraints << log10(poc[k]) << endl;
+        }
         }
         constraints << poc_tot << endl;
     }
@@ -398,13 +397,14 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     }
     constraints.close();
 
+    if  (missDistanceFlag == 0) {
     convRad.open("./write_read/convRad.dat");
     convRad << setprecision(18);
     convRad << convRadius(poc_tot.eval(dx1),1e-8) << endl;
     convRad << convRadius(poc_tot.eval(dx2),1e-8) << endl;
     convRad << convRadius(poc_tot.eval(dx3),1e-8) << endl;    // write the DA expansion of return in output
-
     convRad.close();
+    }
     // Do not consider writing time when calculating execution time
     time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     timeSubtr = timeSubtr + time2 - time1;

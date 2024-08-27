@@ -48,7 +48,8 @@ for k = 1:pp.n_conj
     r2ep   = rtn2eci(x(1:3),x(4:6));
     r2es   = rtn2eci(x_s(1:3),x_s(4:6));
     P      = r2ep*Pp*r2ep' + r2es*Ps*r2es';
-    [PB,p,smd] = Bplane(x,x_s,P);    
+    [PB,p,smd] = Bplane(x,x_s,P);
+    md = norm(p)*Lsc;
     switch pp.pocType
     case 0
         PoC(k) = constantPc(p,PB,pp.HBR(k));                                   % [-] (1,1) PoC computed with Chan's formula
@@ -61,18 +62,20 @@ for k = 1:pp.n_conj
     otherwise
         error('invalid PoC type')
     end
-    switch pp.pocType
-    case 0
-        smdLim   = -2*log(2*pp.PoCLim*sqrt(det(PB))/pp.HBR(k)^2);        % [-] (1,1) SMD limit computed with Alfriend and Akella's formula
-    case 1
-        smdLim   = PoC2SMD(PB, pp.HBR(k), pp.PoCLim, 3, 1, 1e-3, 200);   % [-] (1,1) SMD limit computed with Chan's formula
-    case 2
-        smdLim   = pp.HBR(k)^2/(exp(1)*sqrt(det(PB))*pp.PoCLim);                         % [-] (1,1) SMD limit computed with Maximum formula
-    case 3
-        smdLim   = pp.PoCLim;                                               % [-]   (1,1) PoC limit;     % [-] (1,1) SMD limit computed with Miss distance
-        PB       = eye(2);
-    otherwise
-        error('invalid PoC type')
+    if ~pp.flagMd
+        switch pp.pocType
+        case 0
+            smdLim   = -2*log(2*pp.PoCLim*sqrt(det(PB))/pp.HBR(k)^2);        % [-] (1,1) SMD limit computed with Alfriend and Akella's formula
+        case 1
+            smdLim   = PoC2SMD(PB, pp.HBR(k), pp.PoCLim, 3, 1, 1e-3, 200);   % [-] (1,1) SMD limit computed with Chan's formula
+        case 2
+            smdLim   = pp.HBR(k)^2/(exp(1)*sqrt(det(PB))*pp.PoCLim);                         % [-] (1,1) SMD limit computed with Maximum formula
+        otherwise
+            error('invalid PoC type')
+        end
+    else
+        smdLim   = pp.mdLim;                                               % [-]   (1,1) PoC limit;     % [-] (1,1) SMD limit computed with Miss distance
+        PB       = eye(2);    
     end
     [semiaxes,cov2b] = defineEllipsoid(PB,smdLim);
     a          = semiaxes(1)*Lsc;
@@ -89,7 +92,7 @@ for k = 1:pp.n_conj
     hold on    
     e2b    = eci2Bplane(x(4:6),x_s(4:6));
     e2b    = e2b([1 3],:);
-    pOldB = e2b*(xb(1:3)-x_s(1:3))*Lsc;
+    pOldB = e2b*(xb(1:3)-pp.x_sTCA(1:3,k))*Lsc;
     plot(ellB(2,:),ellB(1,:),'k');
     plot(p(2,:)*Lsc,p(1,:)*Lsc,'o','LineWidth',2);
     plot(pOldB(2,:),pOldB(1,:),'k','marker','diamond');
@@ -128,6 +131,7 @@ else
     disp(['Total Delta-v = ',num2str(normOfVec(ctrl)*dt_lt*Vsc*1e6), ' mm/s'])
 end
 disp(['PoC after validation ',num2str(poc_tot)]);
+disp(['MD after validation ',num2str(md(1)), ' km']);
 if pp.flagTanSep
     disp(['Tangential distance in return ',num2str(tanErr*1e3), ' m']);
 end
@@ -135,8 +139,8 @@ if pp.flagReturn || pp.flagErrReturn
     disp(['Position error in return ',num2str(norm(errRetEci(1:3))*pp.Lsc*1e3), ' m']);
     disp(['Velocity error in return ',num2str(norm(errRetEci(4:6))*pp.Vsc*1e6), ' mm/s']);
 end
-if pp.pocType == 3
-    disp(['Limit: ',num2str(sqrt(lim)*pp.Lsc), ' km'])
+if pp.flagMd
+    disp(['Limit: ',num2str(sqrt(pp.mdLim)*pp.Lsc), ' km'])
 else
     disp(['Limit: ',num2str(lim)])
 end

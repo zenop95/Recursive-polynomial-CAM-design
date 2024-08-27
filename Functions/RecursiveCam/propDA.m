@@ -27,7 +27,6 @@ HBR        = pp.HBR;
 x_pTCA     = pp.x_pTCA;
 x_sTCA     = pp.x_sTCA;
 x_ref      = pp.xReference;
-P          = pp.P;
 PoCLim     = pp.PoCLim;
 N = length(pp.t);
 u = reshape(u,[],1);
@@ -49,6 +48,7 @@ fprintf(fid, '%40.16f\n', Lsc);
 fprintf(fid, '%40.16f\n', mu);
 fprintf(fid, '%2i\n',     pp.gravOrd);
 fprintf(fid, '%40.16f\n', pp.ctrlMax);
+fprintf(fid, '%2i\n',     pp.flagMd);
 fprintf(fid, '%40.16f\n', pp.primary.n);
 for k = 1:n_conj
     fprintf(fid, '%40.16f\n', pp.secondary(k).n);
@@ -128,8 +128,9 @@ for k = 1:n_conj
     xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
 timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
-if pp.pocType == 3
-    lim = PoCLim;
+
+if pp.flagMd
+    lim = pp.mdLim;
 else
     lim = log10(PoCLim);
 end
@@ -141,5 +142,4 @@ if ~validateFlag
                    (3-2*pp.fixedDir-pp.fixedMag)*pp.n_man,pp.n_constr,0);
 end
 timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
-lim = log10(PoCLim);
 end
