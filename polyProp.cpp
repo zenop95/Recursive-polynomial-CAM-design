@@ -7,12 +7,14 @@
 #include <fstream>
 #include <iomanip>
 #include "camRoutines.h"
+#include "auxiliaryRoutines.h"
 #include <chrono>
 
 using namespace std;
 using namespace DACE;
 using namespace std::chrono;
 using namespace cam;
+using namespace aux;
 
 int main(void)
 {
@@ -21,7 +23,7 @@ int main(void)
 
     long time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     
-    ifstream nodes, Input;
+    ifstream nodes;
 	nodes.open("./write_read/initial_state.dat");
         nodes >> N;         // Number of nodes
         nodes >> n_conj;    // Number of conjunctions
@@ -32,77 +34,10 @@ int main(void)
     AlgebraicMatrix<double> Cp(6,6), Cs(6,6), covp(36,n_conj), covs(36,n_conj), r2e(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
     AlgebraicVector<double> xdum(6), metricMap(3), t(N), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3), mean_motion_s(n_conj);
     AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(6);
-    // Write input from .dat
-	Input.open("./write_read/initial_state.dat");
-        Input >> N;               // Number of nodes
-        Input >> n_conj;          // Number of conjunctions
-        Input >> n_man;           // Number of control nodes
-        Input >> m;               // Number of DA variables per node
-        Input >> dyn;             // Dynamics model (0 Earth Orbit, 1 Cislunar)
-        Input >> lowThrust_flag;  // Low thrust dynamics flag
-        Input >> order;           // Expansion order
-        Input >> pocType;         // PoC model (0 Alfriend, 1 Chan)
-        Input >> tca;             // Ephemeris time at conjunction
-        Input >> Lsc;             // Length scale
-        Input >> musc;            // Gravitational constant
-        Input >> gravOrd;            // Gravitational constant
-        Input >> ctrlMax;            // ctrlMax
-        Input >> missDistanceFlag;        // maneuver on miss distance
-        Input >> mean_motion_p;        // mean motion primary
-        for (k = 0; k < n_conj; k ++) {
-            Input >> mean_motion_s[k];        // mean motion secondary
-        }
-        for (j = 0; j < 6; j ++) {
-            Input >> xdum[j];           // Write dummy variable for the primary's ECI state at the first conjunction from input
-        }
-        for (k = 0; k < n_conj; k ++) {
-            for (j = 0; j < 3; j ++) {
-                Input >> rsDum.at(j,k); // Write secondary's ECI position at each conjunction from input
-            }
-            for (j = 0; j < 3; j ++) {
-                Input >> vsDum.at(j,k); // Write secondary's ECI velocity at each conjunction from input
-            }   
-        }
-        for (k = 0; k < n_conj; k ++) {
-            Input >> HBR[k];            // Combined Hard Body radialius for each conjunction
-        }
-        for (j = 0; j < 3; j ++) {
-                Input >> rRef[j]; // Write reference ECI position for return from input
-            }
-        for (j = 0; j < 3; j ++) {
-                Input >> vRef[j]; // Write reference ECI velocity for return from input
-            }
-        for (k = 0; k < n_conj; k ++) {
-            for (vv = 0; vv < 36; vv ++) {
-                Input >> covp.at(vv,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
-            }
-            for (vv = 0; vv < 36; vv ++) {
-                Input >> covs.at(vv,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
-            }
-        }
-        for (i = 0; i < n_man; i ++) {
-                Input >> magnitude[i];    // Write maneuver magnitude if the magnitude is fixed
-        }   
-        for (i = 0; i < n_man; i ++) {
-            for (j = 0; j < 3; j ++) {
-                Input >> directions.at(j,i); // Write maneuver direction in RTN if the direction is fixed
-            }
-        }
-        for (i = 0; i < 6; i ++) {
-            Input >> constraintFlags[i];
-        }
-        for (i = 0; i < n_man; i ++) {
-            for (j = 0; j < m; j ++) {
-                Input >> ctrlDum.at(j,i);   // Write dummy reference control from input ({0 0 0} if ballistic trajectory)
-            }
-        }
-        for (i = 0; i < N; i ++) {
-            Input >> t[i];                  // Write node times before conjunction (if negative it means that there are more than one encounters and nodes are needed after the first encounter)
-            Input >> canFire[i];            // Define if node i is a firing node
-            Input >> isConj[i];             // Define if node i is a conjunction node
-            Input >> isRet[i];              // Define if node i is a return node
-        }
-    Input.close();
+    // Read input from .dat
+	readInit( nvar,  order,  pocType,  N,  lowThrust_flag,  n_conj,  n_man,  m,  dyn,  gravOrd,  missDistanceFlag, tca,  Lsc,  musc,  ctrlMax,  mean_motion_p, covp,   covs,   ctrlDum,   rsDum,  vsDum,
+               directions,  xdum,  t,  HBR,  magnitude, rRef,  vRef,  mean_motion_s,  canFire,  isConj, isRet,  constraintFlags);
+
     // initialize execution time counter
     long time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     long timeSubtr = time2 - time1;
