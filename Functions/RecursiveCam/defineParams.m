@@ -13,7 +13,7 @@ function pp = defineParams(pp,nFire,nRet)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 %% Optimization parameters (modifiable)
-pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 2;                                                           % [-]   (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan, 2: Max)
 % pp.objFunction   = 'fuel';
 pp.objFunction   = 'energy';
@@ -21,14 +21,14 @@ pp.solvingMethod = 'lagrange';                                                  
 % pp.solvingMethod = 'newton';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'convex';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'fmincon';                                                
-pp.mdLim         = (.5/pp.Lsc)^2;                                               % [-]   (1,1) miss distance limit
+pp.mdLim         = (.2/pp.Lsc)^2;                                               % [-]   (1,1) miss distance limit
 pp.PoCLim        = 1e-6;                                                        % [-]   (1,1) PoC limit
 % pp.PoCLim        = 1e-2;                                                        % [-]   (1,1) PoC limit
 % pp.PoCLim        = (1/pp.Lsc)^2;                                               % [-]   (1,1) miss distance limit
 pp.nomDist       = 0.200/pp.Lsc;                                                % [-]   (1,1) Relative distance to achieve after 1 orbit
 
 %% Operational constraints (modifiable)
-pp.flagMd           = 1; % Miss distance instead of PoC
+pp.flagMd           = 0; % Miss distance instead of PoC
 pp.flagStability    = 1; % only for Cislunar
 pp.lowThrust        = 0;                                                        % [bool]   (1,1) Low-thrust flag
 pp.fixedDir         = 0 + pp.flagStability*pp.cislunar;                         % [bool]   (1,1) Fixed-direction flag
@@ -46,9 +46,9 @@ pp.flagAlt          = 0;
 pp.flagReturn       = 0;
 pp.flagErrReturn    = 0;
 pp.flagCtrlMax      = 0;
-ctrlMax             = 100;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
-pp.ctrlMax          = ctrlMax/(pp.Asc*pp.lowThrust + pp.Vsc*~pp.lowThrust)/1e6;
-% pp.ctrlMax          = 1;                                                   
+% ctrlMax             = 100;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
+% pp.ctrlMax          = ctrlMax/(pp.Asc*pp.lowThrust + pp.Vsc*~pp.lowThrust)/1e6;
+pp.ctrlMax          = 1;                                                   
 %% Maneuvering times (should not be modified)
 if pp.cislunar; nFire = nFire/pp.Tsc*86400; nRet = nRet/pp.Tsc*86400; end       % transform days into synodic time units
 nConj      = -pp.tca_sep;                                                       % [-] (1,n_conj) Conjunction times after first TCA
@@ -83,8 +83,8 @@ limUp      = [];
 limLo      = [];
 if pp.flagCA
     if pp.flagMd
-        limUp = pp.mdLim*ones(1 + pp.n_conj*(pp.n_conj > 1),1);       
-        limLo = inf(1 + pp.n_conj*(pp.n_conj > 1),1);
+        limUp = inf(1 + pp.n_conj*(pp.n_conj > 1),1);     
+        limLo = pp.mdLim*ones(1 + pp.n_conj*(pp.n_conj > 1),1);  
     else
         limUp = log10(pp.PoCLim)*ones(1 + pp.n_conj*(pp.n_conj > 1),1);       
         limLo = -inf(1 + pp.n_conj*(pp.n_conj > 1),1);

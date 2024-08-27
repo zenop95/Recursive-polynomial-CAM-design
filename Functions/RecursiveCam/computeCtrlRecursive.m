@@ -38,7 +38,7 @@ end
 %% First-order Dv
 switch lower(pp.solvingMethod)
     case {'lagrange','newton'}
-        Y0   = solveLagrange(DeltasUp,DAArrays,zeros(n,1),1,pp) + u;    % [-] (n,1) 1st-order greedy solution of the polynomial constraint
+        Y0   = solveLagrange(DeltasUp,DeltasLo,DAArrays,zeros(n,1),1,pp) + u;    % [-] (n,1) 1st-order greedy solution of the polynomial constraint
     case 'convex'
         Y0  = solveConvex(DeltasUp,DeltasLo,DAArrays,zeros(n,1),1,pp) + u;     % [-] (n,1) 1st-order convex solution of the polynomial constraint
 end
@@ -56,7 +56,7 @@ for k = 2:DAorder
     while err > tol && iter < maxIter
         iter = iter + 1;                                                        % [-] (1,1) Update iteration number
         if strcmpi(pp.solvingMethod,'lagrange')
-            Yp = solveLagrange(DeltasUp,DAArrays,Y0,k,pp) + u;                  % [-] (n,1) kth-order Lagrange solution of the polynomial constraint
+            Yp = solveLagrange(DeltasUp,DeltasLo,DAArrays,Y0,k,pp) + u;                  % [-] (n,1) kth-order Lagrange solution of the polynomial constraint
         
         elseif strcmpi(pp.solvingMethod,'convex')
             Yp  = solveConvex(DeltasUp,DeltasLo,DAArrays,Y0,k,pp) + u;          % [-] (n,1) kth-order convex solution of the polynomial constraint
