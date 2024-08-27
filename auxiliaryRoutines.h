@@ -10,11 +10,11 @@ namespace aux {
 
 // Unpack a 1D array into a matrix, automatically inferring dimensions
  template <typename T> 
- void unpackMatrix(AlgebraicMatrix<T>& mat, const AlgebraicMatrix<T> MAT, const int k, const int n) {    
+ void unpackMatrix(AlgebraicMatrix<T>& mat, const AlgebraicMatrix<T>& MAT, const int k, const int n) {    
     int index = 0;
     for (int j = 0; j < n; j++) {
-        for (int j = 0; j < n; j++) {
-            mat.at(j, j) = MAT.at(index,k);
+        for (int i = 0; i < n; i++) {
+            mat.at(j, i) = MAT.at(index,k);
             index ++;
         }
     }
@@ -22,11 +22,11 @@ namespace aux {
 
 // Pack a matrix back into a 1D array, automatically inferring dimensions
 template <typename T> 
-void packMatrix(const AlgebraicMatrix<T> mat, AlgebraicMatrix<T>& MAT, const int k, const int n) {
+void packMatrix(const AlgebraicMatrix<T>& mat, AlgebraicMatrix<T>& MAT, const int k, const int n) {
     int index = 0;
     for (int j = 0; j < n; j++) {
-        for (int j = 0; j < n; j++) {
-            MAT.at(index,k) = mat.at(j, j);
+        for (int i = 0; i < n; i++) {
+            MAT.at(index,k) = mat.at(j, i);
             index ++;
         }
     }

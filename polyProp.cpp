@@ -159,13 +159,8 @@ int main(void)
             tcaNew = findTCA(x00 - xsf, nvar);
             STM_p = CWSTM(mean_motion_p,tcaNew); // CW transformation for the covariance (can be done with YA)
             STM_s = CWSTM(mean_motion_s[k],tcaNew); // CW transformation for the covariance (can be done with YA)
-            for (ii = 0; ii < 6 ; ii ++) {
-                for (j = 0; j < 6 ; j ++) {
-                    Cp.at(ii,j)  = covp.at(vv,k);
-                    Cs.at(ii,j)  = covs.at(vv,k);
-                    vv ++;
-                }
-            }
+            unpackMatrix(Cp,covp,k,6);
+            unpackMatrix(Cs,covs,k,6);
             CPropP = STM_p*Cp*STM_p.transpose();
             CPropS = STM_s*Cs*STM_s.transpose();
             for (ii = 0; ii < 3 ; ii ++) {
@@ -186,12 +181,7 @@ int main(void)
             xsf = xsf.eval(dx);
             P_eci = evalDAMatrix(P_eci,dx,3);
             vv = 0;
-            for (ii = 0; ii < 3 ; ii ++) {
-                for (j = 0; j < 3; j ++) {
-                    covsda.at(vv,k) = P_eci.at(ii,j);
-                    vv ++;
-                }
-            }
+            packMatrix(P_eci,covsda,k,3);
             for (j = 0; j < 6 ; j ++) {
                 xTca.at(j,k) = x00[j];
                 xsTca.at(j,k) = xsf[j];
@@ -214,12 +204,7 @@ if (constraintFlags[0] == 1) {
             vs[i] = xsTca.at(i+3,k);
         }
         vv = 0;
-        for (ii = 0; ii < 3 ; ii ++) {
-        for (j = 0; j < 3 ; j ++) {
-            P_eci.at(ii,j) = covsda.at(vv,k);
-            vv ++;
-        }
-        }
+        unpackMatrix(P_eci,covsda,k,3);
         // B-plane transformations
         toB  = Bplane(v,vs); // DCM from ECI to B-plane
         rB   = toB*r;                     // Primary position in the B-plane (3D)
