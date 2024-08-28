@@ -21,9 +21,9 @@ warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 %% User-defined inputs (modifiable)
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
-pp = initOpt(multiple,cislunar,1);                                           % [struc] (1,1) Initialize paramters structure with conjunction data
-returnTime = 0;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-fireTimes  = [2.5 0 2];                                                               % [-] Example of bi-impulsive maneuvers
+pp = initOpt(multiple,cislunar,1053);                                           % [struc] (1,1) Initialize paramters structure with conjunction data
+returnTime = -2;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+fireTimes  = [1.5 2.5];                                                               % [-] Example of bi-impulsive maneuvers
 % fireTimes = [3.5,2.5,1.5,0.5];                                                  % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(1.4,1.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(4.4,4.6,2) linspace(3.4,3.6,2) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
@@ -75,27 +75,26 @@ if pp.filterMans
     n_man      = pp.nMans;
     pp.n_man   = n_man;
     u          = zeros(m,n_man);
-    scale      = ones(m,n_man);
     ctrl       = nan(3,n_man);
 end
 aa=tic;
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
 
-[lim,coeff,timeSubtr,xBall] = propDA(pp.DAorder,u,scale,0,pp);
-if ~pp.flagPoCTot && multiple > 1
-    coeff(pp.n_conj+1) = [];
-    pp.n_constr = pp.n_constr - 1;
-elseif pp.flagPoCTot && multiple > 1
-    coeff(1:pp.n_conj) = [];
-    pp.n_constr = pp.n_constr - pp.n_conj;
-end
+[lim,coeff,timeSubtr,xBall,xRetBall] = propDA(pp.DAorder,u,0,pp);
+% if ~pp.flagPoCTot && multiple > 1
+%     coeff(pp.n_conj+1) = [];
+%     pp.n_constr = pp.n_constr - 1;
+% elseif pp.flagPoCTot && multiple > 1
+%     coeff(1:pp.n_conj) = [];
+%     pp.n_constr = pp.n_constr - pp.n_conj;
+% end
 metric = coeff(1).C(1);
 %% Optimization
 if any(strcmpi(pp.solvingMethod,{'lagrange','convex','newton'}))
-        yF = computeCtrlRecursive(coeff,u,scale,pp);
+        yF = computeCtrlRecursive(coeff,u,pp);
 
 elseif strcmpi(pp.solvingMethod,'fmincon')
-        yF = computeCtrlNlp(coeff,u,scale,pp);
+        yF = computeCtrlNlp(coeff,u,pp);
 
 else
     error('The solving method should be either lagrange, fmincon, or convex')
@@ -124,10 +123,10 @@ metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...
 % distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF./scale,1,[]), ...    
                             % pp.DAorder)*pp.Lsc;
 
-[~,~,~,x,xRet0,x_sec,deltaTca] = propDA(1,ctrl,scale,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
+[~,~,~,x,xRetMan,x_sec,deltaTca] = propDA(1,ctrl,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
 if ~pp.flagMd
     metricValPoly = 10^metricValPoly;
     lim           = 10^lim;
 end                                                     
 %% PostProcess
-postProcess(xBall,x,x_sec,xRet0,lim,ctrl,deltaTca,simTime,pp)
+postProcess(xBall,x,x_sec,xRetMan,xRetBall,lim,ctrl,deltaTca,simTime,pp)

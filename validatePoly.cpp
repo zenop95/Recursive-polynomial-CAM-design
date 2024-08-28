@@ -16,7 +16,7 @@ using namespace cam;
 
 int main(void)
 {
-    int j, i, k, ii, flag1, flag2, flag3, order, metricFlag, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd, missDistanceFlag;
+    int j, i, k, ii, flag1, flag2, flag3, order, metricFlag, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd, missDistanceFlag, TPoCFlag;
 	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, dt, musc, ctrlMax, mean_motion_p;
  
     ifstream nodes;
@@ -45,6 +45,7 @@ int main(void)
         Input >> musc;            // Gravitational constant
         Input >> gravOrd;            // Gravitational constant
         Input >> ctrlMax;            // Gravitational constant
+        Input >> TPoCFlag;        // maneuver on miss distance
         Input >> missDistanceFlag;        // maneuver on miss distance
         Input >> mean_motion_p;        // mean motion primary
         for (k = 0; k < n_conj; k ++) {

@@ -1,12 +1,8 @@
-function yf = computeCtrlNlp(coeff,u,scale,pp)
+function yf = computeCtrlNlp(coeff,u,pp)
 % computeDvNlp Solves the polynomial CAM optimization problem using fmincon
 %
-% INPUT:  lims      = [-] Metric limit
-%         coeffPoC = [struct] Structure with coefficients of the expansion
+% INPUT:  coeff = [struct] Structure with coefficients of the expansion
 %         u        = [-] control of the reference trajectory
-%         n_man        = [-] Number of nodes for the control
-%         m        = [-] Number of control variables per node
-%         scale    = [-] scaling coefficients
 %
 % OUTPUT: Yf = [-] Optimized control vector
 %
@@ -31,7 +27,7 @@ options  = optimoptions( ...
                        'MaxFunctionEvaluations',2e3         ...
                        );
 Yf  = fmincon(@(y)minFun(y,m,n_man,pp),y0,[],[],[],[],lb,ub,@(y)polyConstr(y,coeff,limUp,limLo),options);
-yf  = reshape(Yf,m,n_man).*scale;
+yf  = reshape(Yf,m,n_man);
 
 function J = minFun(y,m,n_man,pp)
 switch pp.objFunction

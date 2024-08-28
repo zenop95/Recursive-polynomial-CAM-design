@@ -14,24 +14,25 @@ function pp = defineParams(pp,nFire,nRet)
 %--------------------------------------------------------------------------
 %% Optimization parameters (modifiable)
 pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
-pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan, 2: Max)
+pp.pocType       = 2;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan, 2: Max)
 % pp.objFunction   = 'fuel';
 pp.objFunction   = 'energy';
 pp.solvingMethod = 'lagrange';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'newton';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'convex';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'fmincon';                                                
-pp.mdLim         = (.2/pp.Lsc)^2;                                               % [-]   (1,1) miss distance limit
-pp.PoCLim        = 1e-6;                                                        % [-]   (1,1) PoC limit
+pp.mdLim         = (.3/pp.Lsc)^2;                                               % [-]   (1,1) miss distance limit
+pp.PoCLim        = 1e-4;                                                        % [-]   (1,1) PoC limit
 % pp.PoCLim        = 1e-2;                                                        % [-]   (1,1) PoC limit
 % pp.PoCLim        = (1/pp.Lsc)^2;                                               % [-]   (1,1) miss distance limit
 pp.nomDist       = 0.200/pp.Lsc;                                                % [-]   (1,1) Relative distance to achieve after 1 orbit
-
+pp.equalityConstr = 1;
+pp.alpha          = .1; % parameter to use previous iteration solution
 %% Operational constraints (modifiable)
 pp.flagMd           = 0; % Miss distance instead of PoC
 pp.flagStability    = 1; % only for Cislunar
 pp.lowThrust        = 0;                                                        % [bool]   (1,1) Low-thrust flag
-pp.fixedDir         = 0 + pp.flagStability*pp.cislunar;                         % [bool]   (1,1) Fixed-direction flag
+pp.fixedDir         = 1 + pp.flagStability*pp.cislunar;                         % [bool]   (1,1) Fixed-direction flag
 pp.fixedMag         = 0;                                                        % [bool]   (1,1) Fixed-magnitude flag
 pp.filterMans       = 0;                                                        % [bool]   (1,1) Filtered maneuver flag
 pp.maxMagConstr     = 0;                                                        % [bool]   (1,1) Filtered maneuver flag
@@ -46,8 +47,8 @@ pp.flagAlt          = 0;
 pp.flagReturn       = 0;
 pp.flagErrReturn    = 0;
 pp.flagCtrlMax      = 0;
-% ctrlMax             = 100;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
-% pp.ctrlMax          = ctrlMax/(pp.Asc*pp.lowThrust + pp.Vsc*~pp.lowThrust)/1e6;
+ctrlMax             = 1000;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
+pp.ctrlMax          = ctrlMax/(pp.Asc*pp.lowThrust + pp.Vsc*~pp.lowThrust)/1e6;
 pp.ctrlMax          = 1;                                                   
 %% Maneuvering times (should not be modified)
 if pp.cislunar; nFire = nFire/pp.Tsc*86400; nRet = nRet/pp.Tsc*86400; end       % transform days into synodic time units
@@ -83,17 +84,16 @@ limUp      = [];
 limLo      = [];
 if pp.flagCA
     if pp.flagMd
-        limUp = inf(1 + pp.n_conj*(pp.n_conj > 1),1);     
-        limLo = pp.mdLim*ones(1 + pp.n_conj*(pp.n_conj > 1),1);  
+        limUp = -pp.mdLim*ones(1 + pp.n_conj*(pp.n_conj > 1),1);                % the miss distance is defined as negative to be used in the same way as PoC (constraint <0)  
     else
         limUp = log10(pp.PoCLim)*ones(1 + pp.n_conj*(pp.n_conj > 1),1);       
-        limLo = -inf(1 + pp.n_conj*(pp.n_conj > 1),1);
     end
+    limLo = -inf(1 + pp.n_conj*(pp.n_conj > 1),1); 
 end
-if pp.flagTanSep;    limUp   = [limUp; -.1/pp.Lsc];     limLo = [limLo; -.2/pp.Lsc]; end
-if pp.flagAlt;       limUp   = [limUp; 0];              limLo = [limLo; 0]; end
-if pp.flagErrReturn; limUp   = [limUp; 0];              limLo = [limLo; 0]; end
-if pp.flagReturn;    limUp   = [limUp; pp.xReference];  limLo = [limLo; pp.xReference]; end
+if pp.flagTanSep;    limUp = [limUp; -.1/pp.Lsc];       limLo = [limLo; -.2/pp.Lsc]; end
+if pp.flagAlt;       limUp = [limUp; 0];                limLo = [limLo; 0]; end
+if pp.flagErrReturn; limUp = [limUp; 0];            limLo = [limLo; 0]; end
+if pp.flagReturn;    limUp = [limUp; pp.xReference];    limLo = [limLo; pp.xReference]; end
 if pp.flagCtrlMax;   limUp = [limUp; ones(pp.n_man,1)]; limLo = [limLo; zeros(pp.n_man,1)]; end 
 pp.limUp = limUp;
 pp.limLo = limLo;

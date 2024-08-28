@@ -1,4 +1,4 @@
-function [] = postProcess(xBall,xManTca,xManSec,xManRet,lim,ctrl,deltaTca,simTime,pp)
+function [] = postProcess(xBall,xManTca,xManSec,xRetMan,xRetBall,lim,ctrl,deltaTca,simTime,pp)
 % postProcess plots the relevant data 
 % 
 % INPUT: 
@@ -107,10 +107,11 @@ poc_tot = PoCTot(PoC);
 
 % Validate return
 if pp.flagReturn || pp.flagErrReturn || pp.flagTanSep
-    errRetEci = xManRet - pp.xReference;
-    r2e = rtn2eci(xManRet(1:3),xManRet(4:6));
+    errRetEci = xRetMan - xRetBall;
+    r2e = rtn2eci(xRetMan(1:3),xRetMan(4:6));
     errRetRtn = r2e'*errRetEci(1:3);
     tanErr = errRetRtn(2)*pp.Lsc;
+    radErr = errRetRtn(1)*pp.Lsc;
 end
 
 disp(['Solver: ', pp.solvingMethod])

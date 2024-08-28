@@ -32,8 +32,8 @@ void packMatrix(const AlgebraicMatrix<T>& mat, AlgebraicMatrix<T>& MAT, const in
     }
 }
 
-void readInit(int& nvar, int& order, int& pocType, int& N, int& lowThrust_flag, int& n_conj, int& n_man, int& m, int& dyn, int& gravOrd, int& missDistanceFlag,
-              double& tca, double& Lsc, double& musc, double& ctrlMax, double& mean_motion_p,
+void readInit(int& nvar, int& order, int& pocType, int& N, int& lowThrust_flag, int& n_conj, int& n_man, int& m, int& dyn, int& gravOrd, int& missDistanceFlag, 
+              int& TPoCFlag, double& tca, double& Lsc, double& musc, double& ctrlMax, double& mean_motion_p,
               AlgebraicMatrix<double>&  covp, AlgebraicMatrix<double>&  covs, AlgebraicMatrix<double>&  ctrlDum, AlgebraicMatrix<double>&  rsDum, AlgebraicMatrix<double>& vsDum, 
               AlgebraicMatrix<double>& directions, AlgebraicVector<double>& xdum, AlgebraicVector<double>& t, AlgebraicVector<double>& HBR, AlgebraicVector<double>& magnitude, 
               AlgebraicVector<double>& rRef, AlgebraicVector<double>& vRef, AlgebraicVector<double>& mean_motion_s, AlgebraicVector<int>& canFire, AlgebraicVector<int>& isConj, 
@@ -56,6 +56,7 @@ Input.open("./write_read/initial_state.dat");
         Input >> gravOrd;            // Gravitational constant
         Input >> ctrlMax;            // ctrlMax
         Input >> missDistanceFlag;        // maneuver on miss distance
+        Input >> TPoCFlag;             // maneuver TPoC
         Input >> mean_motion_p;        // mean motion primary
         for (k = 0; k < n_conj; k ++) {
             Input >> mean_motion_s[k];        // mean motion secondary

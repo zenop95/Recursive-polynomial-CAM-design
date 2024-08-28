@@ -1,11 +1,10 @@
-function [yf,iters] = computeCtrlRecursive(coeff,u,scale,pp)
+function [yf,iters] = computeCtrlRecursive(coeff,u,pp)
 % computeCtrlRecursive Solves the polynomial CAM optimization problem using a
 % recursive approach with lagrange multiplier formulation
 %
 % INPUT:  coeff    = [struct] Structure with coefficients of the expansion
 %                             of the constraints
 %         u        = [-] control of the reference trajectory
-%         scale    = [-] scaling coefficients
 %         pp       = [-] Paramters structur
 %
 % OUTPUT: yF       = [-] Optimized control vector
@@ -52,7 +51,6 @@ iters(1) = 1;
 for k = 2:DAorder
     err  = 1;                                                                   % [-] (1,1) Initialize convergence variable
     DErr = 1;
-    alpha = 1;
     while err > tol && iter < maxIter
         iter = iter + 1;                                                        % [-] (1,1) Update iteration number
         if strcmpi(pp.solvingMethod,'lagrange')
@@ -72,10 +70,10 @@ for k = 2:DAorder
         if iter > 1
             DErr(iter) = er(iter-1) - err;
         end
-        Y0 = (1-alpha)*Y0 + alpha*Yp;                                           % [-] (n,1) Update linearization point for kth-order solution
+        Y0 = (1-pp.alpha)*Y0 + pp.alpha*Yp;                                           % [-] (n,1) Update linearization point for kth-order solution
     end
     Yord(:,k) = Y0;
     iters(k) = iter-sum(iters(1:k-1));
 end
-yf = reshape(Yp,[],n_man).*scale;                                               % [-] (m,N) Reshape final solution to epress it node-wise
+yf = reshape(Yp,[],n_man);                                               % [-] (m,N) Reshape final solution to epress it node-wise
 end

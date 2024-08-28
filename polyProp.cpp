@@ -18,8 +18,8 @@ using namespace aux;
 
 int main(void)
 {
-    int nvar, j, jj, kk, i, ii, k, vv, flag1, flag2, flag3, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd, missDistanceFlag;
-	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, musc, ctrlMax, mean_motion_p;
+    int nvar, j, jj, kk, i, ii, k, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd, missDistanceFlag, TPoCFlag;
+	double tca, Lsc, musc, ctrlMax, mean_motion_p;
 
     long time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     
@@ -35,7 +35,7 @@ int main(void)
     AlgebraicVector<double> xdum(6), metricMap(3), t(N), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3), mean_motion_s(n_conj);
     AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(6);
     // Read input from .dat
-	readInit( nvar,  order,  pocType,  N,  lowThrust_flag,  n_conj,  n_man,  m,  dyn,  gravOrd,  missDistanceFlag, tca,  Lsc,  musc,  ctrlMax,  mean_motion_p, covp,   covs,   ctrlDum,   rsDum,  vsDum,
+	readInit( nvar,  order,  pocType,  N,  lowThrust_flag,  n_conj,  n_man,  m,  dyn,  gravOrd,  missDistanceFlag, TPoCFlag, tca,  Lsc,  musc,  ctrlMax,  mean_motion_p, covp,   covs,   ctrlDum,   rsDum,  vsDum,
                directions,  xdum,  t,  HBR,  magnitude, rRef,  vRef,  mean_motion_s,  canFire,  isConj, isRet,  constraintFlags);
 
     // initialize execution time counter
@@ -47,15 +47,11 @@ int main(void)
     DA::setEps(1e-30);
     
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), x00(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), md(n_conj), dx1(3), dx2(3), dx3(3); 
+    AlgebraicVector<DA> x0(6), x00(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), md(n_conj), dx(nvar-1); 
     AlgebraicMatrix<DA> xTca(6,n_conj), xsTca(6,n_conj), P_eci(3,3), P_B3(3,3), P_B(2,2), Pp(3,3), Ps(3,3), toB(3,3), STM_p(6,6), STM_s(6,6), CPropP(6,6), CPropS(6,6), covsda(9,n_conj), r2ep(3,3), r2es(3,3);
-    DA poc_tot, alpha, beta, tcaNew, tan, radial;
+                    DA  poc_tot, alpha, beta, tcaNew, tan, radial, retErr;
 
-    dx1[0] = DA(1); dx1[1] = 0.0; dx1[2] = 0.0;
-    dx2[0] = 0; dx2[1] = DA(2); dx2[2] = 0.0;
-    dx3[0] = 0; dx3[1] = 0.0; dx3[2] = DA(3);
-
-
+    
     // Define ballistic primary's position at first TCA 
     for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
     // backpropagation from first TCA
@@ -147,7 +143,6 @@ int main(void)
         }
 
         // If the next node is a conjunction node, save the state in a DA variable
-        vv = 0;
 
         if (isConj[i+1] == 1) {
             DA dt = 0.0 + DA(nvar);
@@ -173,14 +168,13 @@ int main(void)
             r2es = rtn2eci(xsf);
             P_eci = r2ep*Pp*r2ep.transpose() + r2es*Ps*r2es.transpose();
 
-            AlgebraicVector<DA> dx(nvar);
+            AlgebraicVector<DA> dxx(nvar);
             for (ii = 0; ii < nvar - 1; ii++) {
-                dx[ii] = DA(ii+1);}
-            dx[nvar - 1] = tcaNew;
-            x00  = x00.eval(dx);
-            xsf = xsf.eval(dx);
-            P_eci = evalDAMatrix(P_eci,dx,3);
-            vv = 0;
+                dxx[ii] = DA(ii+1);}
+            dxx[nvar - 1] = tcaNew;
+            x00  = x00.eval(dxx);
+            xsf = xsf.eval(dxx);
+            P_eci = evalDAMatrix(P_eci,dxx,3);
             packMatrix(P_eci,covsda,k,3);
             for (j = 0; j < 6 ; j ++) {
                 xTca.at(j,k) = x00[j];
@@ -190,6 +184,7 @@ int main(void)
         }
         else if (isRet[i+1] == 1) {
             xRet = x0;
+            retErr = dot(xRet - cons(xRet), xRet - cons(xRet));
         }
     }
 if (constraintFlags[0] == 1) {
@@ -203,7 +198,6 @@ if (constraintFlags[0] == 1) {
             rs[i] = xsTca.at(i,k);
             vs[i] = xsTca.at(i+3,k);
         }
-        vv = 0;
         unpackMatrix(P_eci,covsda,k,3);
         // B-plane transformations
         toB  = Bplane(v,vs); // DCM from ECI to B-plane
@@ -220,7 +214,6 @@ if (constraintFlags[0] == 1) {
             // Combined covariance in the B-plane (2D)
             P_B.at(0,0) = P_B3.at(0,0);     P_B.at(0,1) = P_B3.at(0,2);
             P_B.at(1,0) = P_B3.at(2,0);     P_B.at(1,1) = P_B3.at(2,2);
-            vv = 0;
             // Compute PoC for the single conjunction, according to the required model
             if (pocType == 0) {
                 poc[k] = ConstPoC(r_rel,P_B,HBR[k]);}
@@ -273,6 +266,9 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
         constPart  << cons(xTca.at(j,k)) << endl;
         }
     }
+    for (j = 0; j < 6 ; j++) {
+        constPart  << cons(xRet[j]) << endl;
+    }
     constPart.close();
 
     // write the DA expansion of PoC in output
@@ -280,34 +276,36 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     constraints << setprecision(18);
     if (constraintFlags[0] == 1) {
         for (k = 0; k < n_conj; k ++) {
-        if  (missDistanceFlag == 1) {
-            constraints << md[k] << endl;
+            if  (missDistanceFlag == 1) {
+                constraints << -md[k] << endl;
+            }
+            else {    
+                constraints << log10(poc[k]) << endl;
+            }
         }
-        else {    
-            constraints << log10(poc[k]) << endl;
+        if  (TPoCFlag == 1) {
+            constraints << poc_tot << endl;
         }
-        }
-        constraints << poc_tot << endl;
     }
-
     if (constraintFlags[1] == 1) {
-        constraints << tan    << endl;
+        constraints << tan    << endl;     
     }
 
     // write the DA expansion of return in output
     if (constraintFlags[2] == 1) {
-        constraints << radial       << endl;
+        constraints << radial       << endl;    
+
     }
 
     // write the DA expansion of return in output
     if (constraintFlags[3] == 1) {
         for (j = 0; j < 6; j ++) {
-        constraints << xRet[j]        << endl;
+        constraints << xRet[j]        << endl;     
         }
     }
 
     if (constraintFlags[4] == 1) {
-        constraints << pow(xRet - xdum, 2)  << endl;
+        constraints << retErr  << endl;
     }
 
     if (constraintFlags[5] == 1) {
@@ -317,14 +315,22 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     }
     constraints.close();
 
-    if  (missDistanceFlag == 0) {
-    convRad.open("./write_read/convRad.dat");
-    convRad << setprecision(18);
-    convRad << convRadius(poc_tot.eval(dx1),1e-8) << endl;
-    convRad << convRadius(poc_tot.eval(dx2),1e-8) << endl;
-    convRad << convRadius(poc_tot.eval(dx3),1e-8) << endl;    // write the DA expansion of return in output
-    convRad.close();
-    }
+    // convergence radius
+
+    // convRad.open("./write_read/convRad.dat");
+    // convRad << setprecision(18);
+    // j = 0;
+    // for (j == 0; j < nvar-1; j ++) {
+    //     if (j > 0) {dx[j-1] = 0.0;}
+    //     dx[j] = DA(j+1);
+    //     if  (missDistanceFlag == 0) {
+    //         convRad << convRadius(poc_tot.eval(dx),1e-8) << endl;
+    //     }
+    //     else {
+    //         convRad << convRadius(md[0].eval(dx),1e-8) << endl;
+    //     }
+    //     convRad.close();
+    // }
     // Do not consider writing time when calculating execution time
     time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     timeSubtr = timeSubtr + time2 - time1;

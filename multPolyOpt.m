@@ -21,9 +21,9 @@ set(0,'defaultfigurecolor',[1 1 1])
 
 %% Initialization variables
 % returnTime = -1;                                                           % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-for kk = 2:7
+for kk = 5
 for j = 1:2170
-t_man = [2.5];
+t_man = [2.5 0.5];
 multiple = 0;
 j
 pp = initOpt(0,0,j);
@@ -40,7 +40,6 @@ if pp.fixedMag && pp.fixedDir; error(['Both magnitude and direction ' ...
 
 m     = 3 - pp.fixedMag - 2*pp.fixedDir;  pp.m  = m;                            % [-] (1,1)  Number of optimization variables per node
 u     = zeros(m,n_man);                                                         % [-] (m,N)  Ctrl of the unperturbed trajectory
-scale = ones(m,n_man);                                                          % [-] (m,N)  ~1 if polynomial scaling is used
 ctrl  = nan(3,n_man);                                                           % [-] (3,N)  Initialized ctrl of the optimized trajectory
 
 %% Propagation
@@ -55,7 +54,7 @@ tic
 % If the filtering routine is adpoted, first perform a first-order
 % propagation to find the most sensitive maneuvering times
 if pp.filterMans
-    [~,~,coeffPoC,~,timeSubtr1] = propDA(1,u,scale,0,0,pp);
+    [~,~,coeffPoC,~,timeSubtr1] = propDA(1,u,0,0,pp);
     gradVec = buildDAArray(coeffPoC.C,coeffPoC.E,1);
     for j = 1:n_man
         grads(j) = norm(gradVec(1+m*(j-1):m*j));
@@ -74,13 +73,12 @@ if pp.filterMans
     n_man      = pp.nMans;
     pp.n_man   = n_man;
     u          = zeros(m,n_man);
-    scale      = ones(m,n_man);
     ctrl       = nan(3,n_man);
 end
 aa=tic;
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
 
-[lim,coeff,timeSubtr,xBall] = propDA(pp.DAorder,u,scale,0,pp);
+[lim,coeff,timeSubtr,xBall] = propDA(pp.DAorder,u,0,pp);
 if ~pp.flagPoCTot && multiple > 1
     coeff(pp.n_conj+1) = [];
     pp.n_constr = pp.n_constr - 1;
@@ -91,10 +89,10 @@ end
 metric = coeff(1).C(1);
 %% Optimization
 if any(strcmpi(pp.solvingMethod,{'lagrange','convex','newton'}))
-        [yF,iters] = computeCtrlRecursive(coeff,u,scale,pp);
+        [yF,iters] = computeCtrlRecursive(coeff,u,pp);
 
 elseif strcmpi(pp.solvingMethod,'fmincon')
-        yF = computeCtrlNlp(coeff,u,scale,pp);
+        yF = computeCtrlNlp(coeff,u,pp);
 
 else
     error('The solving method should be either lagrange, fmincon, or convex')
@@ -118,11 +116,11 @@ simTime = toc - timeSubtr - timeSubtr1;
 ctrl = pp.ctrlMax*ctrl;
 
 %% Validation
-metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...    
+metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF,1,[]), ...    
                             pp.DAorder);
-% distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF./scale,1,[]), ...    
+% distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF,1,[]), ...    
                             % pp.DAorder)*pp.Lsc;
-[~,~,~,x,xRet0,x_sec,deltaTca] = propDA(1,ctrl,scale,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
+[~,~,~,x,xRet0,x_sec,deltaTca] = propDA(1,ctrl,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
 if pp.pocType ~= 3
     metricValPoly = 10^metricValPoly;
     lim           = 10^lim;
@@ -150,6 +148,7 @@ e2b    = e2b([1 3],:);
 PB(:,:,j)     = e2b*P*e2b';
 p      = e2b*(x(1:3)-x_sec(1:3));
 smd    = dot(p,PB(:,:,j)\p);
+PoC(j) = maximumPc(p,PB(:,:,j),pp.HBR);                                        % [-] (1,1) PoC computed with Chan's formula
 PoC(j) = poc_Chan(pp.HBR,PB(:,:,j),smd,3);                                        % [-] (1,1) PoC computed with Chan's formula
 compTime(j) = simTime;
 E2B(:,:,j) = e2b;
