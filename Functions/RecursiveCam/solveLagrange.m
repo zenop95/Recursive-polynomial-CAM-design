@@ -38,14 +38,14 @@ if k ==1
     n_constr                 = n_constr - length(indEliminate);
     grad                     = psuedoGradient(DAArrays,ctrl0,k,n_constr,n);
 end
-% normGrad = max(abs(grad),[],2);
-% gradSc   = grad./normGrad;
-% DeltasUp = DeltasUp./normGrad;
-% DeltasLo = DeltasLo./normGrad;
-gradSc = grad;
+normGrad = max(abs(grad),[],2);
+gradSc   = grad./normGrad;
+DeltasUp = DeltasUp./normGrad;
+DeltasLo = DeltasLo./normGrad;
+% gradSc = grad;
 if n_constr == 1
-    gradUnit  = normalize(grad,'norm');                                         % [-] (1,n) Pseudo-gradient direction
-    gradNorm  = norm(grad);                                                     % [-] (1,1) Pseudo-gradient norm
+    gradUnit  = normalize(gradSc,'norm');                                         % [-] (1,n) Pseudo-gradient direction
+    gradNorm  = norm(gradSc);                                                     % [-] (1,1) Pseudo-gradient norm
     ctrlNorm  = DeltasUp/gradNorm;                                              % [-] (1,1) Recursive control norm
     ctrl      = ctrlNorm*gradUnit';                                             % [-] (1,n) Recursive control solution
 else    
@@ -53,16 +53,15 @@ else
         A      = [2*eye(n), grad'; gradSc, zeros(n_constr)];
         b      = [zeros(n,1); DeltasUp];
         sol    = linsolve(A,b);
-        ctrl   = sol(1:end-n_constr);
-    
+        ctrl   = sol(1:end-n_constr);    
     else
         y = [];
         for j = 0:n_constr
             perm = unique(perms([ones(1,n_constr-j),zeros(1,j)]),'rows');
             y = [y; perm];
         end
-        y        = boolean(y');
-        y(:,end) = [];
+        y        = boolean(sortrows(y)');
+        y(:,1) = [];
         comb     = size(y,2);
         for j = 1:comb
             Delta    = DeltasUp(y(:,j));

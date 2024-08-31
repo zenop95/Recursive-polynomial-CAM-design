@@ -49,7 +49,7 @@ for kk = y
     dvn1(dvn1>prctile(dvn1,99.9)) = nan;
     dv1 = dvs;
     normNlp(kk-1,:)     = dvn1;
-    load(['SimOutput\rec',num2str(kk),'.mat'])
+    load(['SimOutput\retErr.mat'])
     PoC(PoC>prctile(PoC,95)) = nan;
     PoC(PoC<prctile(PoC,5)) = nan;
     tcaNewDelta(tcaNewDelta>prctile(tcaNewDelta,99.95)) = nan;
@@ -190,14 +190,22 @@ xlabel('Conjunction ID [-]')
 % yticklabels([])
 % ylim([0,63])
 
-% % TCA histogram
-% figure('Renderer', 'painters', 'Position', [300 300 560 250])
-% colororder([colors(1,:);colors(end,:)])
-% edges = -1:0.07:1;
-% histograms([tcaRec(5,:);tcaNlp(5,:)],edges)
-% xlabel('$\Delta t_{CA}$ [s]')
+%% TCA histogram
+figure('Renderer', 'painters', 'Position', [300 300 560 250])
+edges = -0.5:0.05:0.5;
+histograms(tcaNewDelta,edges)
+xlabel('$\Delta t_{CA}$ [s]')
 % legend('Recursive','fmincon','interpreter','latex','box','off','Orientation','horizontal')
 % 
+%% Return histograms
+figure()
+edges = 0:0.01:0.5;
+histograms(rRetErr,edges)
+xlabel('$err_{r}$ [m]')
+figure()
+histograms(vRetErr,edges)
+xlabel('$err_{v}$ [mm/s]')
+% violin([rRetErr(rRetErr<prctile(rRetErr,90)); vRetErr(rRetErr<prctile(rRetErr,90))]');
 
 %% Delta V histograms
 % dv1(abs(dv1)>1000) = nan;

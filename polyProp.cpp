@@ -47,7 +47,7 @@ int main(void)
     DA::setEps(1e-30);
     
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), x00(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), md(n_conj), dx(nvar-1); 
+    AlgebraicVector<DA> x0(6), x00(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), md(n_conj), dx(nvar-1), rRet(3), vRet(3), distRel(3); 
     AlgebraicMatrix<DA> xTca(6,n_conj), xsTca(6,n_conj), P_eci(3,3), P_B3(3,3), P_B(2,2), Pp(3,3), Ps(3,3), toB(3,3), STM_p(6,6), STM_s(6,6), CPropP(6,6), CPropS(6,6), covsda(9,n_conj), r2ep(3,3), r2es(3,3);
                     DA  poc_tot, alpha, beta, tcaNew, tan, radial, retErr;
 
@@ -184,7 +184,7 @@ int main(void)
         }
         else if (isRet[i+1] == 1) {
             xRet = x0;
-            retErr = dot(xRet - cons(xRet), xRet - cons(xRet));
+            retErr = dot(xRet - cons(xRet), xRet - cons(xRet))*1e6; // scaling because it is very different scale than the PoC variable
         }
     }
 if (constraintFlags[0] == 1) {
@@ -235,7 +235,6 @@ if (constraintFlags[0] == 1) {
 
 if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     // Return constraint (scalar as tangential distance from other spacecraft GRACE)
-    AlgebraicVector<DA> rRet(3), vRet(3), distRel(3);
     for (j = 0; j < 3 ; j ++) {
         rRet[j] = xRet[j];
         vRet[j] = xRet[j+3];
@@ -293,14 +292,14 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
 
     // write the DA expansion of return in output
     if (constraintFlags[2] == 1) {
-        constraints << radial       << endl;    
+        constraints << radial << endl;    
 
     }
 
     // write the DA expansion of return in output
     if (constraintFlags[3] == 1) {
         for (j = 0; j < 6; j ++) {
-        constraints << xRet[j]        << endl;     
+        constraints << xRet[j] - cons(xRet[j]) << endl;     
         }
     }
 

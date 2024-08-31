@@ -23,12 +23,13 @@ set(0,'defaultfigurecolor',[1 1 1])
 % returnTime = -1;                                                           % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 for kk = 5
 for j = 1:2170
-t_man = [2.5 0.5];
+t_man = [0.5 0 -0.5];
 multiple = 0;
+returnTime = -1;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 j
 pp = initOpt(0,0,j);
 pp.cislunar = 0;
-pp = defineParams(pp,t_man,0);
+pp = defineParams(pp,t_man,returnTime);
 pp.DAorder = kk;
 pp.nMans   = j;                                                            % [bool]   (1,1) Selects how many impulses to use
 N  = pp.N;                                                                      % [-] (1,1) Number of nodes in the propagation
@@ -78,7 +79,7 @@ end
 aa=tic;
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
 
-[lim,coeff,timeSubtr,xBall] = propDA(pp.DAorder,u,0,pp);
+[lim,coeff,timeSubtr,xBall,xRet0] = propDA(pp.DAorder,u,0,pp);
 if ~pp.flagPoCTot && multiple > 1
     coeff(pp.n_conj+1) = [];
     pp.n_constr = pp.n_constr - 1;
@@ -120,7 +121,7 @@ metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF,1,[]), ...
                             pp.DAorder);
 % distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF,1,[]), ...    
                             % pp.DAorder)*pp.Lsc;
-[~,~,~,x,xRet0,x_sec,deltaTca] = propDA(1,ctrl,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
+[~,~,~,x,xRetMan,x_sec,deltaTca] = propDA(1,ctrl,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
 if pp.pocType ~= 3
     metricValPoly = 10^metricValPoly;
     lim           = 10^lim;
@@ -155,9 +156,11 @@ E2B(:,:,j) = e2b;
 tcaNewDelta(j) = deltaTca;
 iterationsN(:,j) = iters;
 convRad(:,j) = load("write_read\convRad.dat")*pp.scaling(4)*pp.ctrlMax*1e6;
+rRetErr(j) = norm(xRetMan(1:3)-xRet0(1:3))*pp.scaling(1)*1e3;
+vRetErr(j) = norm(xRetMan(4:6)-xRet0(4:6))*pp.scaling(4)*1e6;
 % nodeThrust(:,j) = thrustNode;
 end
-clearvars -except errP errV dvs xs PoC compTime PB E2B xSec tcaNewDelta pp t_man iterationsN convRad
+clearvars -except errP errV dvs xs PoC compTime PB E2B xSec tcaNewDelta pp t_man iterationsN convRad rRetErr vRetErr
 save(['simOutput/rec' num2str(pp.DAorder)]);
 end
 figure

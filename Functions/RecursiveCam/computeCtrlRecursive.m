@@ -19,8 +19,6 @@ limLo    = pp.limLo;
 DAorder  = pp.DAorder;
 u        = reshape(u,[],1);                                                     % [-] (m,n_man) expansion point for the control
 n        = length(u);                                                           % [-] (1,1) Number of scalar control variables
-tol      = 1e-10;                                                               % [-] (1,1) Tolerance for the successive linearizations
-maxIter  = 1e3;                                                                 % [-] (1,1) Maximum number of successive linearizations
 DAArrays = cell(n_constr,DAorder);                                              % [-] (cell) Initialize cell arrays for the DA expansion high-order tensors
 DeltasUp = nan(n_constr,1);
 DeltasLo = nan(n_constr,1);
@@ -34,6 +32,7 @@ for c = 1:n_constr
         DAArrays{c,k} = buildDAArray(coeff(c).C,coeff(c).E,k);             % [-] (cell) Build cell arrays for the DA expansion high-order tensors
     end
 end
+% [DAArrays,DeltasUp,DeltasLo] = normalizeGrads(DAArrays,DeltasUp,DeltasLo);
 %% First-order Dv
 switch lower(pp.solvingMethod)
     case {'lagrange','newton'}
@@ -51,7 +50,7 @@ iters(1) = 1;
 for k = 2:DAorder
     err  = 1;                                                                   % [-] (1,1) Initialize convergence variable
     DErr = 1;
-    while err > tol && iter < maxIter
+    while err > pp.tol && iter < pp.maxIter
         iter = iter + 1;                                                        % [-] (1,1) Update iteration number
         if strcmpi(pp.solvingMethod,'lagrange')
             Yp = solveLagrange(DeltasUp,DeltasLo,DAArrays,Y0,k,pp) + u;                  % [-] (n,1) kth-order Lagrange solution of the polynomial constraint

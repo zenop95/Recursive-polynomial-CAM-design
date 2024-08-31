@@ -19,11 +19,11 @@ set(0,'defaultfigurecolor',[1 1 1])
 set(groot,'defaultAxesTickLabelInterpreter','latex');  
 warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 %% User-defined inputs (modifiable)
-multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
+multiple = 3;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
-pp = initOpt(multiple,cislunar,1053);                                           % [struc] (1,1) Initialize paramters structure with conjunction data
-returnTime = -2;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-fireTimes  = [1.5 2.5];                                                               % [-] Example of bi-impulsive maneuvers
+pp = initOpt(multiple,cislunar,1);                                           % [struc] (1,1) Initialize paramters structure with conjunction data
+returnTime = -1;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+fireTimes  = [0.5];                                                               % [-] Example of bi-impulsive maneuvers
 % fireTimes = [3.5,2.5,1.5,0.5];                                                  % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(1.4,1.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(4.4,4.6,2) linspace(3.4,3.6,2) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
