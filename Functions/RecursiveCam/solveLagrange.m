@@ -60,8 +60,8 @@ else
             perm = unique(perms([ones(1,n_constr-j),zeros(1,j)]),'rows');
             y = [y; perm];
         end
-        y        = boolean(sortrows(y)');
-        y(:,1) = [];
+        y        = boolean((y)');
+        y(:,end) = [];
         comb     = size(y,2);
         for j = 1:comb
             Delta    = DeltasUp(y(:,j));
