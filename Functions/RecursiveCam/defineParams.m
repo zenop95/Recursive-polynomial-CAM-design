@@ -73,7 +73,7 @@ if nRet == 0; pp.isRet = zeros(pp.N,1); end
 pp.isConj   = ismember(pp.ns,nConj);                                             % [-] (1,N) 1 if the node is a conjunction, 0 otherwise
 pp.t        = pp.ns*pp.T;                                                        % [-] (1,N) Time before TCA for each node (orbits for LEO, a-dimensional time units for Cislunar)
 pp.n_man    = sum(pp.canFire);                                                   % [-] (1,1) Total number of firing nodes
-pp.n_constr = pp.flagCA*(pp.flagPoCTot + pp.n_conj*(pp.n_conj > 1))  + pp.flagTanSep ...
+pp.n_constr = pp.flagCA*(pp.flagPoCTot + pp.n_conj)  + pp.flagTanSep ...
               + pp.flagAlt + 6*pp.flagReturn + pp.flagErrReturn;
 
 %% Reference for return
