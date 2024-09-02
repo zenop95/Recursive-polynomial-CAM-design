@@ -158,82 +158,6 @@ template<typename T> AlgebraicVector<T> CR3BPsyn(AlgebraicVector<T> x, Algebraic
 
 //---------------------------------------------------------------------
 
-template<typename T> AlgebraicVector<T> J2dynamics(AlgebraicVector<T> xx, AlgebraicVector<T> uEci, double t, double mu, double Lsc)
-{
-	const double J2 = 1.08262668e-3; //{-}
-    const double rE = 6378.137/Lsc;
-
-    AlgebraicVector<T> pos(3), res(6), vel(3);
-    
-    pos[0] = xx[0]; pos[1] = xx[1]; pos[2] = xx[2];
-    vel[0] = xx[3]; vel[1] = xx[4]; vel[2] = xx[5];
-    
-    T r = pos.vnorm();
-    T v = vel.vnorm();
-    
-    res[0] = xx[3];
-    res[1] = xx[4];
-    res[2] = xx[5];
-
-    T x = pos[0];
-	T y = pos[1];
-	T z = pos[2];
-	
-	T mur3 = mu/r/r/r;
-	T z2r2 = z/r*z/r;
-
-	T J2rEr = 1.5*J2*rE/r*rE/r;
-
-	res[3] = -pos[0] * mur3 * (1. + J2rEr*(1. - 5.*z2r2)) + uEci[0];
-	res[4] = -pos[1] * mur3 * (1. + J2rEr*(1. - 5.*z2r2)) + uEci[1];
-	res[5] = -pos[2] * mur3 * (1. + J2rEr*(3. - 5.*z2r2)) + uEci[2];
-    
-    return res; 
-}
-
-//---------------------------------------------------------------------
-
-template<typename T> AlgebraicVector<T> J2_J4dynamics(AlgebraicVector<T> xx, AlgebraicVector<T> uEci, double t, double mu, double Lsc)
-{
-	const double J2 = 1.08262668e-3; //{-}
-	const double J3 = -2.53648e-6; //{-}
-	const double J4 = -1.6233e-6; //{-}
-    const double rE = 6378.137/Lsc;
-    
-    AlgebraicVector<T> pos(3), res(6), vel(3);
-    
-    pos[0] = xx[0]; pos[1] = xx[1]; pos[2] = xx[2];
-    vel[0] = xx[3]; vel[1] = xx[4]; vel[2] = xx[5];
-    
-    T r = pos.vnorm();
-    T v = vel.vnorm();
-    
-    res[0] = xx[3];
-    res[1] = xx[4];
-    res[2] = xx[5];
-
-    T x = pos[0];
-	T y = pos[1];
-	T z = pos[2];
-	
-	T mur3 = mu/r/r/r;
-	T z2r2 = z/r*z/r;
-
-	T J2rEr = 1.5*J2*rE/r*rE/r;
-	T mur7Er3 = 5./2.*mur3*J3*rE/r*rE/r*rE/r/r;
-	T mur7Er4 = 15./8.*mur3*J4*rE/r*rE/r*rE/r*rE/r;
-
-	res[3] = -pos[0] * mur3 * (1. + J2rEr*(1. - 5.*z2r2));
-	res[4] = -pos[1] * mur3 * (1. + J2rEr*(1. - 5.*z2r2));
-	res[5] = -pos[2] * mur3 * (1. + J2rEr*(3. - 5.*z2r2));
-        
-    res[3] = res[3] + (mur7Er3*x*z*(7.*z2r2-3.) + mur7Er4*x*(1.-14.*z2r2+21.*z2r2*z2r2) + uEci[0]);
-	res[4] = res[4] + (mur7Er3*y*z*(7.*z2r2-3.) + mur7Er4*y*(1.-14.*z2r2+21.*z2r2*z2r2) + uEci[1]);
-	res[5] = res[5] + (mur7Er3*r*r*(3./5. - 6.*z2r2+7.*z2r2*z2r2) +  mur7Er4*z*(5.-70./3.*z2r2+21.*z2r2*z2r2) + uEci[2]);
-	
-    return res; 
-}
-
 DACE::AlgebraicMatrix<double> stmDace(DACE::AlgebraicVector<DACE::DA>& x,int nDAVars, int nDepVars)
 {
     DACE::AlgebraicMatrix<double> STM(nDepVars,nDAVars);
@@ -669,6 +593,91 @@ template<typename T> AlgebraicVector<T> keplerPropAcc(AlgebraicVector<T> x, Alge
 
     return res;
     
+}
+
+//---------------------------------------------------------------------
+
+
+template<typename T> AlgebraicVector<T> J2dynamics(AlgebraicVector<T> xx, AlgebraicVector<T> uRtn, double t, double mu, double Lsc)
+{
+	const double J2 = 1.08262668e-3; //{-}
+    const double rE = 6378.137/Lsc;
+
+    AlgebraicVector<T> pos(3), res(6), vel(3), uEci(3);
+    AlgebraicMatrix<double> r2e(3,3);
+    r2e = rtn2eci(cons(xx));
+    uEci = r2e*uRtn;
+
+    pos[0] = xx[0]; pos[1] = xx[1]; pos[2] = xx[2];
+    vel[0] = xx[3]; vel[1] = xx[4]; vel[2] = xx[5];
+    
+    T r = pos.vnorm();
+    T v = vel.vnorm();
+    
+    res[0] = xx[3];
+    res[1] = xx[4];
+    res[2] = xx[5];
+
+    T x = pos[0];
+	T y = pos[1];
+	T z = pos[2];
+	
+	T mur3 = mu/r/r/r;
+	T z2r2 = z/r*z/r;
+
+	T J2rEr = 1.5*J2*rE/r*rE/r;
+
+	res[3] = -pos[0] * mur3 * (1. + J2rEr*(1. - 5.*z2r2)) + uEci[0];
+	res[4] = -pos[1] * mur3 * (1. + J2rEr*(1. - 5.*z2r2)) + uEci[1];
+	res[5] = -pos[2] * mur3 * (1. + J2rEr*(3. - 5.*z2r2)) + uEci[2];
+    
+    return res; 
+}
+
+//---------------------------------------------------------------------
+
+template<typename T> AlgebraicVector<T> J2_J4dynamics(AlgebraicVector<T> xx, AlgebraicVector<T> uRtn, double t, double mu, double Lsc)
+{
+	const double J2 = 1.08262668e-3; //{-}
+	const double J3 = -2.53648e-6; //{-}
+	const double J4 = -1.6233e-6; //{-}
+    const double rE = 6378.137/Lsc;
+    
+    AlgebraicVector<T> pos(3), res(6), vel(3), uEci(3);
+    AlgebraicMatrix<double> r2e(3,3);
+    r2e = rtn2eci(cons(xx));
+    uEci = r2e*uRtn;
+
+    pos[0] = xx[0]; pos[1] = xx[1]; pos[2] = xx[2];
+    vel[0] = xx[3]; vel[1] = xx[4]; vel[2] = xx[5];
+    
+    T r = pos.vnorm();
+    T v = vel.vnorm();
+    
+    res[0] = xx[3];
+    res[1] = xx[4];
+    res[2] = xx[5];
+
+    T x = pos[0];
+	T y = pos[1];
+	T z = pos[2];
+	
+	T mur3 = mu/r/r/r;
+	T z2r2 = z/r*z/r;
+
+	T J2rEr = 1.5*J2*rE/r*rE/r;
+	T mur7Er3 = 5./2.*mur3*J3*rE/r*rE/r*rE/r/r;
+	T mur7Er4 = 15./8.*mur3*J4*rE/r*rE/r*rE/r*rE/r;
+
+	res[3] = -pos[0] * mur3 * (1. + J2rEr*(1. - 5.*z2r2));
+	res[4] = -pos[1] * mur3 * (1. + J2rEr*(1. - 5.*z2r2));
+	res[5] = -pos[2] * mur3 * (1. + J2rEr*(3. - 5.*z2r2));
+        
+    res[3] = res[3] + (mur7Er3*x*z*(7.*z2r2-3.) + mur7Er4*x*(1.-14.*z2r2+21.*z2r2*z2r2) + uEci[0]);
+	res[4] = res[4] + (mur7Er3*y*z*(7.*z2r2-3.) + mur7Er4*y*(1.-14.*z2r2+21.*z2r2*z2r2) + uEci[1]);
+	res[5] = res[5] + (mur7Er3*r*r*(3./5. - 6.*z2r2+7.*z2r2*z2r2) +  mur7Er4*z*(5.-70./3.*z2r2+21.*z2r2*z2r2) + uEci[2]);
+	
+    return res; 
 }
 
 //---------------------------------------------------------------------
