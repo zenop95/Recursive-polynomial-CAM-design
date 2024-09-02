@@ -1,7 +1,7 @@
 %% Define path and set figure properties
 beep off
 format longG
-% close all
+close all
 clear
 addpath(genpath('.\data'))
 addpath(genpath('.\Functions'))
@@ -21,12 +21,12 @@ warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 %% User-defined inputs (modifiable)
 multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
-pp = initOpt(multiple,cislunar,1129);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
+pp = initOpt(multiple,cislunar,1);                                           % [struc] (1,1) Initialize paramters structure with conjunction data
 returnTime = -1;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-% fireTimes  = 1;                                                                 % [-] Example of bi-impulsive maneuvers
-fireTimes = 2.5;                                                        % [-] Example of bi-impulsive maneuvers
+fireTimes  = [0.5];                                                               % [-] Example of bi-impulsive maneuvers
+% fireTimes = [3.5,2.5,1.5,0.5];                                                  % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(1.4,1.6,2);                                              % [-] Example of single low-thrust arc
-% fireTimes = [linspace(1.4,1.6,2) linspace(0.6,0.4,2)];                        % [-] Example of two low-thrust arcs with different discretization points
+% fireTimes = [linspace(4.4,4.6,2) linspace(3.4,3.6,2) linspace(2.4,2.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
 pp          = defineParams(pp,fireTimes,returnTime);                            % [-] (1,1) Include optimization paramters to parameters structure
 % pp.PoCLim   = pp.PoCLim/max(multiple,1);
@@ -75,27 +75,26 @@ if pp.filterMans
     n_man      = pp.nMans;
     pp.n_man   = n_man;
     u          = zeros(m,n_man);
-    scale      = ones(m,n_man);
     ctrl       = nan(3,n_man);
 end
 aa=tic;
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
 
-[lim,coeff,timeSubtr,xBall] = propDA(pp.DAorder,u,scale,0,pp);
-if ~pp.flagPoCTot && multiple > 1
-    coeff(pp.n_conj+1) = [];
-    pp.n_constr = pp.n_constr - 1;
-elseif pp.flagPoCTot && multiple > 1
-    coeff(1:pp.n_conj) = [];
-    pp.n_constr = pp.n_constr - pp.n_conj;
-end
+[lim,coeff,timeSubtr,xBall,xRetBall] = propDA(pp.DAorder,u,0,pp);
+% if ~pp.flagPoCTot && multiple > 1
+%     coeff(pp.n_conj+1) = [];
+%     pp.n_constr = pp.n_constr - 1;
+% elseif pp.flagPoCTot && multiple > 1
+%     coeff(1:pp.n_conj) = [];
+%     pp.n_constr = pp.n_constr - pp.n_conj;
+% end
 metric = coeff(1).C(1);
 %% Optimization
 if any(strcmpi(pp.solvingMethod,{'lagrange','convex','newton'}))
-        yF = computeCtrlRecursive(coeff,u,scale,pp);
+        yF = computeCtrlRecursive(coeff,u,pp);
 
 elseif strcmpi(pp.solvingMethod,'fmincon')
-        yF = computeCtrlNlp(coeff,u,scale,pp);
+        yF = computeCtrlNlp(coeff,u,pp);
 
 else
     error('The solving method should be either lagrange, fmincon, or convex')
@@ -116,31 +115,18 @@ else
     ctrl = yF;                                                                  % [-] (3,n_man) Build control matrix node-wise in the general case
 end
 simTime = toc - timeSubtr - timeSubtr1;     
+convRad = load("write_read\convRad.dat")*pp.scaling(4)*pp.ctrlMax*1e6;
 ctrl = pp.ctrlMax*ctrl;
-
 %% Validation
 metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...    
                             pp.DAorder);
 % distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF./scale,1,[]), ...    
                             % pp.DAorder)*pp.Lsc;
-[~,~,~,x,xRet0] = propDA(1,ctrl,scale,1,pp);                                  % Validate the solution by forward propagating and computing the real PoC
-if pp.pocType ~= 3
+
+[~,~,~,x,xRetMan,x_sec,deltaTca] = propDA(1,ctrl,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
+if ~pp.flagMd
     metricValPoly = 10^metricValPoly;
     lim           = 10^lim;
-end
-%% find TCA
-fid = fopen('write_read/initial_state.dat', 'w');
-for j = 1:6 
-    fprintf(fid, '%40.16f\n', x(j));
-end
-for j = 1:6
-    fprintf(fid, '%40.16f\n', pp.x_sTCA(j));
-end
-fclose(fid);
-!wsl ./CppExec/findTca
-tca = load("write_read/tcaOut.dat")*pp.Tsc;                                                         
-
+end                                                     
 %% PostProcess
-
-
-postProcess(xBall,x,xRet0,lim,ctrl,simTime,pp)
+postProcess(xBall,x,x_sec,xRetMan,xRetBall,lim,ctrl,deltaTca,simTime,pp)

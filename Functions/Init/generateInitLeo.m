@@ -8,10 +8,13 @@ B = table2array(data); clear data;
 x0p = toColumn(B(ind,3:8));
 primary = cartesian2kepler(x0p,mu);
 primary.x0 = x0p;
+a = 0*1e-6*rand(3);
+b = 0*1e-5*rand(3);
+c = 0*1e-5*rand(3);
+d = 0*1e-4*rand(3);
 primary.C0 = [[B(ind,9) B(ind,12)  B(ind,13);
            B(ind,12)  B(ind, 10) B(ind,14);
-           B(ind,13)  B(ind, 14)  B(ind,11)] zeros(3,3); 
-                                            zeros(3,6)];
+           B(ind,13)  B(ind, 14)  B(ind,11)] a; a' b];
 T              = 2*pi/primary.n;         % [s] orbital period
 primary.HBR    = B(ind,2)/2;           % [km]
 primary.mass   = 500;            % [kg] mass
@@ -27,8 +30,9 @@ r2e = rtn2eci(x0p(1:3),x0p(4:6));
 secondary.relState = [r2e' zeros(3); zeros(3) r2e']*(x0s-x0p);                          % [km] [km/s] Relative cartesian state at TCA
 secondary.C0    = [[B(ind,21) B(ind,24) B(ind,25);
            B(ind,24)  B(ind,22) B(ind,26);
-           B(ind,25)  B(ind,26) B(ind,23)] zeros(3,3); 
-                                            zeros(3,6)];
+           B(ind,25)  B(ind,26) B(ind,23)] c; c' d];
+a = cartesian2kepler(x0s);
+secondary.n = a.n;
 secondary.HBR        = B(ind,2)/2 + primary.HBR;         % [km]
 secondary.mass       = 100;          % [kg] mass
 secondary.A_drag     = 1;            % [m^2] drag surface area

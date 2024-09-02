@@ -7,21 +7,23 @@
 #include <fstream>
 #include <iomanip>
 #include "camRoutines.h"
+#include "auxiliaryRoutines.h"
 #include <chrono>
 
 using namespace std;
 using namespace DACE;
 using namespace std::chrono;
 using namespace cam;
+using namespace aux;
 
 int main(void)
 {
-    int j, jj, kk, i, k, vv, flag1, flag2, flag3, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd;
-	double mass, A_drag, Cd, A_srp, Cr, tca, Lsc, musc, ctrlMax;
+    int nvar, j, jj, kk, i, ii, k, order, pocType, N, lowThrust_flag, n_conj, n_man, m, dyn, gravOrd, missDistanceFlag, TPoCFlag;
+	double tca, Lsc, musc, ctrlMax, mean_motion_p;
 
     long time1 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     
-    ifstream nodes, Input;
+    ifstream nodes;
 	nodes.open("./write_read/initial_state.dat");
         nodes >> N;         // Number of nodes
         nodes >> n_conj;    // Number of conjunctions
@@ -29,83 +31,27 @@ int main(void)
         nodes >> m;         // Number of DA variables per node
 	nodes.close();
     // Initialize variable
-    AlgebraicMatrix<double> P(3,3), cov(9,n_conj), P_B3(3,3), P_B(2,2), r2e(3,3), toB(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
-    AlgebraicVector<double> xdum(6), metricMap(3), t(N), vs(3), rs(3), rsB(3), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3);
+    AlgebraicMatrix<double> Cp(6,6), Cs(6,6), covp(36,n_conj), covs(36,n_conj), r2e(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
+    AlgebraicVector<double> xdum(6), metricMap(3), t(N), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3), mean_motion_s(n_conj);
     AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(6);
-    // Write input from .dat
-	Input.open("./write_read/initial_state.dat");
-        Input >> N;               // Number of nodes
-        Input >> n_conj;          // Number of conjunctions
-        Input >> n_man;           // Number of control nodes
-        Input >> m;               // Number of DA variables per node
-        Input >> dyn;             // Dynamics model (0 Earth Orbit, 1 Cislunar)
-        Input >> lowThrust_flag;  // Low thrust dynamics flag
-        Input >> order;           // Expansion order
-        Input >> pocType;         // PoC model (0 Alfriend, 1 Chan)
-        Input >> tca;             // Ephemeris time at conjunction
-        Input >> Lsc;             // Length scale
-        Input >> musc;            // Gravitational constant
-        Input >> gravOrd;            // Gravitational constant
-        Input >> ctrlMax;            // ctrlMax
-        for (j = 0; j < 6; j ++) {
-            Input >> xdum[j];           // Write dummy variable for the primary's ECI state at the first conjunction from input
-        }
-        for (k = 0; k < n_conj; k ++) {
-            Input >> HBR[k];            // Combined Hard Body radialius for each conjunction
-        }
-        for (k = 0; k < n_conj; k ++) {
-            for (j = 0; j < 3; j ++) {
-                Input >> rsDum.at(j,k); // Write secondary's ECI position at each conjunction from input
-            }
-            for (j = 0; j < 3; j ++) {
-                Input >> vsDum.at(j,k); // Write secondary's ECI velocity at each conjunction from input
-            }   
-        }
-        for (j = 0; j < 3; j ++) {
-                Input >> rRef[j]; // Write reference ECI position for return from input
-            }
-        for (j = 0; j < 3; j ++) {
-                Input >> vRef[j]; // Write reference ECI velocity for return from input
-            }
-        for (k = 0; k < n_conj; k ++) {
-            for (j = 0; j < 9; j ++) {
-                Input >> cov.at(j,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
-            }
-        }
-        for (i = 0; i < n_man; i ++) {
-                Input >> magnitude[i];    // Write maneuver magnitude if the magnitude is fixed
-        }   
-        for (i = 0; i < n_man; i ++) {
-            for (j = 0; j < 3; j ++) {
-                Input >> directions.at(j,i); // Write maneuver direction in RTN if the direction is fixed
-            }
-        }
-        for (i = 0; i < 6; i ++) {
-            Input >> constraintFlags[i];
-        }
-        for (i = 0; i < n_man; i ++) {
-            for (j = 0; j < m; j ++) {
-                Input >> ctrlDum.at(j,i);   // Write dummy reference control from input ({0 0 0} if ballistic trajectory)
-            }
-        }
-        for (i = 0; i < N; i ++) {
-            Input >> t[i];                  // Write node times before conjunction (if negative it means that there are more than one encounters and nodes are needed after the first encounter)
-            Input >> canFire[i];            // Define if node i is a firing node
-            Input >> isConj[i];             // Define if node i is a conjunction node
-            Input >> isRet[i];              // Define if node i is a return node
-        }
-    Input.close();
+    // Read input from .dat
+	readInit( nvar,  order,  pocType,  N,  lowThrust_flag,  n_conj,  n_man,  m,  dyn,  gravOrd,  missDistanceFlag, TPoCFlag, tca,  Lsc,  musc,  ctrlMax,  mean_motion_p, covp,   covs,   ctrlDum,   rsDum,  vsDum,
+               directions,  xdum,  t,  HBR,  magnitude, rRef,  vRef,  mean_motion_s,  canFire,  isConj, isRet,  constraintFlags);
+
     // initialize execution time counter
     long time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     long timeSubtr = time2 - time1;
-    // Initialize DA     
-    DA::init(order, m*n_man);
+    // Initialize DA    
+    nvar = m*n_man + 1; 
+    DA::init(order, nvar);
     DA::setEps(1e-30);
-
+    
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), xRet(6), poc(n_conj); 
-    AlgebraicMatrix<DA> xTca(6,n_conj);
-    DA poc_tot, alpha, beta;
+    AlgebraicVector<DA> x0(6), x00(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), md(n_conj), dx(nvar-1), rRet(3), vRet(3), distRel(3); 
+    AlgebraicMatrix<DA> xTca(6,n_conj), xsTca(6,n_conj), P_eci(3,3), P_B3(3,3), P_B(2,2), Pp(3,3), Ps(3,3), toB(3,3), STM_p(6,6), STM_s(6,6), CPropP(6,6), CPropS(6,6), covsda(9,n_conj), r2ep(3,3), r2es(3,3);
+                    DA  poc_tot, alpha, beta, tcaNew, tan, radial, retErr;
+
+    
     // Define ballistic primary's position at first TCA 
     for (j = 0; j < 6 ; j++) {xBall[j] = xdum[j] + 0*DA(1);}
     // backpropagation from first TCA
@@ -164,7 +110,7 @@ int main(void)
             }
             kk ++;
             // In Cislunar optimization do not tranform to RTN because we are in the synodic frame
-            if (dyn == 0) {
+            if (dyn + lowThrust_flag == 0) {
                 ctrl = r2e*ctrlRtn*ctrlMax;
             }
             else {
@@ -195,15 +141,50 @@ int main(void)
         else {
             x0 = RK78(6, x0, ctrl, tca - t[i], tca - t[i+1], CR3BPsyn, musc, Lsc); // Cislunar Orbit
         }
+
         // If the next node is a conjunction node, save the state in a DA variable
+
         if (isConj[i+1] == 1) {
+            DA dt = 0.0 + DA(nvar);
+            ctrl = {DA(1)*0, DA(1)*0, DA(1)*0};
+            xs0[0] = rsDum.at(0,k) + DA(1)*0; xs0[1] = rsDum.at(1,k) + DA(1)*0; xs0[2] = rsDum.at(2,k) + DA(1)*0;
+            xs0[3] = vsDum.at(0,k) + DA(1)*0; xs0[4] = vsDum.at(1,k) + DA(1)*0; xs0[5] = vsDum.at(2,k) + DA(1)*0; 
+            x00  = KeplerProp(x0, dt, 1.0);
+            xsf  = KeplerProp(xs0, dt, 1.0);
+            tcaNew = findTCA(x00 - xsf, nvar);
+            STM_p = CWSTM(mean_motion_p,tcaNew); // CW transformation for the covariance (can be done with YA)
+            STM_s = CWSTM(mean_motion_s[k],tcaNew); // CW transformation for the covariance (can be done with YA)
+            unpackMatrix(Cp,covp,k,6);
+            unpackMatrix(Cs,covs,k,6);
+            CPropP = STM_p*Cp*STM_p.transpose();
+            CPropS = STM_s*Cs*STM_s.transpose();
+            for (ii = 0; ii < 3 ; ii ++) {
+            for (j = 0; j < 3 ; j ++) {
+                Pp.at(ii,j)  = CPropP.at(ii,j);
+                Ps.at(ii,j)  = CPropS.at(ii,j);
+            }
+            }
+            r2ep = rtn2eci(x00);
+            r2es = rtn2eci(xsf);
+            P_eci = r2ep*Pp*r2ep.transpose() + r2es*Ps*r2es.transpose();
+
+            AlgebraicVector<DA> dxx(nvar);
+            for (ii = 0; ii < nvar - 1; ii++) {
+                dxx[ii] = DA(ii+1);}
+            dxx[nvar - 1] = tcaNew;
+            x00  = x00.eval(dxx);
+            xsf = xsf.eval(dxx);
+            P_eci = evalDAMatrix(P_eci,dxx,3);
+            packMatrix(P_eci,covsda,k,3);
             for (j = 0; j < 6 ; j ++) {
-                xTca.at(j,k) = x0[j];
-            }        
+                xTca.at(j,k) = x00[j];
+                xsTca.at(j,k) = xsf[j];
+            }
             k = k + 1;
         }
         else if (isRet[i+1] == 1) {
             xRet = x0;
+            retErr = dot(xRet - cons(xRet), xRet - cons(xRet))*1e6; // scaling because it is very different scale than the PoC variable
         }
     }
 if (constraintFlags[0] == 1) {
@@ -211,58 +192,49 @@ if (constraintFlags[0] == 1) {
     DA noCollisions = 1.0;
     for (k = 0; k < n_conj; k ++) {
         // Expanded position and velocity of the primary at conjunction k
-        r[0] = xTca.at(0,k);  r[1] = xTca.at(1,k);  r[2] = xTca.at(2,k);   
-        v[0] = xTca.at(3,k);  v[1] = xTca.at(4,k);  v[2] = xTca.at(5,k);
-        vv = 0;
-        // Build the ECI combined covariance matrix and the secondary's ECI position and velocity from dummy variables
         for (i = 0; i < 3 ; i ++) {
-            for (j = 0; j < 3 ; j ++) {
-                P.at(i,j)  = cov.at(vv,k);
-                vv = vv + 1;
-            }
-            vs[i] = vsDum.at(i,k);
-            rs[i] = rsDum.at(i,k);
+            r[i] = xTca.at(i,k);
+            v[i] = xTca.at(i+3,k);
+            rs[i] = xsTca.at(i,k);
+            vs[i] = xsTca.at(i+3,k);
         }
+        unpackMatrix(P_eci,covsda,k,3);
         // B-plane transformations
-        toB = Bplane(cons(v),vs); // DCM from ECI to B-plane
-        rB  = toB*r;                     // Primary position in the B-plane (3D)
-        rsB = toB*rs;                    // Secondary position in the B-plane (3D)
-        P_B3 = toB*P*toB.transpose();    // Combined covariance in the B-plane (3D)
+        toB  = Bplane(v,vs); // DCM from ECI to B-plane
+        rB   = toB*r;                     // Primary position in the B-plane (3D)
+        rsB  = toB*rs;                    // Secondary position in the B-plane (3D)
+        P_B3 = toB*P_eci*toB.transpose();     // Combined covariance in the B-plane (3D)
 
         // Relative position in the B-plane (2D)
-        r_rel[0]    = rB[0] - rsB[0];   r_rel[1]    = rB[2] - rsB[2]; 
-        // Combined covariance in the B-plane (2D)
-        P_B.at(0,0) = P_B3.at(0,0);     P_B.at(0,1) = P_B3.at(0,2);
-        P_B.at(1,0) = P_B3.at(2,0);     P_B.at(1,1) = P_B3.at(2,2);
-        vv = 0;
-        // Compute PoC for the single conjunction, according to the required model
-        if (pocType == 0) {
-            poc[k] = ConstPoC(r_rel,P_B,HBR[k]);}
-        else if (pocType == 1) {
-            poc[k] = ChanPoC(r_rel,P_B,HBR[k],3);}
-        else if (pocType == 2) {
-            poc[k] = MaxPoC(r_rel,P_B,HBR[k]);}
-        else if (pocType == 3) {
-            poc[k] = dot(r_rel,r_rel);}
+        r_rel[0]    = rB[0] - rsB[0];   r_rel[1]    = rB[2] - rsB[2];
+        if (missDistanceFlag == 1 ) {
+            md[k] = dot(r_rel,r_rel);
+            }
         else {
-            throw std::runtime_error("the metric flag must be in the interval [1,3] and the PoC type must be in the interval [0,1]");}
-        // Probability of no collision
-        noCollisions = noCollisions*(1.0 - poc[k]);
+            // Combined covariance in the B-plane (2D)
+            P_B.at(0,0) = P_B3.at(0,0);     P_B.at(0,1) = P_B3.at(0,2);
+            P_B.at(1,0) = P_B3.at(2,0);     P_B.at(1,1) = P_B3.at(2,2);
+            // Compute PoC for the single conjunction, according to the required model
+            if (pocType == 0) {
+                poc[k] = ConstPoC(r_rel,P_B,HBR[k]);}
+            else if (pocType == 1) {
+                poc[k] = ChanPoC(r_rel,P_B,HBR[k],3);}
+            else if (pocType == 2) {
+                poc[k] = MaxPoC(r_rel,P_B,HBR[k]);}
+            else {
+                throw std::runtime_error("the metric flag must be in the interval [1,3] and the PoC type must be in the interval [0,1]");}
+            // Probability of no collision
+            noCollisions = noCollisions*(1.0 - poc[k]);
+        }
     }
-
     // Final PoC comprehensive of all the conjunctions
-    if (pocType == 3) {
-        poc_tot = poc[0];
-    }
-    else {
+    if (missDistanceFlag == 0 ) {
         poc_tot = log10(1.0 - noCollisions);
     }
 }
 
-DA tan, radial;
 if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     // Return constraint (scalar as tangential distance from other spacecraft GRACE)
-    AlgebraicVector<DA> rRet(3), vRet(3), distRel(3);
     for (j = 0; j < 3 ; j ++) {
         rRet[j] = xRet[j];
         vRet[j] = xRet[j+3];
@@ -283,53 +255,56 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
 
     time1   = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     //open the output files
-    ofstream constPart, constraints;
+    ofstream constPart, constraints, tcaOut, convRad;
     constPart.open("./write_read/constPart.dat");
     constPart << setprecision(18);
-    constraints.open("./write_read/constraints.dat");
-    constraints << setprecision(18);
-
+    
     // write TCA states in ECI coordinates into output
     for (k = 0; k < n_conj ; k++) {
         for (j = 0; j < 6 ; j++) {
         constPart  << cons(xTca.at(j,k)) << endl;
         }
     }
+    for (j = 0; j < 6 ; j++) {
+        constPart  << cons(xRet[j]) << endl;
+    }
+    constPart.close();
 
     // write the DA expansion of PoC in output
+    constraints.open("./write_read/constraints.dat");
+    constraints << setprecision(18);
     if (constraintFlags[0] == 1) {
-        if (n_conj > 1) {
-            for (k = 0; k < n_conj; k ++) {
-            if  (pocType == 3) {
-                constraints << poc[k] << endl;
+        for (k = 0; k < n_conj; k ++) {
+            if  (missDistanceFlag == 1) {
+                constraints << -md[k] << endl;
             }
             else {    
                 constraints << log10(poc[k]) << endl;
             }
-            }
         }
-        constraints << poc_tot << endl;
+        if  (TPoCFlag == 1) {
+            constraints << poc_tot << endl;
+        }
     }
-
-    // write the DA expansion of return in output
     if (constraintFlags[1] == 1) {
-        constraints << tan    << endl;
+        constraints << tan    << endl;     
     }
 
     // write the DA expansion of return in output
     if (constraintFlags[2] == 1) {
-        constraints << radial       << endl;
+        constraints << radial << endl;    
+
     }
 
     // write the DA expansion of return in output
     if (constraintFlags[3] == 1) {
         for (j = 0; j < 6; j ++) {
-        constraints << xRet[j]        << endl;
+        constraints << xRet[j] - cons(xRet[j]) << endl;     
         }
     }
 
     if (constraintFlags[4] == 1) {
-        constraints << pow(xRet - xdum, 2)  << endl;
+        constraints << retErr  << endl;
     }
 
     if (constraintFlags[5] == 1) {
@@ -337,6 +312,24 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
             constraints << DA(1 + j*m)*DA(1 + j*m) + DA(2 + j*m)*DA(2 + j*m) + DA(3 + j*m)*DA(3 + j*m) << endl;
         }
     }
+    constraints.close();
+
+    // convergence radius
+
+    // convRad.open("./write_read/convRad.dat");
+    // convRad << setprecision(18);
+    // j = 0;
+    // for (j == 0; j < nvar-1; j ++) {
+    //     if (j > 0) {dx[j-1] = 0.0;}
+    //     dx[j] = DA(j+1);
+    //     if  (missDistanceFlag == 0) {
+    //         convRad << convRadius(poc_tot.eval(dx),1e-8) << endl;
+    //     }
+    //     else {
+    //         convRad << convRadius(md[0].eval(dx),1e-8) << endl;
+    //     }
+    //     convRad.close();
+    // }
     // Do not consider writing time when calculating execution time
     time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     timeSubtr = timeSubtr + time2 - time1;
@@ -346,6 +339,4 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
     timeOut << setprecision(16);
     timeOut << timeSubtr << endl;
     timeOut.close();
-    constPart.close();
-    constraints.close();
 }

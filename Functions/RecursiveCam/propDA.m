@@ -1,5 +1,5 @@
-function [lim,coeff,timeSubtr,xTca,xRet0] = ...
-              propDA(DAorder,u,scale,validateFlag,pp)
+function [lim,coeff,timeSubtr,xTca,xRet0,x_sec,deltaTca] = ...
+              propDA(DAorder,u,validateFlag,pp)
 % propDA performs the DA propagation to build the NLP
 % 
 % INPUT:
@@ -27,13 +27,11 @@ HBR        = pp.HBR;
 x_pTCA     = pp.x_pTCA;
 x_sTCA     = pp.x_sTCA;
 x_ref      = pp.xReference;
-P          = pp.P;
 PoCLim     = pp.PoCLim;
-N = length(pp.t);
-u = reshape(u,[],1);
-scale = reshape(scale,[],1);
-xTca   = nan(6,pp.n_conj);
-bb = tic;
+N          = length(pp.t);
+u          = reshape(u,[],1);
+xTca       = nan(6,pp.n_conj);
+bb         = tic;
 % Write file to pass to C++
 fid = fopen('write_read/initial_state.dat', 'w');
 fprintf(fid, '%2i\n',     N);
@@ -49,25 +47,36 @@ fprintf(fid, '%40.16f\n', Lsc);
 fprintf(fid, '%40.16f\n', mu);
 fprintf(fid, '%2i\n',     pp.gravOrd);
 fprintf(fid, '%40.16f\n', pp.ctrlMax);
+fprintf(fid, '%2i\n',     pp.flagMd);
+fprintf(fid, '%2i\n',     pp.flagPoCTot);
+fprintf(fid, '%40.16f\n', pp.primary.n);
+for k = 1:n_conj
+    fprintf(fid, '%40.16f\n', pp.secondary(k).n);
+end
 for j = 1:6 
     fprintf(fid, '%40.16f\n', x_pTCA(j));
+end
+for k = 1:n_conj
+    for j = 1:6
+        fprintf(fid, '%40.16f\n', x_sTCA(j,k));
+    end
 end
 if ~validateFlag
     for k = 1:n_conj
         fprintf(fid, '%40.16f\n', HBR(k));
     end
-    for k = 1:n_conj
-        for j = 1:6
-            fprintf(fid, '%40.16f\n', x_sTCA(j,k));
-        end
-    end
     for j = 1:6
         fprintf(fid, '%40.16f\n', x_ref(j));
     end
     for k = 1:n_conj
-        for j = 1:3 
-            for i = 1:3 
-                fprintf(fid, '%40.16f\n', P(j,i,k));
+        for j = 1:6 
+            for i = 1:6 
+                fprintf(fid, '%40.16f\n', pp.Cp(j,i,k));
+            end
+        end
+        for j = 1:6 
+            for i = 1:6 
+                fprintf(fid, '%40.16f\n', pp.Cs(j,i,k));
             end
         end
     end
@@ -104,9 +113,11 @@ if ~validateFlag
 elseif validateFlag
     !wsl ./CppExec/validatePoly
     lim=[];coeff=[];timeSubtr=[];
-    x    = reshape(load("write_read/constPart.dat"),6,pp.n_conj+1);             % If validating we only care about the TCA positions
-    if any(pp.isRet); xRet0 = x(:,end); end
-    xTca  = x(:,1:end-1);
+    out = reshape(load("write_read/constPart.dat"),6,2*pp.n_conj+1);             % If validating we only care about the TCA positions
+    xTca = out(:,1:n_conj);
+    x_sec = out(:,n_conj+1:2*n_conj);
+    deltaTca = load("write_read/tcaOut.dat")*pp.Tsc;             
+    if any(pp.isRet); xRet0 = out(:,end); end
     return;
 end
 b = tic;
@@ -116,9 +127,13 @@ a         = load("write_read/constPart.dat");
 for k = 1:n_conj
     xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
+if pp.flagReturn || pp.flagErrReturn || pp.flagTanSep
+    xRet0(:,k) = a(end-5:end);                                               % [-] (6,n_conj) Constant part of the propagated state and control
+end
 timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
-if pp.pocType == 3
-    lim = PoCLim;
+
+if pp.flagMd
+    lim = pp.mdLim;
 else
     lim = log10(PoCLim);
 end
@@ -129,6 +144,6 @@ if ~validateFlag
     coeff  = LoadCOSY('write_read/constraints.dat', ...
                    (3-2*pp.fixedDir-pp.fixedMag)*pp.n_man,pp.n_constr,0);
 end
+
 timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
-lim = log10(PoCLim);
 end

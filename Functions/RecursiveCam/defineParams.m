@@ -14,19 +14,24 @@ function pp = defineParams(pp,nFire,nRet)
 %--------------------------------------------------------------------------
 %% Optimization parameters (modifiable)
 pp.DAorder       = 5;                                                           % [-]   (1,1) Order of the DA polynomial expansion
-pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan)
+pp.pocType       = 1;                                                           % [-]   (1,1) PoC type (0: Constant, 1: Chan, 2: Max)
 % pp.objFunction   = 'fuel';
 pp.objFunction   = 'energy';
 pp.solvingMethod = 'lagrange';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'newton';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'convex';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'fmincon';                                                
+pp.mdLim         = (.3/pp.Lsc)^2;                                               % [-]   (1,1) miss distance limit
 pp.PoCLim        = 1e-6;                                                        % [-]   (1,1) PoC limit
-% pp.PoCLim        = 1e-2;                                                        % [-]   (1,1) PoC limit
-% pp.PoCLim        = (1/pp.Lsc)^2;                                               % [-]   (1,1) miss distance limit
+% pp.PoCLim        = 1e-2;                                                      % [-]   (1,1) PoC limit
+% pp.PoCLim        = (1/pp.Lsc)^2;                                              % [-]   (1,1) miss distance limit
 pp.nomDist       = 0.200/pp.Lsc;                                                % [-]   (1,1) Relative distance to achieve after 1 orbit
-
+pp.equalityConstr = 0;
+pp.tol            = 1e-10;                                                      % [-] (1,1) Tolerance for the successive linearizations
+pp.maxIter        = 1e3;                                                        % [-] (1,1) Maximum number of successive linearizations
+pp.alpha          = .1; % parameter to use previous iteration solution
 %% Operational constraints (modifiable)
+pp.flagMd           = 1; % Miss distance instead of PoC
 pp.flagStability    = 1; % only for Cislunar
 pp.lowThrust        = 0;                                                        % [bool]   (1,1) Low-thrust flag
 pp.fixedDir         = 0 + pp.flagStability*pp.cislunar;                         % [bool]   (1,1) Fixed-direction flag
@@ -44,7 +49,7 @@ pp.flagAlt          = 0;
 pp.flagReturn       = 0;
 pp.flagErrReturn    = 0;
 pp.flagCtrlMax      = 0;
-ctrlMax             = 100;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
+ctrlMax             = 1000;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
 pp.ctrlMax          = ctrlMax/(pp.Asc*pp.lowThrust + pp.Vsc*~pp.lowThrust)/1e6;
 % pp.ctrlMax          = 1;                                                   
 %% Maneuvering times (should not be modified)
@@ -68,8 +73,8 @@ if nRet == 0; pp.isRet = zeros(pp.N,1); end
 pp.isConj   = ismember(pp.ns,nConj);                                             % [-] (1,N) 1 if the node is a conjunction, 0 otherwise
 pp.t        = pp.ns*pp.T;                                                        % [-] (1,N) Time before TCA for each node (orbits for LEO, a-dimensional time units for Cislunar)
 pp.n_man    = sum(pp.canFire);                                                   % [-] (1,1) Total number of firing nodes
-pp.n_constr = pp.flagCA*(1 + pp.n_conj*(pp.n_conj > 1))  + pp.flagTanSep ...
-              + pp.flagAlt + 6*pp.flagReturn + pp.flagErrReturn;% + pp.n_man;
+pp.n_constr = pp.flagCA*(pp.flagPoCTot + pp.n_conj)  + pp.flagTanSep ...
+              + pp.flagAlt + 6*pp.flagReturn + pp.flagErrReturn;
 
 %% Reference for return
 r2e_p         = rtn2eci(pp.x_pTCA(1:3),pp.x_pTCA(4:6));                         % [-] (3,3) RTN to ECI rotation matrix for primary in Earth Orbit 
@@ -80,18 +85,17 @@ pp.xReference = pp.x_pTCA;% + [r2e_p*[pp.nomDist; 0; 0]; 0; 0; 0];
 limUp      = [];
 limLo      = [];
 if pp.flagCA
-    if pp.pocType == 3
-        limUp = pp.PoCLim*ones(1 + pp.n_conj*(pp.n_conj > 1),1);       
-        limLo = inf(1 + pp.n_conj*(pp.n_conj > 1),1);
+    if pp.flagMd
+        limUp = -pp.mdLim*ones(1 + pp.n_conj*(pp.n_conj > 1),1);                % the miss distance is defined as negative to be used in the same way as PoC (constraint <0)  
     else
         limUp = log10(pp.PoCLim)*ones(1 + pp.n_conj*(pp.n_conj > 1),1);       
-        limLo = -inf(1 + pp.n_conj*(pp.n_conj > 1),1);
     end
+    limLo = -inf(1 + pp.n_conj*(pp.n_conj > 1),1); 
 end
-if pp.flagTanSep;    limUp   = [limUp; -.1/pp.Lsc];     limLo = [limLo; -.2/pp.Lsc]; end
-if pp.flagAlt;       limUp   = [limUp; 0];              limLo = [limLo; 0]; end
-if pp.flagErrReturn; limUp   = [limUp; 0];              limLo = [limLo; 0]; end
-if pp.flagReturn;    limUp   = [limUp; pp.xReference];  limLo = [limLo; pp.xReference]; end
+if pp.flagTanSep;    limUp = [limUp; -.1/pp.Lsc];       limLo = [limLo; -.2/pp.Lsc]; end
+if pp.flagAlt;       limUp = [limUp; 0];                limLo = [limLo; 0]; end
+if pp.flagErrReturn; limUp = [limUp; 0.1/pp.Lsc];       limLo = [limLo; 0]; end
+if pp.flagReturn;    limUp = [limUp; zeros(6,1)];       limLo = [limLo; zeros(6,1)]; end
 if pp.flagCtrlMax;   limUp = [limUp; ones(pp.n_man,1)]; limLo = [limLo; zeros(pp.n_man,1)]; end 
 pp.limUp = limUp;
 pp.limLo = limLo;
