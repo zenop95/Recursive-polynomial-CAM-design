@@ -100,7 +100,7 @@ int main(void)
             for (j = 0; j < 3 ; j++) { 
                 ctrlRtn[j] = ctrlDum.at(j,ii);
             }
-            if (dyn == 0) {
+            if (dyn + lowThrust_flag == 0) {
                 ctrl = r2e*ctrlRtn;
             }
             else {

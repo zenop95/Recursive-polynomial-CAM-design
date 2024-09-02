@@ -35,27 +35,6 @@ template <typename T> T atan2_mod(T a, T b) {
     return angle;
 }
 
-template<typename T> AlgebraicVector<T> keplerPropAcc(AlgebraicVector<T> x, AlgebraicVector<T> uEci, double t, double mu, double Lsc)
-{     
-    AlgebraicVector<T> res(6), pos(3);
-    AlgebraicMatrix<double> dcm(3,3);
-    
-    pos[0] = x[0]; pos[1] = x[1]; pos[2] = x[2];    
-    T rrr = pow(pos.vnorm(),3);
-
-    res[0] = x[3];
-    res[1] = x[4];
-    res[2] = x[5];
-	res[3] = -mu*pos[0]/rrr + uEci[0];
-	res[4] = -mu*pos[1]/rrr + uEci[1];
-	res[5] = -mu*pos[2]/rrr + uEci[2];
-
-    return res;
-    
-}
-
-//---------------------------------------------------------------------
-
 template<typename T, typename U> DACE::AlgebraicVector<T> 
 	KeplerProp(const DACE::AlgebraicVector<T>& rv, const U& t, const double mu){
 
@@ -670,6 +649,29 @@ template <typename T> AlgebraicMatrix<T> rtn2eci(const AlgebraicVector<T> & rv)
 
   return dcm;
 }
+
+template<typename T> AlgebraicVector<T> keplerPropAcc(AlgebraicVector<T> x, AlgebraicVector<T> uRtn, double t, double mu, double Lsc)
+{     
+    AlgebraicVector<T> res(6), pos(3), uEci(3);
+    AlgebraicMatrix<double> r2e(3,3);
+    r2e = rtn2eci(cons(x));
+    uEci = r2e*uRtn;
+
+    pos[0] = x[0]; pos[1] = x[1]; pos[2] = x[2];    
+    T rrr = pow(pos.vnorm(),3);
+
+    res[0] = x[3];
+    res[1] = x[4];
+    res[2] = x[5];
+	res[3] = -mu*pos[0]/rrr + uEci[0];
+	res[4] = -mu*pos[1]/rrr + uEci[1];
+	res[5] = -mu*pos[2]/rrr + uEci[2];
+
+    return res;
+    
+}
+
+//---------------------------------------------------------------------
 
 template<typename T> AlgebraicVector<T> cart2kep(const AlgebraicVector<T>& rv, const double mu)
 {

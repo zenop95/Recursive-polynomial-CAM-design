@@ -110,7 +110,7 @@ int main(void)
             }
             kk ++;
             // In Cislunar optimization do not tranform to RTN because we are in the synodic frame
-            if (dyn == 0) {
+            if (dyn + lowThrust_flag == 0) {
                 ctrl = r2e*ctrlRtn*ctrlMax;
             }
             else {
