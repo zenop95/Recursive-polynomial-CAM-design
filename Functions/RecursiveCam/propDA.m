@@ -128,7 +128,7 @@ for k = 1:n_conj
     xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
 if pp.flagReturn || pp.flagErrReturn || pp.flagTanSep
-    xRet0(:,k) = a(end-5:end);                                               % [-] (6,n_conj) Constant part of the propagated state and control
+    xRet0 = a(end-5:end);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
 timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
 

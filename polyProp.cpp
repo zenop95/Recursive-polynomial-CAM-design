@@ -229,7 +229,7 @@ if (constraintFlags[0] == 1) {
     }
     // Final PoC comprehensive of all the conjunctions
     if (missDistanceFlag == 0 ) {
-        poc_tot = log10(1.0 - noCollisions);
+        poc_tot = 1.0 - noCollisions;
     }
 }
 
@@ -278,13 +278,13 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
             if  (missDistanceFlag == 1) {
                 constraints << -md[k] << endl;
             }
-            else {    
+            else if (missDistanceFlag == 0 && TPoCFlag == 0) {    
                 constraints << log10(poc[k]) << endl;
             }
         }
-        if  (TPoCFlag == 1) {
-            constraints << poc_tot << endl;
-        }
+    if (TPoCFlag == 1) {
+        constraints << log10(poc_tot) << endl;
+    }
     }
     if (constraintFlags[1] == 1) {
         constraints << tan    << endl;     
