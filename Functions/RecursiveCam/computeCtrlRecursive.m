@@ -12,6 +12,7 @@ function [yf,iters] = computeCtrlRecursive(coeff,u,pp)
 % Author: Zeno Pavanello, 2024
 % E-mail: zpav176@aucklanduni.ac.nz
 %-------------------------------------------------------------------------------
+
 n_constr = pp.n_constr;
 n_man    = pp.n_man;
 limUp    = pp.limUp;
@@ -32,47 +33,56 @@ for c = 1:n_constr
         DAArrays{c,k} = buildDAArray(coeff(c).C,coeff(c).E,k);             % [-] (cell) Build cell arrays for the DA expansion high-order tensors
     end
 end
-% [DAArrays,DeltasUp,DeltasLo] = normalizeGrads(DAArrays,DeltasUp,DeltasLo);
-%% First-order Dv
-switch lower(pp.solvingMethod)
-    case {'lagrange','newton'}
-        Y0   = solveLagrange(DeltasUp,DeltasLo,DAArrays,zeros(n,1),1,pp) + u;    % [-] (n,1) 1st-order greedy solution of the polynomial constraint
-    case 'convex'
-        Y0  = solveConvex(DeltasUp,DeltasLo,DAArrays,zeros(n,1),1,pp) + u;     % [-] (n,1) 1st-order convex solution of the polynomial constraint
+
+%% Define permutations
+y = [];
+for j = 0:n_constr
+    perm = unique(perms([ones(1,n_constr-j),zeros(1,j)]),'rows');
+    y = [y; perm];
 end
+y(end,:)           = [];                                                        % eliminate case where all constraints are inactive
+y(:,pp.isEqConstr) = 1;                                                         % always activate all equality constraints
+y                  = boolean(unique(y,'rows'))';
+comb               = size(y,2);
+J                  = nan(comb,1);
+Y0s                = nan(pp.m*pp.n_man,comb);
 
-%% Higher-orders Dv
-iter = 0;                                                                       % [-] (1,1) Initialize iteration counter
-Yord = Y0;
-Yp = Y0;
-iters = nan(7,1);
-iters(1) = 1;
-for k = 2:DAorder
-    err  = 1;                                                                   % [-] (1,1) Initialize convergence variable
-    DErr = 1;
-    while err > pp.tol && iter < pp.maxIter
-        iter = iter + 1;                                                        % [-] (1,1) Update iteration number
-        if strcmpi(pp.solvingMethod,'lagrange')
-            Yp = solveLagrange(DeltasUp,DeltasLo,DAArrays,Y0,k,pp) + u;                  % [-] (n,1) kth-order Lagrange solution of the polynomial constraint
-        
-        elseif strcmpi(pp.solvingMethod,'convex')
-            Yp  = solveConvex(DeltasUp,DeltasLo,DAArrays,Y0,k,pp) + u;          % [-] (n,1) kth-order convex solution of the polynomial constraint
-        
-        elseif strcmpi(pp.solvingMethod,'newton')
-            Yp = solveNewton(DeltasUp,DAArrays,Y0,k,pp) + u;                    % [-] (n,1) kth-order Lagrange solution of the polynomial constraint
-        
+%% Solve problem with each possible set of active constraints
+for j = 1:comb
+    actInd = y(:,j);
+    actCoeffs  = DAArrays(actInd,:);
+    actDeltaUp = DeltasUp(actInd);     
+    Y0   = solveLagrange(actDeltaUp,actCoeffs,zeros(n,1),1,actInd,pp) + u;    % [-] (n,1) 1st-order greedy solution of the polynomial constraint
+    iter = 0;                                                                       % [-] (1,1) Initialize iteration counter
+    iters = nan(7,1);
+    iters(1) = 1;
+    for k = 2:DAorder
+        err  = 1;                                                               % [-] (1,1) Initialize convergence variable
+        while err > pp.tol && iter < pp.maxIter
+            iter = iter + 1;                                                    % [-] (1,1) Update iteration number
+            Yp = solveLagrange(actDeltaUp,actCoeffs,Y0,k,actInd,pp) + u;        % [-] (n,1) kth-order Lagrange solution of the polynomial constraint
+            err  = norm(Yp-Y0);                                                 % [-] (n,1) Compute convergence variable at iteration iter
+            er(iter) = err;
+            Ys(:,iter) = Yp;
+            Y0 = (1-pp.alpha)*Y0 + pp.alpha*Yp;                                           % [-] (n,1) Update linearization point for kth-order solution
         end
-
-        err  = norm(Yp-Y0);                                                     % [-] (n,1) Compute convergence variable at iteration iter
-        er(iter) = err;
-        Ys(:,iter) = Yp;
-        if iter > 1
-            DErr(iter) = er(iter-1) - err;
-        end
-        Y0 = (1-pp.alpha)*Y0 + pp.alpha*Yp;                                           % [-] (n,1) Update linearization point for kth-order solution
+        % Yord(:,k) = Y0;
+        iters(k) = iter-sum(iters(1:k-1));
     end
-    Yord(:,k) = Y0;
-    iters(k) = iter-sum(iters(1:k-1));
+    Y0s(:,j) = Y0;
+    J(j) = Y0'*Y0;
+    grad  = psuedoGradient(DAArrays,Y0,DAorder,n_constr,n);
+    g = actInd;
+    for i = 1:n_constr
+        if ~actInd(i)
+            g(i) = grad(i,:)*Y0 - DeltasUp(i) <= 1e-11 && grad(i,:)*Y0 - DeltasLo(i) >= 1e-11;
+        end
+    end
+    respConstr(j) = all(g);
 end
-yf = reshape(Yp,[],n_man);                                               % [-] (m,N) Reshape final solution to epress it node-wise
+J(~respConstr) = nan; if sum(isnan(J)) == comb; error('No feasible solution'); end
+[~,c]          = min(J);
+ctrlcol        = Y0s(:,c);
+
+yf = reshape(ctrlcol,[],n_man);                                               % [-] (m,N) Reshape final solution to epress it node-wise
 end
