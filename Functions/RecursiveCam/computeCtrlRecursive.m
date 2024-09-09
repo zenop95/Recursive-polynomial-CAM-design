@@ -49,7 +49,7 @@ Y0s                = nan(pp.m*pp.n_man,comb);
 
 %% Solve problem with each possible set of active constraints
 for j = 1:comb
-    actInd = y(:,j);
+    actInd     = y(:,j);
     actCoeffs  = DAArrays(actInd,:);
     actDeltaUp = DeltasUp(actInd);     
     Y0   = solveLagrange(actDeltaUp,actCoeffs,zeros(n,1),1,actInd,pp) + u;    % [-] (n,1) 1st-order greedy solution of the polynomial constraint
@@ -62,7 +62,7 @@ for j = 1:comb
             iter = iter + 1;                                                    % [-] (1,1) Update iteration number
             Yp = solveLagrange(actDeltaUp,actCoeffs,Y0,k,actInd,pp) + u;        % [-] (n,1) kth-order Lagrange solution of the polynomial constraint
             err  = norm(Yp-Y0);                                                 % [-] (n,1) Compute convergence variable at iteration iter
-            er(iter) = err;
+            er(iter,j) = err;
             Ys(:,iter) = Yp;
             Y0 = (1-pp.alpha)*Y0 + pp.alpha*Yp;                                           % [-] (n,1) Update linearization point for kth-order solution
         end
@@ -75,7 +75,7 @@ for j = 1:comb
     g = actInd;
     for i = 1:n_constr
         if ~actInd(i)
-            g(i) = grad(i,:)*Y0 - DeltasUp(i) <= 1e-11 && grad(i,:)*Y0 - DeltasLo(i) >= 1e-11;
+            g(i) = grad(i,:)*Y0 - DeltasUp(i) <= 1e-11;
         end
     end
     respConstr(j) = all(g);
