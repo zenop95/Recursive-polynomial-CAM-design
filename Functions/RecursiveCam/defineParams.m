@@ -22,7 +22,7 @@ pp.solvingMethod = 'lagrange';                                                  
 % pp.solvingMethod = 'fmincon';                                                
 pp.mdLim         = (1/pp.Lsc)^2;                                                % [-] (1,1) miss distance limit
 pp.PoCLim        = 1e-6;                                                        % [-] (1,1) PoC limit
-pp.equalityConstr = 0;
+pp.equalityConstr = 1;
 pp.tol            = 1e-7;                                                       % [-] (1,1) Tolerance for the successive linearizations
 pp.maxIter        = 1e4;                                                        % [-] (1,1) Maximum number of successive linearizations
 pp.alpha          = .1;                                                         % parameter to use previous iteration solution (0.1 when error return)
@@ -82,8 +82,8 @@ if pp.flagCA
     limLo = -inf(pp.flagPoCTot + ~pp.flagPoCTot*pp.n_conj,1); 
     isEqConstr = zeros(pp.flagPoCTot + ~pp.flagPoCTot*pp.n_conj,1);
 end   
-if pp.flagErrReturn; limUp = [limUp; ~pp.equalityConstr*(.01/pp.Lsc)^2];  limLo = [limLo; 0];                    isEqConstr = [isEqConstr; pp.equalityConstr]; 
-                     limUp = [limUp; ~pp.equalityConstr*(1e-5/pp.Vsc)^2]; limLo = [limLo; 0];                    isEqConstr = [isEqConstr; pp.equalityConstr]; end
+if pp.flagErrReturn; limUp = [limUp; ~pp.equalityConstr*log10((.001/pp.Lsc)^2)];  limLo = [limLo; 0];                    isEqConstr = [isEqConstr; pp.equalityConstr]; 
+                     limUp = [limUp; ~pp.equalityConstr*log10((1e-6/pp.Vsc)^2)]; limLo = [limLo; 0];                    isEqConstr = [isEqConstr; pp.equalityConstr]; end
 if pp.flagReturn;    limUp = [limUp; zeros(6,1)];                         limLo = [limLo; zeros(6,1)];           isEqConstr = [isEqConstr; ones(6,1)]; end
 if pp.flagMeanSma;   limUp = [limUp; 0; 0];                               limLo = [limLo; 0; 0];                 isEqConstr = [isEqConstr; 1; 1]; end
 pp.limUp      = limUp;

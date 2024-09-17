@@ -188,11 +188,9 @@ int main(void)
                 rRet[j] = xRet[j];
                 vRet[j] = xRet[j+3];
             }
-            retErrP = dot(rRet - cons(rRet), rRet - cons(rRet))*1e5; // scaling because it is very different scale than the PoC variable
-            retErrV = dot(vRet - cons(vRet), vRet - cons(vRet))*1e5; // scaling because it is very different scale than the PoC variable
             meanCoe = osculating2mean(cart2kep(xRet,1.0),1.0,Lsc);
             meanSma = meanCoe[1];
-            meanEcc = meanSma*meanCoe[1];
+            meanEcc = meanSma*meanCoe[2];
         }
     }
 if (constraintFlags[0] == 1) {
@@ -282,14 +280,20 @@ if (constraintFlags[0] == 1) {
         }
     }
 
+    DA a,b;
+    double eps = 1e-15;
     if (constraintFlags[2] == 1) {
-        constraints << retErrP  << endl;
-        constraints << retErrV  << endl;
+        a = log10(dot(rRet - cons(rRet), rRet - cons(rRet)) + eps);
+        b = log10(dot(vRet - cons(vRet), vRet - cons(vRet)) + eps);
+        constraints << a - cons(a) << endl;
+        constraints << b - cons(b) << endl;
     }
 
     if (constraintFlags[3] == 1) {
-        constraints << pow(meanSma-cons(meanSma),2) << endl;
-        constraints << meanEcc-cons(meanEcc) << endl;
+        a = log10((meanSma - cons(meanSma))*(meanSma - cons(meanSma)) + eps);
+        b = log10((meanEcc-cons(meanEcc))*(meanEcc-cons(meanEcc)) + eps);
+        constraints << a - cons(a) << endl;
+        constraints << b-cons(b) << endl;
     }
     constraints.close();
 

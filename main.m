@@ -19,11 +19,11 @@ set(0,'defaultfigurecolor',[1 1 1])
 set(groot,'defaultAxesTickLabelInterpreter','latex');  
 warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 %% User-defined inputs (modifiable)
-multiple = 1;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
+multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
 pp = initOpt(multiple,cislunar,631);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
 returnTime = -2;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-fireTimes  = [2.5 -0.5];                                                               % [-] Example of bi-impulsive maneuvers
+fireTimes  = [0.5 -0.5 -1.5];                                                               % [-] Example of bi-impulsive maneuvers
 % fireTimes = [3.5,2.5,1.5,0.5];                                                  % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(0.4,0.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(0.4,0.6,2) -linspace(.4,.6,2) -linspace(1.8,2,2)];                        % [-] Example of two low-thrust arcs with different discretization points
@@ -91,8 +91,8 @@ aa=tic;
 metric = coeff(1).C(1);
 %% Optimization
 if strcmpi(pp.solvingMethod,'lagrange')
-        % yF = computeCtrlActiveSet(coeff,u,pp);
-        yF = computeCtrlRecursive(coeff,u,pp);
+        yF = computeCtrlActiveSet(coeff,u,pp);
+        % yF = computeCtrlRecursive(coeff,u,pp);
 
 elseif strcmpi(pp.solvingMethod,'convex')
         yF = computeCtrlRecursiveConvex(coeff,u,pp);
