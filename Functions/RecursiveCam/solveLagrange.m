@@ -36,7 +36,7 @@ if k == 1
     n_constr                 = n_constr - length(indEliminate);
     grad                     = psuedoGradient(DAArrays,ctrl0,k,n_constr,n);
 end
-normGrad = max(abs(grad),[],2);
+normGrad = normOfVec(grad')';
 gradSc   = grad./normGrad;
 DeltasUp = DeltasUp./normGrad;
 % gradSc = grad;

@@ -941,4 +941,185 @@ template <typename T, typename U> AlgebraicMatrix<T> evalDAMatrix(AlgebraicMatri
     
     return out;
 }
+
+
+template<typename T> T true2eccAnomaly(const T theta, const T e)
+{
+    return 2.0 * atan2(sqrt(1. - e)*sin(theta / 2.), sqrt(1. + e) * cos(theta / 2.));
+}
+
+template<typename T> T ecc2trueAnomaly(const T E, const T e)
+{
+    return 2.0 * atan2(sqrt(1. + e)*sin(E / 2.), sqrt(1. - e) * cos(E / 2.));
+}
+
+template<typename T> T mean2eccAnomaly(const T M, const T e)
+{
+    T E = M;
+    
+    for (int i = 0; i < 20; i++) {
+        E = M + e*sin(E);
+    }
+    return E;
+}
+
+template<typename T> T mean2trueAnomaly(const T M, const T e)
+{
+    T E = mean2eccAnomaly(M, e);
+    
+    return ecc2trueAnomaly(E, e);
+}
+
+template<typename T> T true2meanAnomaly(const T theta, const T e)
+{
+    T E = true2eccAnomaly(theta, e);
+    
+    return E - e*sin(E);
+}
+
+template<typename T> DACE::AlgebraicVector<T> kep2cyl(const DACE::AlgebraicVector<T>& kep, const double mu)
+{
+  DACE::AlgebraicVector<T> cyl(6);
+  T f, p, a, ecc, inc, w, RAAN, r, R, th, Th, nu, Nu;
+
+  a    = kep[0];
+  ecc  = kep[1];
+  inc  = kep[2];
+  RAAN = kep[3];
+  w    = kep[4];
+  f    = kep[5];
+
+  p = a*(1.0 - ecc*ecc);
+  
+  Th = sqrt(mu*p);
+  Nu = Th*cos(inc);
+  th = w + f;
+  nu = RAAN;
+  r  = p/(1+ecc*cos(f));
+  R  = (Th/p)*ecc*sin(f);
+
+  cyl[0] = r;
+  cyl[1] = th;
+  cyl[2] = nu;
+  cyl[3] = R;
+  cyl[4] = Th;
+  cyl[5] = Nu;
+  
+  return cyl;
+}
+
+template<typename T> DACE::AlgebraicVector<T> cyl2kep(const DACE::AlgebraicVector<T>& cyl, const double mu)
+//  cyl[] = {r, th, nu, R, Th, Nu}
+{
+
+  DACE::AlgebraicVector<T> kep(6);
+  
+  T r     = cyl[0];
+  T th    = cyl[1];
+  T nu    = cyl[2];
+  T R     = cyl[3];
+  T Th    = cyl[4];
+  T Nu    = cyl[5];
+  
+  T i       = acos(Nu/Th);
+  T cs      = (-1.0 + pow(Th,2)/(mu*r))*cos(th) + (R*Th*sin(th))/mu;
+  T ss      = -((R*Th*cos(th))/mu) + (-1.0 + pow(Th,2)/(mu*r))*sin(th);
+  T ecc     = sqrt(cs*cs+ss*ss);
+  T p       = Th*Th/mu;
+  T costrue = 1.0/ecc*(p/r-1.0);
+  T f       = acos(costrue);
+  
+  if (DACE::cons(R)<0.0) {
+      f = 2.0*M_PI-f;
+  }
+  
+  kep[0] = p/(1-ecc*ecc);
+  kep[1] = ecc;
+  kep[2] = i;
+  kep[3] = nu;
+  kep[4] = th-f;
+  kep[5] = f;
+  
+  return kep;
+    
+}
+
+template<typename T> DACE::AlgebraicVector<T> osculating2mean(DACE::AlgebraicVector<T> kep, const double mu, const double Lsc)
+{
+  
+  double J2 = 1.08262668e-3; //{-}
+  double rE = 6378.137/Lsc;
+  
+  DACE::AlgebraicVector<T> cyl(6), meanCyl(6), meanKep(6);
+
+  cyl = kep2cyl(kep,mu);
+  const T r     = cyl[0];
+  const T th    = cyl[1];
+  const T nu    = cyl[2];
+  const T R     = cyl[3];
+  const T Th    = cyl[4];
+  const T Nu    = cyl[5];
+  
+  T p  = Th*Th/mu;
+  T ci  = Nu/Th;
+  T si  = sqrt(1.0-ci*ci);
+  T cs  = (p/r - 1.0)*cos(th) + (R*Th*sin(th))/mu;
+  T ss  = -((R*Th*cos(th))/mu) + (p/r - 1.0)*sin(th);
+  T e   = sqrt(cs*cs+ss*ss);
+  T eta = sqrt(1.0-e*e);
+  
+  T beta = 1.0/(1.0+eta);
+  T costrue = 1/e*(p/r-1);
+  T f = acos(costrue);
+
+  if (DACE::cons(R)<0.0) {
+      f = 2.0*M_PI-f;
+  }
+
+  T M = true2meanAnomaly(f,e);
+
+  T phi  = f - M;
+  
+  const T rMean = r +  ((pow(rE,2)*beta*J2)/(2.*r) - (3*pow(rE,2)*beta*J2*pow(si,2))/(4.*r) +
+                                (pow(rE,2)*eta*J2*pow(mu,2)*r)/pow(Th,4) - (3*pow(rE,2)*eta*J2*pow(mu,2)*r*pow(si,2))/(2.*pow(Th,4)) +
+                                (pow(rE,2)*J2*mu)/(2.*pow(Th,2)) - (pow(rE,2)*beta*J2*mu)/(2.*pow(Th,2)) -
+                                (3.*pow(rE,2)*J2*mu*pow(si,2))/(4.*pow(Th,2)) + (3*pow(rE,2)*beta*J2*mu*pow(si,2))/(4.*pow(Th,2)) -
+                                (pow(rE,2)*J2*mu*pow(si,2)*cos(2*th))/(4.*pow(Th,2)));
+  
+  
+  const T thMean = th + ((-3.*pow(rE,2)*J2*pow(mu,2)*phi)/pow(Th,4) + (15.*pow(rE,2)*J2*pow(mu,2)*phi*pow(si,2))/(4.*pow(Th,4)) -
+                                (5.*pow(rE,2)*J2*mu*R)/(2.*pow(Th,3)) - (pow(rE,2)*beta*J2*mu*R)/(2.*pow(Th,3)) +
+                                (3.*pow(rE,2)*J2*mu*R*pow(si,2))/pow(Th,3) + (3.*pow(rE,2)*beta*J2*mu*R*pow(si,2))/(4.*pow(Th,3)) -
+                                (pow(rE,2)*beta*J2*R)/(2.*r*Th) + (3.*pow(rE,2)*beta*J2*R*pow(si,2))/(4.*r*Th) +
+                                (-(pow(rE,2)*J2*mu*R)/(2.*pow(Th,3)) + (pow(rE,2)*J2*mu*R*pow(si,2))/pow(Th,3))*cos(2.*th) +
+                                (-(pow(rE,2)*J2*pow(mu,2))/(4.*pow(Th,4)) + (5.*pow(rE,2)*J2*pow(mu,2)*pow(si,2))/(8.*pow(Th,4)) +
+                                  (pow(rE,2)*J2*mu)/(r*pow(Th,2)) - (3.*pow(rE,2)*J2*mu*pow(si,2))/(2.*r*pow(Th,2)))*sin(2.*th));
+  
+  const T nuMean = nu + ((3.*pow(rE,2)*ci*J2*pow(mu,2)*phi)/(2.*pow(Th,4)) + (3.*pow(rE,2)*ci*J2*mu*R)/(2.*pow(Th,3)) +
+                                (pow(rE,2)*ci*J2*mu*R*cos(2.*th))/(2.*pow(Th,3)) +
+                                ((pow(rE,2)*ci*J2*pow(mu,2))/(4.*pow(Th,4)) - (pow(rE,2)*ci*J2*mu)/(r*pow(Th,2)))*sin(2.*th));
+  
+  
+  const T RMean = R  + (-(pow(rE,2)*beta*J2*R)/(2.*pow(r,2)) + (3.*pow(rE,2)*beta*J2*R*pow(si,2))/(4.*pow(r,2)) -
+                                (pow(rE,2)*eta*J2*pow(mu,2)*R)/(2.*pow(Th,4)) + (3.*pow(rE,2)*eta*J2*pow(mu,2)*R*pow(si,2))/(4.*pow(Th,4)) +
+                                (pow(rE,2)*J2*mu*pow(si,2)*sin(2.*th))/(2.*pow(r,2)*Th));
+  
+  
+  const T ThMean = Th  + (((pow(rE,2)*J2*pow(mu,2)*pow(si,2))/(4.*pow(Th,3)) - (pow(rE,2)*J2*mu*pow(si,2))/(r*Th))*cos(2.*th) -
+                                  (pow(rE,2)*J2*mu*R*pow(si,2)*sin(2.*th))/(2.*pow(Th,2)));
+  
+  const T NuMean = Nu +  0.;
+  
+  meanCyl[0] = rMean;
+  meanCyl[1] = thMean;
+  meanCyl[2] = nuMean;
+  meanCyl[3] = RMean;
+  meanCyl[4] = ThMean;
+  meanCyl[5] = NuMean;
+
+  meanKep = cyl2kep(meanCyl,mu);
+  
+  return meanKep;
+}
+
 }

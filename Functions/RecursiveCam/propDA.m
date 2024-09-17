@@ -26,7 +26,6 @@ mu         = pp.mu;
 HBR        = pp.HBR;
 x_pTCA     = pp.x_pTCA;
 x_sTCA     = pp.x_sTCA;
-x_ref      = pp.xReference;
 PoCLim     = pp.PoCLim;
 N          = length(pp.t);
 u          = reshape(u,[],1);
@@ -46,6 +45,7 @@ fprintf(fid, '%40.16f\n', et);
 fprintf(fid, '%40.16f\n', Lsc);
 fprintf(fid, '%40.16f\n', mu);
 fprintf(fid, '%2i\n',     pp.gravOrd);
+% fprintf(fid, '%2i\n',     2);
 fprintf(fid, '%40.16f\n', pp.ctrlMax);
 fprintf(fid, '%2i\n',     pp.flagMd);
 fprintf(fid, '%2i\n',     pp.flagPoCTot);
@@ -64,9 +64,6 @@ end
 if ~validateFlag
     for k = 1:n_conj
         fprintf(fid, '%40.16f\n', HBR(k));
-    end
-    for j = 1:6
-        fprintf(fid, '%40.16f\n', x_ref(j));
     end
     for k = 1:n_conj
         for j = 1:6 
@@ -89,11 +86,9 @@ if ~validateFlag
         end
     end
     fprintf(fid, '%2i\n', pp.flagCA);
-    fprintf(fid, '%2i\n', pp.flagTanSep);
-    fprintf(fid, '%2i\n', pp.flagAlt);
     fprintf(fid, '%2i\n', pp.flagReturn);
     fprintf(fid, '%2i\n', pp.flagErrReturn);
-    fprintf(fid, '%2i\n', pp.flagCtrlMax);
+    fprintf(fid, '%2i\n', pp.flagMeanSma);
 end
 for i = 1:length(u) 
     fprintf(fid, '%40.16f\n', u(i));
@@ -127,7 +122,7 @@ a         = load("write_read/constPart.dat");
 for k = 1:n_conj
     xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
-if pp.flagReturn || pp.flagErrReturn || pp.flagTanSep
+if pp.flagReturn || pp.flagErrReturn || pp.flagMeanSma
     xRet0 = a(end-5:end);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
 timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure

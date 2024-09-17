@@ -36,7 +36,7 @@ void readInit(int& nvar, int& order, int& pocType, int& N, int& lowThrust_flag, 
               int& TPoCFlag, double& tca, double& Lsc, double& musc, double& ctrlMax, double& mean_motion_p,
               AlgebraicMatrix<double>&  covp, AlgebraicMatrix<double>&  covs, AlgebraicMatrix<double>&  ctrlDum, AlgebraicMatrix<double>&  rsDum, AlgebraicMatrix<double>& vsDum, 
               AlgebraicMatrix<double>& directions, AlgebraicVector<double>& xdum, AlgebraicVector<double>& t, AlgebraicVector<double>& HBR, AlgebraicVector<double>& magnitude, 
-              AlgebraicVector<double>& rRef, AlgebraicVector<double>& vRef, AlgebraicVector<double>& mean_motion_s, AlgebraicVector<int>& canFire, AlgebraicVector<int>& isConj, 
+              AlgebraicVector<double>& mean_motion_s, AlgebraicVector<int>& canFire, AlgebraicVector<int>& isConj, 
               AlgebraicVector<int>& isRet, AlgebraicVector<int>& constraintFlags) {
 
 int k, j;
@@ -75,12 +75,6 @@ Input.open("./write_read/initial_state.dat");
         for (k = 0; k < n_conj; k ++) {
             Input >> HBR[k];            // Combined Hard Body radialius for each conjunction
         }
-        for (j = 0; j < 3; j ++) {
-                Input >> rRef[j]; // Write reference ECI position for return from input
-            }
-        for (j = 0; j < 3; j ++) {
-                Input >> vRef[j]; // Write reference ECI velocity for return from input
-            }
         for (k = 0; k < n_conj; k ++) {
             for (j = 0; j < 36; j ++) {
                 Input >> covp.at(j,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
@@ -97,7 +91,7 @@ Input.open("./write_read/initial_state.dat");
                 Input >> directions.at(j,k); // Write maneuver direction in RTN if the direction is fixed
             }
         }
-        for (k = 0; k < 6; k ++) {
+        for (k = 0; k < 4; k ++) {
             Input >> constraintFlags[k];
         }
         for (k = 0; k < n_man; k ++) {

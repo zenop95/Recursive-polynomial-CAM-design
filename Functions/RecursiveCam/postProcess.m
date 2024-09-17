@@ -88,7 +88,7 @@ for k = 1:pp.n_conj
     for j = 1:length(tt)
         ellB(:,j) = cov2b*ellCov(:,j);
     end
-    figure('Renderer', 'painters', 'Position', [300 300 560 300])
+    figure('Renderer', 'painters', 'Position', [600*(k-1) 600 560 300])
     hold on    
     e2b    = eci2Bplane(x(4:6),x_s(4:6));
     e2b    = e2b([1 3],:);
@@ -106,12 +106,10 @@ end
 poc_tot = PoCTot(PoC);
 
 % Validate return
-if pp.flagReturn || pp.flagErrReturn || pp.flagTanSep
-    errRetEci = xRetMan - xRetBall;
-    r2e = rtn2eci(xRetMan(1:3),xRetMan(4:6));
-    errRetRtn = r2e'*errRetEci(1:3);
-    tanErr = errRetRtn(2)*pp.Lsc;
-    radErr = errRetRtn(1)*pp.Lsc;
+if pp.flagReturn || pp.flagErrReturn || pp.flagMeanSma
+    errRet = xRetMan - xRetBall;
+    finalCoeMan  = osculating2mean(cartesian2kepler(xRetMan,1),1,pp.Lsc);
+    finalCoeBall = osculating2mean(cartesian2kepler(xRetBall,1),1,pp.Lsc);
 end
 
 disp(['Solver: ', pp.solvingMethod])
@@ -133,12 +131,13 @@ else
 end
 disp(['PoC after validation ',num2str(poc_tot)]);
 disp(['MD after validation ',num2str(md(1)), ' km']);
-if pp.flagTanSep
-    disp(['Tangential distance in return ',num2str(tanErr*1e3), ' m']);
+if pp.flagReturn || pp.flagErrReturn ||  pp.flagMeanSma
+    disp(['Position error in return ',num2str(norm(errRet(1:3))*pp.Lsc*1e3), ' m']);
+    disp(['Velocity error in return ',num2str(norm(errRet(4:6))*pp.Vsc*1e6), ' mm/s']);
 end
-if pp.flagReturn || pp.flagErrReturn
-    disp(['Position error in return ',num2str(norm(errRetEci(1:3))*pp.Lsc*1e3), ' m']);
-    disp(['Velocity error in return ',num2str(norm(errRetEci(4:6))*pp.Vsc*1e6), ' mm/s']);
+if pp.flagMeanSma
+    disp(['Semi-major axis shift ',num2str((finalCoeMan.a - finalCoeBall.a)*pp.Lsc*1e3), ' m']);
+    disp(['Eccentricity shift ',num2str((finalCoeMan.ecc*finalCoeMan.a - finalCoeBall.ecc*finalCoeBall.a)*pp.Lsc*1e3), ' m']);
 end
 if pp.flagMd
     disp(['Limit: ',num2str(sqrt(pp.mdLim)*pp.Lsc), ' km'])
@@ -147,7 +146,7 @@ else
 end
 ctrlNorm = normOfVec(ctrl);
 
-figure('Renderer', 'painters', 'Position', [300 300 560 150])
+figure('Renderer', 'painters', 'Position', [1000 300 560 150])
 if ~pp.lowThrust
     ctrl(ctrl==0) = nan;
     if ~pp.cislunar
@@ -164,10 +163,15 @@ if ~pp.lowThrust
     ylabel('$\Delta v$ [mm/s]')
     % set(gca, 'XDir','reverse')
 else
-    ctrlN = ctrl*pp.Asc*1e6;
-    for i = 2:pp.N
-        if ~pp.canFire(i) && pp.canFire(i-1)
-            ctrlN = [ctrlN(:,1:i-1) zeros(3,1) ctrlN(:,i:end)];
+    ctrlN  = [];
+    ctrlN1 = ctrl*pp.Asc*1e6;
+    ccc = 0;
+    for i = 1:pp.N
+        if ~pp.canFire(i) 
+            ctrlN = [ctrlN zeros(3,1)];
+        else
+            ccc = ccc + 1;
+            ctrlN = [ctrlN ctrlN1(:,ccc)];
         end
     end
     [t,o] = sort([pp.t;ttt],'descend');
@@ -176,7 +180,7 @@ else
     else
         t  = t*pp.Tsc/86400;
     end
-    ctrlN  = [ctrlN, zeros(3,length(t)-size(ctrlN,2))];
+    ctrlN  = [ctrlN, ctrlN1];
     ctrlN  = ctrlN(:,o);
     xq = linspace(t(1),t(end),1000);
     ctrlInt(1,:) = interp1(t,ctrlN(1,:),xq,'previous');

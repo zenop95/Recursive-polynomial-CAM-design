@@ -19,14 +19,14 @@ set(0,'defaultfigurecolor',[1 1 1])
 set(groot,'defaultAxesTickLabelInterpreter','latex');  
 warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 %% User-defined inputs (modifiable)
-multiple = 3;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
+multiple = 1;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
-pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
+pp = initOpt(multiple,cislunar,631);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
 returnTime = -2;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-fireTimes  = [.5 0 -0.3 -1.999];                                                               % [-] Example of bi-impulsive maneuvers
+fireTimes  = [2.5 -0.5];                                                               % [-] Example of bi-impulsive maneuvers
 % fireTimes = [3.5,2.5,1.5,0.5];                                                  % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(0.4,0.6,2);                                              % [-] Example of single low-thrust arc
-% fireTimes = [linspace(0.4,0.6,2) -linspace(.4,.6,2)];                        % [-] Example of two low-thrust arcs with different discretization points
+% fireTimes = [linspace(0.4,0.6,2) -linspace(.4,.6,2) -linspace(1.8,2,2)];                        % [-] Example of two low-thrust arcs with different discretization points
 pp.cislunar = cislunar;
 pp          = defineParams(pp,fireTimes,returnTime);                            % [-] (1,1) Include optimization paramters to parameters structure
 % pp.PoCLim   = pp.PoCLim/max(multiple,1);
@@ -56,8 +56,8 @@ tic
 % If the filtering routine is adpoted, first perform a first-order
 % propagation to find the most sensitive maneuvering times
 if pp.filterMans
-    [~,~,coeffPoC,~,timeSubtr1] = propDA(1,u,scale,0,0,pp);
-    gradVec = buildDAArray(coeffPoC.C,coeffPoC.E,1);
+    [~,~,coeff,~,timeSubtr1] = propDA(1,u,scale,0,0,pp);
+    gradVec = buildDAArray(coeff.C,coeff.E,1);
     for j = 1:n_man
         grads(j) = norm(gradVec(1+m*(j-1):m*j));
     end
@@ -90,8 +90,12 @@ aa=tic;
 % end
 metric = coeff(1).C(1);
 %% Optimization
-if any(strcmpi(pp.solvingMethod,{'lagrange','convex','newton'}))
+if strcmpi(pp.solvingMethod,'lagrange')
+        % yF = computeCtrlActiveSet(coeff,u,pp);
         yF = computeCtrlRecursive(coeff,u,pp);
+
+elseif strcmpi(pp.solvingMethod,'convex')
+        yF = computeCtrlRecursiveConvex(coeff,u,pp);
 
 elseif strcmpi(pp.solvingMethod,'fmincon')
         yF = computeCtrlNlp(coeff,u,pp);
@@ -120,8 +124,6 @@ ctrl = pp.ctrlMax*ctrl;
 %% Validation
 metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...    
                             pp.DAorder);
-% distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF./scale,1,[]), ...    
-                            % pp.DAorder)*pp.Lsc;
 
 [~,~,~,x,xRetMan,x_sec,deltaTca] = propDA(1,ctrl,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
 if ~pp.flagMd

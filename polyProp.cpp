@@ -32,11 +32,11 @@ int main(void)
 	nodes.close();
     // Initialize variable
     AlgebraicMatrix<double> Cp(6,6), Cs(6,6), covp(36,n_conj), covs(36,n_conj), r2e(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
-    AlgebraicVector<double> xdum(6), metricMap(3), t(N), HBR(n_conj), magnitude(n_man), rRef(3), vRef(3), mean_motion_s(n_conj);
-    AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(6);
+    AlgebraicVector<double> xdum(6), metricMap(3), t(N), HBR(n_conj), magnitude(n_man), mean_motion_s(n_conj);
+    AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(4);
     // Read input from .dat
 	readInit( nvar,  order,  pocType,  N,  lowThrust_flag,  n_conj,  n_man,  m,  dyn,  gravOrd,  missDistanceFlag, TPoCFlag, tca,  Lsc,  musc,  ctrlMax,  mean_motion_p, covp,   covs,   ctrlDum,   rsDum,  vsDum,
-               directions,  xdum,  t,  HBR,  magnitude, rRef,  vRef,  mean_motion_s,  canFire,  isConj, isRet,  constraintFlags);
+               directions,  xdum,  t,  HBR,  magnitude, mean_motion_s,  canFire,  isConj, isRet,  constraintFlags);
 
     // initialize execution time counter
     long time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
@@ -47,9 +47,9 @@ int main(void)
     DA::setEps(1e-30);
     
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), x00(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), md(n_conj), dx(nvar-1), rRet(3), vRet(3), distRel(3); 
+    AlgebraicVector<DA> x0(6), x00(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), md(n_conj), dx(nvar-1), rRet(3), vRet(3), distRel(3), meanCoe(6); 
     AlgebraicMatrix<DA> xTca(6,n_conj), xsTca(6,n_conj), P_eci(3,3), P_B3(3,3), P_B(2,2), Pp(3,3), Ps(3,3), toB(3,3), STM_p(6,6), STM_s(6,6), CPropP(6,6), CPropS(6,6), covsda(9,n_conj), r2ep(3,3), r2es(3,3);
-                    DA  poc_tot, alpha, beta, tcaNew, tan, radial, retErrP, retErrV;
+                    DA  poc_tot, alpha, beta, tcaNew, tan, radial, retErrP, retErrV, meanSma, meanEcc;
 
     
     // Define ballistic primary's position at first TCA 
@@ -186,9 +186,13 @@ int main(void)
             xRet = x0;
             for (j = 0; j < 3 ; j ++) {
                 rRet[j] = xRet[j];
-                vRet[j] = xRet[j+3];}
-            retErrP = dot(rRet - cons(rRet), rRet - cons(rRet))*1e6; // scaling because it is very different scale than the PoC variable
-            retErrV = dot(vRet - cons(vRet), vRet - cons(vRet))*1e6; // scaling because it is very different scale than the PoC variable
+                vRet[j] = xRet[j+3];
+            }
+            retErrP = dot(rRet - cons(rRet), rRet - cons(rRet))*1e5; // scaling because it is very different scale than the PoC variable
+            retErrV = dot(vRet - cons(vRet), vRet - cons(vRet))*1e5; // scaling because it is very different scale than the PoC variable
+            meanCoe = osculating2mean(cart2kep(xRet,1.0),1.0,Lsc);
+            meanSma = meanCoe[1];
+            meanEcc = meanSma*meanCoe[1];
         }
     }
 if (constraintFlags[0] == 1) {
@@ -237,26 +241,6 @@ if (constraintFlags[0] == 1) {
     }
 }
 
-if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
-    // Return constraint (scalar as tangential distance from other spacecraft GRACE)
-    for (j = 0; j < 3 ; j ++) {
-        rRet[j] = xRet[j];
-        vRet[j] = xRet[j+3];
-    }      
-    r2e     = rtn2eci(cons(xRet));
-    distRel = r2e.transpose()*(rRet-rRef);
-    radial  = distRel[0]; // radial displacement with respect to reference
-    tan     = distRel[1]; // tangential displacement with respect to reference
-}
-
-// stability of the monodromy matrix (Cauchy-Green Tensor) after an orbital period
-// if (constraintFlags[4] == 1 || dyn == 1) {
-//     ctrl = {0.0*DA(1), 0.0*DA(1), 0.0*DA(1)};
-//     x0 = RK78Cis(6, x0, ctrl, -t[end], -t[end] +     1, CR3BPsyn, 0.012150668, 0.0); // forward propagation to the next node
-//     AlgebraicMatrix<double> STM = stmDace(x0, 3, 6);
-//     AlgebraicMatrix<double> CG = STM.transpose()*STM;
-// }
-
     time1   = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
     //open the output files
     ofstream constPart, constraints, tcaOut, convRad;
@@ -290,32 +274,22 @@ if (constraintFlags[1] == 1 || constraintFlags[2] == 1) {
         constraints << log10(poc_tot) << endl;
     }
     }
+    
+    // write the DA expansion of return in output
     if (constraintFlags[1] == 1) {
-        constraints << tan    << endl;     
-    }
-
-    // write the DA expansion of return in output
-    if (constraintFlags[2] == 1) {
-        constraints << radial << endl;    
-
-    }
-
-    // write the DA expansion of return in output
-    if (constraintFlags[3] == 1) {
         for (j = 0; j < 6; j ++) {
-        constraints << xRet[j] - cons(xRet[j]) << endl;     
+        constraints << (xRet[j] - cons(xRet[j])) << endl;     
         }
     }
 
-    if (constraintFlags[4] == 1) {
+    if (constraintFlags[2] == 1) {
         constraints << retErrP  << endl;
         constraints << retErrV  << endl;
     }
 
-    if (constraintFlags[5] == 1) {
-        for (j = 0; j < n_man; j ++) {
-            constraints << DA(1 + j*m)*DA(1 + j*m) + DA(2 + j*m)*DA(2 + j*m) + DA(3 + j*m)*DA(3 + j*m) << endl;
-        }
+    if (constraintFlags[3] == 1) {
+        constraints << pow(meanSma-cons(meanSma),2) << endl;
+        constraints << meanEcc-cons(meanEcc) << endl;
     }
     constraints.close();
 

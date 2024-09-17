@@ -41,12 +41,32 @@ grad   = psuedoGradient(DAArrays,zeros(n,1),1,n_constr,n);
 % normGrad = max(abs(grad),[],2);
 % grad   = grad./normGrad;
 % DeltasUp = DeltasUp./normGrad;
-gradEq  = grad(pp.isEqConstr,:);
+indEliminate = [];
+n_in = pp.n_in;
+for j = 1:size(grad,1)
+    if sum(abs(grad(j,:))) == 0 
+       indEliminate = [indEliminate; j];
+       if ~pp.isEqConstr(j)
+           n_in = n_in - 1;
+       end
+    end
+end
+DAArrays1 = DAArrays; DeltasUp1 = DeltasUp; a1 = pp.isEqConstr;
+DAArrays1(indEliminate,:) = []; 
+DeltasUp1(indEliminate)   = [];
+a1(indEliminate)          = [];
+n_constr1                  = n_constr - length(indEliminate);
+grad                      = psuedoGradient(DAArrays1,zeros(n,1),k,n_constr1,n);
+gradEq  = grad(a1,:);
+beq     = DeltasUp1(a1); if isempty(beq); beq = zeros(0,1); end
+gradIn  = grad(~a1,:);
+bin     = DeltasUp1(~a1); 
+% options = mpcActiveSetOptions('ConstraintTolerance',1e-11);
+% Y0      = mpcActiveSetSolver(H,f,gradIn,bin,gradEq,beq,false(n_in,1),options); Yp = Y0;
+options = mpcInteriorPointOptions('ConstraintTolerance',1e-11);
+Y0      = mpcInteriorPointSolver(H,f,gradIn,bin,gradEq,beq,zeros(n,1),options); Yp = Y0;
 beq     = DeltasUp(pp.isEqConstr); if isempty(beq); beq = zeros(0,1); end
-gradIn  = grad(~pp.isEqConstr,:);
 bin     = DeltasUp(~pp.isEqConstr); 
-options = mpcActiveSetOptions('ConstraintTolerance',1e-11);
-Y0      = mpcActiveSetSolver(H,f,gradIn,bin,gradEq,beq,false(pp.n_in,1),options);
 iter = 0;
 alpha = pp.alpha;
 isConstrAct = false(pp.n_in,1);
@@ -60,10 +80,11 @@ for k = 2:DAorder
         % DeltasUp = DeltasUp./normGrad;
         gradEq = grad(pp.isEqConstr,:);
         gradIn = grad(~pp.isEqConstr,:);
-        for j = pp.n_in
-            isConstrAct(j) = boolean(abs(gradIn(j,:)*Y0 - bin(j)) < 1e-5);
-        end
-        Yp = mpcActiveSetSolver(H,f,gradIn,bin,gradEq,beq,isConstrAct,options);        
+        % for j = pp.n_in
+        %     isConstrAct(j) = boolean(abs(gradIn(j,:)*Y0 - bin(j)) < 1e-5);
+        % end
+        % Yp = mpcActiveSetSolver(H,f,gradIn,bin,gradEq,beq,isConstrAct,options);        
+        Yp = mpcInteriorPointSolver(H,f,gradIn,bin,gradEq,beq,Y0,options);        
         err  = norm(Yp-Y0);                                                 % [-] (n,1) Compute convergence variable at iteration iter
         er(iter) = err;
         Ys(:,iter) = Yp;
