@@ -36,10 +36,10 @@ if k == 1
     n_constr                 = n_constr - length(indEliminate);
     grad                     = psuedoGradient(DAArrays,ctrl0,k,n_constr,n);
 end
-normGrad = normOfVec(grad')';
-gradSc   = grad./normGrad;
-DeltasUp = DeltasUp./normGrad;
-% gradSc = grad;
+% normGrad = normOfVec(grad')';
+% gradSc   = grad./normGrad;
+% DeltasUp = DeltasUp./normGrad;
+gradSc = grad;
 if n_constr == 1
     gradUnit   = normalize(gradSc,'norm');                                      % [-] (1,n) Pseudo-gradient direction
     gradNorm   = norm(gradSc);                                                  % [-] (1,1) Pseudo-gradient norm

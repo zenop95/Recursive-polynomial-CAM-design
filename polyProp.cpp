@@ -189,8 +189,8 @@ int main(void)
                 vRet[j] = xRet[j+3];
             }
             meanCoe = osculating2mean(cart2kep(xRet,1.0),1.0,Lsc);
-            meanSma = meanCoe[1];
-            meanEcc = meanSma*meanCoe[2];
+            meanSma = meanCoe[0];
+            meanEcc = meanSma*meanCoe[1];
         }
     }
 if (constraintFlags[0] == 1) {
@@ -280,20 +280,19 @@ if (constraintFlags[0] == 1) {
         }
     }
 
-    DA a,b;
+    DA a,e;
     double eps = 1e-15;
     if (constraintFlags[2] == 1) {
         a = log10(dot(rRet - cons(rRet), rRet - cons(rRet)) + eps);
-        b = log10(dot(vRet - cons(vRet), vRet - cons(vRet)) + eps);
-        constraints << a - cons(a) << endl;
-        constraints << b - cons(b) << endl;
+        e = log10(dot(vRet - cons(vRet), vRet - cons(vRet)) + eps);
+        constraints << a - 15.0 << endl;
+        constraints << e - 15.0 << endl;
     }
-
     if (constraintFlags[3] == 1) {
-        a = log10((meanSma - cons(meanSma))*(meanSma - cons(meanSma)) + eps);
-        b = log10((meanEcc-cons(meanEcc))*(meanEcc-cons(meanEcc)) + eps);
-        constraints << a - cons(a) << endl;
-        constraints << b-cons(b) << endl;
+        a = ((meanSma - cons(meanSma))*(meanSma - cons(meanSma)));
+        e = ((meanEcc-cons(meanEcc))*(meanEcc-cons(meanEcc)));
+        constraints << a   << endl;
+        constraints << e  << endl;
     }
     constraints.close();
 

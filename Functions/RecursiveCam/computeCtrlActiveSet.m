@@ -58,9 +58,10 @@ a1(indEliminate)          = [];
 n_constr1                  = n_constr - length(indEliminate);
 grad                      = psuedoGradient(DAArrays1,zeros(n,1),k,n_constr1,n);
 gradEq  = grad(a1,:);
-beq     = DeltasUp1(a1); if isempty(beq); beq = zeros(0,1); end
+beq     = DeltasUp1(a1); if isempty(beq); beq = zeros(0,1); end 
 gradIn  = grad(~a1,:);
-bin     = DeltasUp1(~a1); 
+bin     = DeltasUp1(~a1); if isempty(bin); bin = zeros(0,1); end
+
 % options = mpcActiveSetOptions('ConstraintTolerance',1e-11);
 % Y0      = mpcActiveSetSolver(H,f,gradIn,bin,gradEq,beq,false(n_in,1),options); Yp = Y0;
 options = mpcInteriorPointOptions('ConstraintTolerance',1e-11);

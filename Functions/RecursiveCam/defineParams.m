@@ -24,8 +24,8 @@ pp.mdLim         = (1/pp.Lsc)^2;                                                
 pp.PoCLim        = 1e-6;                                                        % [-] (1,1) PoC limit
 pp.equalityConstr = 0;
 tol               = 1e-7;                                                          % [km/s] (1,1) Tolerance for the successive linearizations (0.1 mm/s)
-pp.maxIter        = 3e3;                                                        % [-] (1,1) Maximum number of successive linearizations
-pp.alpha          = .01;                                                         % parameter to use previous iteration solution (0.1 when error return)
+pp.maxIter        = 5e3;                                                        % [-] (1,1) Maximum number of successive linearizations
+pp.alpha          = .1;                                                         % parameter to use previous iteration solution (0.1 when error return)
 %% Operational constraints (modifiable)
 pp.flagMd           = 0; % Miss distance instead of PoC
 pp.flagStability    = 1; % only for Cislunar
@@ -83,10 +83,9 @@ if pp.flagCA
     limLo = -inf(pp.flagPoCTot + ~pp.flagPoCTot*pp.n_conj,1); 
     isEqConstr = zeros(pp.flagPoCTot + ~pp.flagPoCTot*pp.n_conj,1);
 end   
-if pp.flagErrReturn; limUp = [limUp; 0]; limLo = [limLo; 0];  isEqConstr = [isEqConstr; pp.equalityConstr]; 
-                     limUp = [limUp; 0]; limLo = [limLo; 0];  isEqConstr = [isEqConstr; pp.equalityConstr]; end
-if pp.flagReturn;    limUp = [limUp; zeros(6,1)];                         limLo = [limLo; zeros(6,1)];           isEqConstr = [isEqConstr; ones(6,1)]; end
-if pp.flagMeanSma;   limUp = [limUp; log10((10/pp.Lsc)^2); log10((10/pp.Vsc)^2)];   limLo = [limLo; 0; 0]; isEqConstr = [isEqConstr; 0; 0]; end
+if pp.flagErrReturn; limUp = [limUp; 0]; limLo = [limLo; 1];  isEqConstr = [isEqConstr; pp.equalityConstr]; 
+                     limUp = [limUp; 0]; limLo = [limLo; 1];  isEqConstr = [isEqConstr; pp.equalityConstr]; end
+if pp.flagMeanSma;   limUp = [limUp; 0; 0];   limLo = [limLo; 0; 0]; isEqConstr = [isEqConstr; 1; 1]; end
 pp.limUp      = limUp;
 pp.limLo      = limLo;
 pp.isEqConstr = boolean(isEqConstr);

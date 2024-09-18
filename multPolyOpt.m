@@ -159,13 +159,13 @@ E2B(:,:,j) = e2b;
 tcaNewDelta(j) = deltaTca;
 iterationsN(:,j) = iters;
 % convRad(:,j) = load("write_read\convRad.dat")*pp.scaling(4)*pp.ctrlMax*1e6;
-rRetErr(j) = norm(xRetMan(1:3)-xRetBall(1:3))*pp.Lsc(1)*1e3;
-vRetErr(j) = norm(xRetMan(4:6)-xRetBall(4:6))*pp.Vsc(4)*1e6;
+rRetErr(j) = norm(xRetMan(1:3)-xRetBall(1:3))*pp.Lsc*1e3;
+vRetErr(j) = norm(xRetMan(4:6)-xRetBall(4:6))*pp.Vsc*1e6;
 meanAErr(j) = (finalCoeMan.a - finalCoeBall.a)*pp.Lsc*1e3;
 meanEErr(j) = (finalCoeMan.ecc - finalCoeBall.ecc)*pp.Lsc*1e3;
 % nodeThrust(:,j) = thrustNode;
 end
 clearvars -except errP errV dvs xs PoC compTime PB E2B xSec tcaNewDelta pp t_man iterationsN convRad rRetErr vRetErr meanAErr meanEErr
-save('simOutput/IACReturn');
+save('simOutput/IACMean');
 end
 

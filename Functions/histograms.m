@@ -7,7 +7,7 @@ end
 counts = counts'/size(var,2)*100;
 
 % Plot histograms
-bar(edges(2:end),counts,'FaceColor','flat','EdgeColor','flat');
+bar(edges(2:end),counts,'group','FaceColor','flat','EdgeColor','flat');
 ylabel('\% of cases [-]')
 grid on
 box on

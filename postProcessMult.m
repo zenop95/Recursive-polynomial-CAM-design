@@ -17,7 +17,6 @@ set(0,'DefaultUipanelFontName','Times', 'DefaultUipanelFontSize', 14);
 set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
 %% load variables
-simFolder = 'SimOutput\IACReturn';
 n = 2170;
 y = 2:7;
 yy = length(y);
@@ -32,7 +31,6 @@ yy = length(y);
 % outPlaneNlp = nan(yy,n);
 % outPlaneRec = nan(yy,n);
 % for kk = y
-    load([simFolder])
 %     % PoC(PoC>prctile(PoC,95)) = nan;
 %     % PoC(PoC<prctile(PoC,5)) = nan;
 %     % % tcaNewDelta(tcaNewDelta>prctile(tcaNewDelta,99.95)) = nan;
@@ -66,39 +64,60 @@ yy = length(y);
 %     % normRec(kk-1,:)     = dvn;  
 %     % cr(:,:,kk-1)     = convRad*pp.scaling(4)*pp.ctrlMax*1e6;  
 % end
-valid = boolean(sum(iterationsN,1)<pp.maxIter);
-PoC = PoC(valid);
-compTime = compTime(valid);
-tcaRec = tcaNewDelta(valid);
-meanAErr = meanAErr(valid);
-meanEErr = meanEErr(valid);
-rRetErr = rRetErr(valid);
-vRetErr = vRetErr(valid);
-alsoNlp = 0;
-%% Violin plots
-figure
-A = violin(PoC'*1e6-1);
-hold off
-xlabel('Expansion order [-]')
-ylabel('PoC relative error [-]')
+load('SimOutput\IACReturn');
+for j = 1:2170
+    dv1(j) = sum(normOfVec(dvs(:,:,j)));
+end
+valid     = boolean(sum(iterationsN,1)<pp.maxIter);
+dv1       = dv1(valid);
+PoC1      = PoC(valid);
+compTime1 = compTime(valid);
+tcaRec1   = tcaNewDelta(valid);
+meanAErr1 = meanAErr(valid);
+meanEErr1 = meanEErr(valid);
+rRetErr1  = rRetErr(valid);
+vRetErr1  = vRetErr(valid);
+dvTot     = vRetErr(valid);
 
-figure
-subplot(3,1,1)
-A = violin(compTime');
-hold off
-xlabel('Expansion order [-]')
-ylabel('Computation Time [s]')
+load('SimOutput\IACMean');
+for j = 1:2170
+    dv2(j) = sum(normOfVec(dvs(:,:,j)));
+end
+valid     = boolean(meanAErr<5);
+dv2       = dv2(valid);
+PoC2      = PoC(valid);
+compTime2 = compTime(valid);
+tcaRec2   = tcaNewDelta(valid);
+meanAErr2 = meanAErr(valid);
+meanEErr2 = meanEErr(valid);
+rRetErr2  = rRetErr(valid);
+vRetErr2  = vRetErr(valid);
+alsoNlp   = 0;
+
+%% Violin plots
+% figure
+% A = violin([PoC1', PoC2']*1e6-1);
+% hold off
+% xlabel('Expansion order [-]')
+% ylabel('PoC relative error [-]')
+
+% figure
+% subplot(3,1,1)
+% A = violin([compTime1', compTime2']);
+% hold off
+% xlabel('Expansion order [-]')
+% ylabel('Computation Time [s]')
 
 
 %% Define colors
-col1 = [0.9290 0.6940 0.1250];
-col2 = [0.4940 0.1840 0.5560];
-col3 = [0.4660 0.6740 0.1880];
-col4 = [0 0.4470 0.7410];
-colorsRec = [linspace(col3(1),col4(1),yy)', linspace(col3(2),col4(2),yy)', linspace(col3(3),col4(3),yy)'];
-colorsNlp = [linspace(col1(1),col2(1),yy)', linspace(col1(2),col2(2),yy)', linspace(col1(3),col2(3),yy)'];
-colors = [colorsRec;colorsNlp];
-colororder(colors)
+% col1 = [0.9290 0.6940 0.1250];
+% col2 = [0.4940 0.1840 0.5560];
+% col3 = [0.4660 0.6740 0.1880];
+% col4 = [0 0.4470 0.7410];
+% colorsRec = [linspace(col3(1),col4(1),yy)', linspace(col3(2),col4(2),yy)', linspace(col3(3),col4(3),yy)'];
+% colorsNlp = [linspace(col1(1),col2(1),yy)', linspace(col1(2),col2(2),yy)', linspace(col1(3),col2(3),yy)'];
+% colors = [colorsRec;colorsNlp];
+% colororder(colors)
 
 % crR = squeeze(cr(1,:,:));
 % crT = squeeze(cr(2,:,:));
@@ -183,29 +202,38 @@ colororder(colors)
 % ylim([0,63])
 
 %% TCA histogram
-figure('Renderer', 'painters', 'Position', [300 300 560 250])
+placeFigure
 edges = -0.5:0.05:0.5;
 histograms(tcaNewDelta,edges)
 xlabel('$\Delta t_{CA}$ [s]')
-% legend('Recursive','fmincon','interpreter','latex','box','off','Orientation','horizontal')
+
+
+placeFigure
+edges = 0.1:0.005:0.3;
+histograms(compTime2,edges)
+xlabel('Computation time [s]')
+legend('Return','Mean')
+
 % 
 %% Return histograms
-figure()
+placeFigure
+subplot(2,1,1)
 edges = 0:0.01:.5;
-histograms(rRetErr,edges)
-xlabel('$err_{r}$ [m]')
+histograms(rRetErr1,edges)
+xlabel('$e_{r}$ [m]')
 edges = 0:0.01:.2;
-figure()
-histograms(vRetErr,edges)
-xlabel('$err_{v}$ [mm/s]')
-% violin([rRetErr(rRetErr<prctile(rRetErr,90)); vRetErr(rRetErr<prctile(rRetErr,90))]');
-figure()
-edges = 0:0.01:.5;
-histograms(meanAErr,edges)
-xlabel('$err_{a}$ [m]')
-figure()
-histograms(meanEErr,edges)
-xlabel('$err_{e}$ [m]')
+subplot(2,1,2)
+histograms(vRetErr1,edges)
+xlabel('$e_{v}$ [mm/s]')
+
+placeFigure
+subplot(2,1,1)
+edges = 0:0.1:5;
+histograms(meanAErr2,edges)
+xlabel('$e_{a}$ [m]')
+subplot(2,1,2)
+histograms(meanEErr2,edges)
+xlabel('$e_{e}$ [m]')
 
 %% Delta V histograms
 % dv1(abs(dv1)>1000) = nan;
