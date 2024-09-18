@@ -69,7 +69,9 @@ beq     = DeltasUp(pp.isEqConstr); if isempty(beq); beq = zeros(0,1); end
 bin     = DeltasUp(~pp.isEqConstr); 
 iter = 0;
 alpha = pp.alpha;
-isConstrAct = false(pp.n_in,1);
+% isConstrAct = false(pp.n_in,1);
+iters = nan(DAorder,1);
+iters(1) = 1;
 for k = 2:DAorder
     err = 1;
     while err > pp.tol && iter < pp.maxIter
@@ -85,11 +87,12 @@ for k = 2:DAorder
         % end
         % Yp = mpcActiveSetSolver(H,f,gradIn,bin,gradEq,beq,isConstrAct,options);        
         Yp = mpcInteriorPointSolver(H,f,gradIn,bin,gradEq,beq,Y0,options);        
-        err  = norm(Yp-Y0);                                                 % [-] (n,1) Compute convergence variable at iteration iter
+        err  = norm(Yp-Y0);                                                     % [-] (n,1) Compute convergence variable at iteration iter
         er(iter) = err;
         Ys(:,iter) = Yp;
         Y0 = (1-alpha)*Y0 + alpha*Yp;                                           % [-] (n,1) Update linearization point for kth-order solution
     end
+    iters(k) = iter-iters(k-1);
 end
 yf = reshape(Yp,[],n_man);                                                      % [-] (m,N) Reshape final solution to epress it node-wise
 end

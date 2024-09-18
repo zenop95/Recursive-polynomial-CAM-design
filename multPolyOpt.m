@@ -21,12 +21,12 @@ set(0,'defaultfigurecolor',[1 1 1])
 
 %% Initialization variables
 % returnTime = -1;                                                           % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-for kk = 5
+for kk = 2
 for j = 1:2170
-t_man = [0.5 0 -0.5];
-multiple = 0;
-returnTime = -1;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+t_man = [0.5, -0.5, -1.5];
 j
+multiple = 0;
+returnTime = -2;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 pp = initOpt(0,0,j);
 pp.cislunar = 0;
 pp = defineParams(pp,t_man,returnTime);
@@ -79,7 +79,7 @@ end
 aa=tic;
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
 
-[lim,coeff,timeSubtr,xBall,xRet0] = propDA(pp.DAorder,u,0,pp);
+[lim,coeff,timeSubtr,xBall,xRetBall] = propDA(pp.DAorder,u,0,pp);
 if ~pp.flagPoCTot && multiple > 1
     coeff(pp.n_conj+1) = [];
     pp.n_constr = pp.n_constr - 1;
@@ -89,8 +89,12 @@ elseif pp.flagPoCTot && multiple > 1
 end
 metric = coeff(1).C(1);
 %% Optimization
-if any(strcmpi(pp.solvingMethod,{'lagrange','convex','newton'}))
-        [yF,iters] = computeCtrlRecursive(coeff,u,pp);
+if strcmpi(pp.solvingMethod,'lagrange')
+        [yF,iters] = computeCtrlActiveSet(coeff,u,pp);
+        % yF = computeCtrlRecursive(coeff,u,pp);
+
+elseif strcmpi(pp.solvingMethod,'convex')
+        yF = computeCtrlRecursiveConvex(coeff,u,pp);
 
 elseif strcmpi(pp.solvingMethod,'fmincon')
         yF = computeCtrlNlp(coeff,u,pp);
@@ -126,10 +130,9 @@ if pp.pocType ~= 3
     metricValPoly = 10^metricValPoly;
     lim           = 10^lim;
 end
-% errRetEci = xRet0 - pp.xReference;
-% errP(j) = norm(errRetEci(1:3))*pp.Lsc*1e3;
-% errV(j) = norm(errRetEci(4:6))*pp.Vsc*1e6;
-% metricValPoly = 10^metricValPoly;
+finalCoeMan  = osculating2mean(cartesian2kepler(xRetMan,1),1,pp.Lsc);
+finalCoeBall = osculating2mean(cartesian2kepler(xRetBall,1),1,pp.Lsc);
+
 lim           = 10^lim;
 dvs(:,:,j) = ctrl*pp.Vsc*1e6;
 xs(:,j)  = x;
@@ -155,13 +158,14 @@ compTime(j) = simTime;
 E2B(:,:,j) = e2b;
 tcaNewDelta(j) = deltaTca;
 iterationsN(:,j) = iters;
-convRad(:,j) = load("write_read\convRad.dat")*pp.scaling(4)*pp.ctrlMax*1e6;
-rRetErr(j) = norm(xRetMan(1:3)-xRet0(1:3))*pp.scaling(1)*1e3;
-vRetErr(j) = norm(xRetMan(4:6)-xRet0(4:6))*pp.scaling(4)*1e6;
+% convRad(:,j) = load("write_read\convRad.dat")*pp.scaling(4)*pp.ctrlMax*1e6;
+rRetErr(j) = norm(xRetMan(1:3)-xRetBall(1:3))*pp.Lsc(1)*1e3;
+vRetErr(j) = norm(xRetMan(4:6)-xRetBall(4:6))*pp.Vsc(4)*1e6;
+meanAErr(j) = (finalCoeMan.a - finalCoeBall.a)*pp.Lsc*1e3;
+meanEErr(j) = (finalCoeMan.ecc - finalCoeBall.ecc)*pp.Lsc*1e3;
 % nodeThrust(:,j) = thrustNode;
 end
-clearvars -except errP errV dvs xs PoC compTime PB E2B xSec tcaNewDelta pp t_man iterationsN convRad rRetErr vRetErr
-save(['simOutput/rec' num2str(pp.DAorder)]);
+clearvars -except errP errV dvs xs PoC compTime PB E2B xSec tcaNewDelta pp t_man iterationsN convRad rRetErr vRetErr meanAErr meanEErr
+save('simOutput/IACReturn');
 end
-figure
-semilogy(convRad')
+

@@ -17,82 +17,74 @@ set(0,'DefaultUipanelFontName','Times', 'DefaultUipanelFontSize', 14);
 set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
 %% load variables
-simFolder = 'SimOutput\impulsive\';
+simFolder = 'SimOutput\IACReturn';
 n = 2170;
 y = 2:7;
 yy = length(y);
-PoCNlp      = nan(yy,n);
-PoCRec      = nan(yy,n);
-simTimeNlp  = nan(yy,n);
-simTimeRec  = nan(yy,n);
-normNlp     = nan(yy,n);
-normRec     = nan(yy,n);
-inPlaneNlp  = nan(yy,n);
-inPlaneRec  = nan(yy,n);
-outPlaneNlp = nan(yy,n);
-outPlaneRec = nan(yy,n);
-for kk = y
-    load([simFolder,'nlp',num2str(kk),'.mat'])
-    PoC(PoC>prctile(PoC,95)) = nan;
-    PoC(PoC<prctile(PoC,5)) = nan;
-    % tcaNewDelta(tcaNewDelta>prctile(tcaNewDelta,99.95)) = nan;
-    % tcaNewDelta(tcaNewDelta<prctile(tcaNewDelta,0.05)) = nan;
-    % compTime(compTime>prctile(compTime,99)) = nan;
-    PoCNlp(kk-1,:)     = PoC;
-    tcaRec(kk-1,:)     = nan(2170,1);
-    compTime(compTime>prctile(compTime,99)) = nan;
-    simTimeNlp(kk-1,:) = compTime;
-    dvs = squeeze(dvs);
-    inPlaneNlp(kk-1,:)  = rad2deg(atan(dvs(1,:)'./dvs(2,:)'))';
-    outPlaneNlp(kk-1,:) = rad2deg(atan(dvs(3,:)'./normOfVec(dvs(1:2,:))'))';
-    dvn1 = normOfVec(squeeze(dvs));
-    dvn1(dvn1>prctile(dvn1,99.9)) = nan;
-    dv1 = dvs;
-    normNlp(kk-1,:)     = dvn1;
-    load(['SimOutput\retErr.mat'])
-    PoC(PoC>prctile(PoC,95)) = nan;
-    PoC(PoC<prctile(PoC,5)) = nan;
-    tcaNewDelta(tcaNewDelta>prctile(tcaNewDelta,99.95)) = nan;
-    tcaNewDelta(tcaNewDelta<prctile(tcaNewDelta,0.05)) = nan;
-    tcaNlp(kk-1,:)     = tcaNewDelta;
-    compTime(compTime>prctile(compTime,99)) = nan;
-    PoCRec(kk-1,:)     = PoC;
-    simTimeRec(kk-1,:) = compTime;
-    dvs = squeeze(dvs);
-    inPlaneRec(kk-1,:)  = rad2deg(atan(dvs(1,:)'./dvs(2,:)'))';
-    outPlaneRec(kk-1,:) = rad2deg(atan(dvs(3,:)'./normOfVec(dvs(1:2,:))'))';
-    dvn = normOfVec(squeeze(dvs));
-    dvn(dvn>prctile(dvn,99.9)) = nan;
-    normRec(kk-1,:)     = dvn;  
-    cr(:,:,kk-1)     = convRad*pp.scaling(4)*pp.ctrlMax*1e6;  
-end
+% PoCNlp      = nan(yy,n);
+% PoCRec      = nan(yy,n);
+% simTimeNlp  = nan(yy,n);
+% simTimeRec  = nan(yy,n);
+% normNlp     = nan(yy,n);
+% normRec     = nan(yy,n);
+% inPlaneNlp  = nan(yy,n);
+% inPlaneRec  = nan(yy,n);
+% outPlaneNlp = nan(yy,n);
+% outPlaneRec = nan(yy,n);
+% for kk = y
+    load([simFolder])
+%     % PoC(PoC>prctile(PoC,95)) = nan;
+%     % PoC(PoC<prctile(PoC,5)) = nan;
+%     % % tcaNewDelta(tcaNewDelta>prctile(tcaNewDelta,99.95)) = nan;
+%     % % tcaNewDelta(tcaNewDelta<prctile(tcaNewDelta,0.05)) = nan;
+%     % % compTime(compTime>prctile(compTime,99)) = nan;
+%     % PoCNlp(kk-1,:)     = PoC;
+%     % tcaRec(kk-1,:)     = nan(2170,1);
+%     % compTime(compTime>prctile(compTime,99)) = nan;
+%     % simTimeNlp(kk-1,:) = compTime;
+%     % dvs = squeeze(dvs);
+%     % inPlaneNlp(kk-1,:)  = rad2deg(atan(dvs(1,:)'./dvs(2,:)'))';
+%     % outPlaneNlp(kk-1,:) = rad2deg(atan(dvs(3,:)'./normOfVec(dvs(1:2,:))'))';
+%     % dvn1 = normOfVec(squeeze(dvs));
+%     % dvn1(dvn1>prctile(dvn1,99.9)) = nan;
+%     % dv1 = dvs;
+%     % normNlp(kk-1,:)     = dvn1;
+%     load('SimOutput\IACReturn.mat')
+%     PoC(PoC>prctile(PoC,95)) = nan;
+%     PoC(PoC<prctile(PoC,5)) = nan;
+%     tcaNewDelta(tcaNewDelta>prctile(tcaNewDelta,99.95)) = nan;
+%     tcaNewDelta(tcaNewDelta<prctile(tcaNewDelta,0.05)) = nan;
+%     tcaNlp(kk-1,:)     = tcaNewDelta;
+%     compTime(compTime>prctile(compTime,99)) = nan;
+%     PoCRec(kk-1,:)     = PoC;
+%     simTimeRec(kk-1,:) = compTime;
+%     % dvs = squeeze(dvs);
+%     % inPlaneRec(kk-1,:)  = rad2deg(atan(dvs(1,:)'./dvs(2,:)'))';
+%     % outPlaneRec(kk-1,:) = rad2deg(atan(dvs(3,:)'./normOfVec(dvs(1:2,:))'))';
+%     % dvn = normOfVec(squeeze(dvs));
+%     % dvn(dvn>prctile(dvn,99.9)) = nan;
+%     % normRec(kk-1,:)     = dvn;  
+%     % cr(:,:,kk-1)     = convRad*pp.scaling(4)*pp.ctrlMax*1e6;  
+% end
+valid = boolean(sum(iterationsN,1)<pp.maxIter);
+PoC = PoC(valid);
+compTime = compTime(valid);
+tcaRec = tcaNewDelta(valid);
+meanAErr = meanAErr(valid);
+meanEErr = meanEErr(valid);
+rRetErr = rRetErr(valid);
+vRetErr = vRetErr(valid);
 alsoNlp = 0;
 %% Violin plots
 figure
-if alsoNlp
-    B = violin(PoCNlp'*1e6-1,y);
-    B.LineColor = [0.4940 0.1840 0.5560];
-    B.violinColor = [0.4940 0.1840 0.5560];
-    B.mediancolor = 'r';
-    B.meancolor   = 'r';
-end
-hold on
-A = violin(PoCRec'*1e6-1,y);
+A = violin(PoC'*1e6-1);
 hold off
 xlabel('Expansion order [-]')
-ylabel('PoC [-]')
+ylabel('PoC relative error [-]')
 
 figure
 subplot(3,1,1)
-% if alsoNlp
-    B = violin(simTimeNlp',y);
-    B.LineColor = [0.4940 0.1840 0.5560];
-    B.violinColor = [0.4940 0.1840 0.5560];
-    B.mediancolor = 'r';
-    B.meancolor   = 'r';
-    hold on
-% end
-A = violin(simTimeRec',y);
+A = violin(compTime');
 hold off
 xlabel('Expansion order [-]')
 ylabel('Computation Time [s]')
@@ -108,64 +100,64 @@ colorsNlp = [linspace(col1(1),col2(1),yy)', linspace(col1(2),col2(2),yy)', linsp
 colors = [colorsRec;colorsNlp];
 colororder(colors)
 
-crR = squeeze(cr(1,:,:));
-crT = squeeze(cr(2,:,:));
-crN = squeeze(cr(3,:,:));
+% crR = squeeze(cr(1,:,:));
+% crT = squeeze(cr(2,:,:));
+% crN = squeeze(cr(3,:,:));
 
-figure()
-[crRsorted,ord] = sort(crR);
-semilogy(abs(dvs(1,ord(:,4))),'.','LineWidth',1)
-hold on
-semilogy(crRsorted,'LineWidth',2)
-axis tight
-box on
-grid on
-hold off
-ylabel('$\Delta v_R$ [mm/s]')
-xlabel('Conjunction ID [-]')
-
-    figure()
-    [crTsorted,ord] = sort(crT);
-    ddv = abs(dvs(2,ord(:,4)));
-    upB = crTsorted(:,5)';
-    ddvup = ddv; ddvup(ddvup<upB*2) = nan;
-    semilogy(abs(ddv),'b.','LineWidth',1)
-    hold on
-    semilogy(abs(ddvup),'r.','LineWidth',1)
-    semilogy(crTsorted,'LineWidth',2)
-    legend('','','n=2','n=3','n=4','n=5','n=6','n=7','Interpreter','latex','Orientation','horizontal')
-    axis tight
-    box on
-    grid on
-    hold off
-    ylabel('$\Delta v_T$ [mm/s]')
-    xlabel('Conjunction ID [-]')
+% figure()
+% [crRsorted,ord] = sort(crR);
+% semilogy(abs(dvs(1,ord(:,4))),'.','LineWidth',1)
+% hold on
+% semilogy(crRsorted,'LineWidth',2)
+% axis tight
+% box on
+% grid on
+% hold off
+% ylabel('$\Delta v_R$ [mm/s]')
+% xlabel('Conjunction ID [-]')
+%     % 
+    % figure()
+    % [crTsorted,ord] = sort(crT);
+    % ddv = abs(dvs(2,ord(:,4)));
+    % upB = crTsorted(:,5)';
+    % ddvup = ddv; ddvup(ddvup<upB*2) = nan;
+    % semilogy(abs(ddv),'b.','LineWidth',1)
+    % hold on
+    % semilogy(abs(ddvup),'r.','LineWidth',1)
+    % semilogy(crTsorted,'LineWidth',2)
+    % legend('','','n=2','n=3','n=4','n=5','n=6','n=7','Interpreter','latex','Orientation','horizontal')
+    % axis tight
+    % box on
+    % grid on
+    % hold off
+    % ylabel('$\Delta v_T$ [mm/s]')
+    % xlabel('Conjunction ID [-]')
     
-    iters = sum(iterationsN(1:5,ord(:,4)),1);
-    iterred = iters; iterred(isnan(ddvup)) = nan;
-    figure()
-    plot(iters,'b.') 
-    hold on 
-    plot(iterred,'r.')
-    hold off
-    axis tight
-    box on
-    grid on
-    hold off
-    ylabel('Iterations [-]')
-    xlabel('Conjunction ID [-]')
+    % iters = sum(iterationsN(1:2,ord(:,4)),1);
+    % iterred = iters; iterred(isnan(ddvup)) = nan;
+    % figure()
+    % plot(iters,'b.') 
+    % hold on 
+    % plot(iterred,'r.')
+    % hold off
+    % axis tight
+    % box on
+    % grid on
+    % hold off
+    % ylabel('Iterations [-]')
+    % xlabel('Conjunction ID [-]')
 
-figure()
-[crNsorted,ord] = sort(crN);
-semilogy(abs(dvs(3,ord(:,4))),'.','LineWidth',1)
-hold on
-semilogy(crNsorted,'LineWidth',2)
-axis tight
-box on
-grid on
-hold off
-ylabel('$\Delta v_N$ [mm/s]')
-xlabel('Conjunction ID [-]')
+% figure()
+% [crNsorted,ord] = sort(crN);
+% semilogy(abs(dvs(3,ord(:,4))),'.','LineWidth',1)
+% hold on
+% semilogy(crNsorted,'LineWidth',2)
+% axis tight
+% box on
+% grid on
+% hold off
+% ylabel('$\Delta v_N$ [mm/s]')
+% xlabel('Conjunction ID [-]')
 % 
 % %% Delta V histograms
 % figure()
@@ -199,13 +191,21 @@ xlabel('$\Delta t_{CA}$ [s]')
 % 
 %% Return histograms
 figure()
-edges = 0:0.01:0.5;
+edges = 0:0.01:.5;
 histograms(rRetErr,edges)
 xlabel('$err_{r}$ [m]')
+edges = 0:0.01:.2;
 figure()
 histograms(vRetErr,edges)
 xlabel('$err_{v}$ [mm/s]')
 % violin([rRetErr(rRetErr<prctile(rRetErr,90)); vRetErr(rRetErr<prctile(rRetErr,90))]');
+figure()
+edges = 0:0.01:.5;
+histograms(meanAErr,edges)
+xlabel('$err_{a}$ [m]')
+figure()
+histograms(meanEErr,edges)
+xlabel('$err_{e}$ [m]')
 
 %% Delta V histograms
 % dv1(abs(dv1)>1000) = nan;
