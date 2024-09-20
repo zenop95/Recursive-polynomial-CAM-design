@@ -46,8 +46,8 @@ tca_sep  = [0 1817.29381948244 7747.41049358302 11573.2922188092 15590.468030296
 conj_id = [1 5];
 tca_sep = tca_sep(conj_id(1:n_conj));
 Cs(:,:,1) = diag([1e-3 0.8 4e-5]);
-Cs(:,:,2) = diag([0.01 0.1 5e-4]);
-Cs(:,:,3) = diag([2e-3 0.6 4e-4]);
+Cs(:,:,5) = diag([0.01 0.05 5e-4]);
+Cs(:,:,4) = diag([2e-3 0.6 4e-4]);
 for j = 1:n_conj
     secondary(j).x0       = absState(:,conj_id(j));         
     secondary(j).mass     = 260;          % [kg] mass
@@ -60,7 +60,7 @@ for j = 1:n_conj
     %      B(conj_id(j),24) B(conj_id(j),22) B(conj_id(j),26);
     %      B(conj_id(j),25) B(conj_id(j),26) B(conj_id(j),23)];
     % secondary(j).C0       = [fix((cp + cs)*1e4)/1e4 zeros(3,3); zeros(3,6)];
-    secondary(j).C0       = [Cs(:,:,j) zeros(3,3); zeros(3,6)];
+    secondary(j).C0       = [Cs(:,:,conj_id(j)) zeros(3,3); zeros(3,6)];
     secondary(j).HBR      = primary.HBR + 0.003;         % [km]
     secondary(j).A_drag   = 1;            % [m^2] drag surface area
     secondary(j).Cd       = 2.2;          % [-] shape coefficient for drag

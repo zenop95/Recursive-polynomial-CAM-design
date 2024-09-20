@@ -32,7 +32,7 @@ else
     pp   = generateInitLeo(i);
     pp.T         = pp.T/pp.Tsc;                                                     % [-]    (1,1) Scaled orbital period
 end
-pp.gravOrd   = 2;                                                               % Order of the gravitational model
+pp.gravOrd   = 0;                                                               % Order of the gravitational model
 
 %(not modifiable)
 pp.Asc     = pp.Vsc/pp.Tsc;                                                     % [km/s2]   (1,1) Acceleration scaling constant

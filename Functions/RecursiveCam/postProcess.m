@@ -158,8 +158,8 @@ if ~pp.lowThrust
     hold on
     stem(t,ctrl(2,:),'LineWidth',2)
     stem(t,ctrl(3,:),'LineWidth',2)
-    stem(t(ctrlNorm~=0),ctrlNorm(ctrlNorm~=0),'color','k','LineWidth',2)
-    plot(t(ctrlNorm==0),ctrlNorm(ctrlNorm==0),'color','k')
+    % stem(t(ctrlNorm~=0),ctrlNorm(ctrlNorm~=0),'color','k','LineWidth',2)
+    % plot(t(ctrlNorm==0),ctrlNorm(ctrlNorm==0),'color','k')
     ylabel('$\Delta v$ [mm/s]')
     % set(gca, 'XDir','reverse')
 else

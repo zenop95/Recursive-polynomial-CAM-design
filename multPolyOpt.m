@@ -23,7 +23,7 @@ set(0,'defaultfigurecolor',[1 1 1])
 % returnTime = -1;                                                           % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 for kk = 2
 for j = 1:2170
-t_man = [0.5, -0.5, -1.5];
+t_man = [0.5, -0.5 -1.5];
 j
 multiple = 0;
 returnTime = -2;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
@@ -90,7 +90,7 @@ end
 metric = coeff(1).C(1);
 %% Optimization
 if strcmpi(pp.solvingMethod,'lagrange')
-        [yF,iters] = computeCtrlActiveSet(coeff,u,pp);
+        [yF,iters,er] = computeCtrlActiveSet(coeff,u,pp);
         % yF = computeCtrlRecursive(coeff,u,pp);
 
 elseif strcmpi(pp.solvingMethod,'convex')
@@ -163,6 +163,7 @@ rRetErr(j) = norm(xRetMan(1:3)-xRetBall(1:3))*pp.Lsc*1e3;
 vRetErr(j) = norm(xRetMan(4:6)-xRetBall(4:6))*pp.Vsc*1e6;
 meanAErr(j) = (finalCoeMan.a - finalCoeBall.a)*pp.Lsc*1e3;
 meanEErr(j) = (finalCoeMan.ecc - finalCoeBall.ecc)*pp.Lsc*1e3;
+erss(:,j) = [er, nan(1,pp.maxIter-length(er))];
 % nodeThrust(:,j) = thrustNode;
 end
 clearvars -except errP errV dvs xs PoC compTime PB E2B xSec tcaNewDelta pp t_man iterationsN convRad rRetErr vRetErr meanAErr meanEErr

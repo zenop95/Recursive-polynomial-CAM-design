@@ -1,7 +1,7 @@
 beep off
 format longG
-close all
-clear
+% close all
+% clear
 addpath(genpath('.\data'))
 addpath(genpath('.\Functions'))
 addpath(genpath('.\CppExec'))
@@ -64,35 +64,37 @@ yy = length(y);
 %     % normRec(kk-1,:)     = dvn;  
 %     % cr(:,:,kk-1)     = convRad*pp.scaling(4)*pp.ctrlMax*1e6;  
 % end
-load('SimOutput\IACReturn');
-for j = 1:2170
-    dv1(j) = sum(normOfVec(dvs(:,:,j)));
-end
-valid     = boolean(sum(iterationsN,1)<pp.maxIter);
-dv1       = dv1(valid);
-PoC1      = PoC(valid);
-compTime1 = compTime(valid);
-tcaRec1   = tcaNewDelta(valid);
-meanAErr1 = meanAErr(valid);
-meanEErr1 = meanEErr(valid);
-rRetErr1  = rRetErr(valid);
-vRetErr1  = vRetErr(valid);
-dvTot     = vRetErr(valid);
-
+% load('SimOutput\IACReturn');
 load('SimOutput\IACMean');
-for j = 1:2170
-    dv2(j) = sum(normOfVec(dvs(:,:,j)));
-end
-valid     = boolean(meanAErr<5);
-dv2       = dv2(valid);
-PoC2      = PoC(valid);
-compTime2 = compTime(valid);
-tcaRec2   = tcaNewDelta(valid);
-meanAErr2 = meanAErr(valid);
-meanEErr2 = meanEErr(valid);
-rRetErr2  = rRetErr(valid);
-vRetErr2  = vRetErr(valid);
-alsoNlp   = 0;
+% for j = 1:n
+%     dV(:,j) = normOfVec(squeeze(dvs(:,:,j)))';
+% end
+valid     = boolean(sum(iterationsN,1)<pp.maxIter);
+% dV        = dV(:,valid);
+iterations  = iterationsN(2,valid);
+% PoC1      = PoC(valid);
+% compTime1 = compTime(valid);
+% tcaRec1   = tcaNewDelta(valid);
+% meanAErr1 = meanAErr(valid);
+% meanEErr1 = meanEErr(valid);
+% rRetErr1  = rRetErr(valid);
+% vRetErr1  = vRetErr(valid);
+% dvTot     = sum(dV,1);
+% 
+% load('SimOutput\IACMean');
+% for j = 1:2170
+%     dv2(j) = sum(normOfVec(dvs(:,:,j)));
+% end
+% valid     = boolean(meanAErr<5);
+% dv2       = dv2(valid);
+% PoC2      = PoC(valid);
+% compTime2 = compTime(valid);
+% tcaRec2   = tcaNewDelta(valid);
+% meanAErr2 = meanAErr(valid);
+% meanEErr2 = meanEErr(valid);
+% rRetErr2  = rRetErr(valid);
+% vRetErr2  = vRetErr(valid);
+% alsoNlp   = 0;
 
 %% Violin plots
 % figure
@@ -202,38 +204,58 @@ alsoNlp   = 0;
 % ylim([0,63])
 
 %% TCA histogram
-placeFigure
-edges = -0.5:0.05:0.5;
-histograms(tcaNewDelta,edges)
-xlabel('$\Delta t_{CA}$ [s]')
-
-
-placeFigure
-edges = 0.1:0.005:0.3;
-histograms(compTime2,edges)
-xlabel('Computation time [s]')
-legend('Return','Mean')
+% placeFigure
+% edges = -0.5:0.05:0.5;
+% histograms(tcaNewDelta,edges)
+% xlabel('$\Delta t_{CA}$ [s]')
+% 
+% 
+% placeFigure
+% edges = 0.1:0.005:0.2;
+% histograms(compTime1,edges)
+% xlabel('Computation time [s]')
 
 % 
 %% Return histograms
-placeFigure
-subplot(2,1,1)
-edges = 0:0.01:.5;
-histograms(rRetErr1,edges)
-xlabel('$e_{r}$ [m]')
-edges = 0:0.01:.2;
-subplot(2,1,2)
-histograms(vRetErr1,edges)
-xlabel('$e_{v}$ [mm/s]')
+% placeFigure
+% subplot(2,1,1)
+% edges = 0:.01:.2;
+% histograms(rRetErr1,edges)
+% xlabel('$\varepsilon_{r}$ [m]')
+% subplot(2,1,2)
+% edges = 0:.01:.2;
+% histograms(vRetErr1,edges)
+% xlabel('$\varepsilon_{v}$ [mm/s]')
+
+% placeFigure
+% subplot(2,1,1)
+% edges = 0:.08:3;
+% histograms(abs(meanAErr1),edges)
+% xlabel('$\varepsilon_{a}$ [m]')
+% subplot(2,1,2)
+% histograms(abs(meanEErr1),edges)
+% xlabel('$\varepsilon_{e}$ [m]')
+% 
+% placeFigure
+% edges = 0:2.5e-3:5e-2;
+% histograms(abs(PoC1*1e6-1),edges)
+% xlabel('PoC relative error [-]')
+% 
+% placeFigure
+% edges = 0:30:500;
+% histograms(dvTot,edges)
+% xlabel('$\Delta v$ [mm/s]')
+% 
+% placeFigure
+% edges = 0:30:500;
+% histograms(dV,edges)
+% xlabel('$\Delta v$ [mm/s]')
+% legend('$\Delta v_1$','$\Delta v_2$','$\Delta v_3$','Interpreter','latex')
 
 placeFigure
-subplot(2,1,1)
-edges = 0:0.1:5;
-histograms(meanAErr2,edges)
-xlabel('$e_{a}$ [m]')
-subplot(2,1,2)
-histograms(meanEErr2,edges)
-xlabel('$e_{e}$ [m]')
+edges = 0:50:1000;
+histograms(iterations,edges)
+xlabel('Number of itereations [-]')
 
 %% Delta V histograms
 % dv1(abs(dv1)>1000) = nan;

@@ -1,4 +1,4 @@
-function [yf,iters] = computeCtrlActiveSet(coeff,u,pp)
+function [yf,iters,er,Ys] = computeCtrlActiveSet(coeff,u,pp)
 % computeCtrlRecursive Solves the polynomial CAM optimization problem using a
 % recursive approach with lagrange multiplier formulation
 %
@@ -62,15 +62,13 @@ beq     = DeltasUp1(a1); if isempty(beq); beq = zeros(0,1); end
 gradIn  = grad(~a1,:);
 bin     = DeltasUp1(~a1); if isempty(bin); bin = zeros(0,1); end
 
-% options = mpcActiveSetOptions('ConstraintTolerance',1e-11);
-% Y0      = mpcActiveSetSolver(H,f,gradIn,bin,gradEq,beq,false(n_in,1),options); Yp = Y0;
-options = mpcInteriorPointOptions('ConstraintTolerance',1e-11);
-Y0      = mpcInteriorPointSolver(H,f,gradIn,bin,gradEq,beq,zeros(n,1),options); Yp = Y0;
+options = mpcActiveSetOptions('ConstraintTolerance',1e-11);
+Y0      = mpcActiveSetSolver(H,f,gradIn,bin,gradEq,beq,false(n_in,1),options); Yp = Y0;
 beq     = DeltasUp(pp.isEqConstr); if isempty(beq); beq = zeros(0,1); end
 bin     = DeltasUp(~pp.isEqConstr); 
 iter = 0;
 alpha = pp.alpha;
-% isConstrAct = false(pp.n_in,1);
+isConstrAct = false(pp.n_in,1);
 iters = nan(DAorder,1);
 iters(1) = 1;
 for k = 2:DAorder
@@ -83,17 +81,16 @@ for k = 2:DAorder
         % DeltasUp = DeltasUp./normGrad;
         gradEq = grad(pp.isEqConstr,:);
         gradIn = grad(~pp.isEqConstr,:);
-        % for j = pp.n_in
-        %     isConstrAct(j) = boolean(abs(gradIn(j,:)*Y0 - bin(j)) < 1e-5);
-        % end
-        % Yp = mpcActiveSetSolver(H,f,gradIn,bin,gradEq,beq,isConstrAct,options);        
-        Yp = mpcInteriorPointSolver(H,f,gradIn,bin,gradEq,beq,Y0,options);        
+        for j = pp.n_in
+            isConstrAct(j) = boolean(abs(gradIn(j,:)*Y0 - bin(j)) < 1e-5);
+        end
+        Yp = mpcActiveSetSolver(H,f,gradIn,bin,gradEq,beq,isConstrAct,options);        
         err  = norm(Yp-Y0);                                                     % [-] (n,1) Compute convergence variable at iteration iter
         er(iter) = err;
         Ys(:,iter) = Yp;
         Y0 = (1-alpha)*Y0 + alpha*Yp;                                           % [-] (n,1) Update linearization point for kth-order solution
     end
-    iters(k) = iter-iters(k-1);
+    iters(k) = iter-sum(iters(1:k-1));
 end
 yf = reshape(Yp,[],n_man);                                                      % [-] (m,N) Reshape final solution to epress it node-wise
 end

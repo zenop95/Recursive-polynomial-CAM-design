@@ -1,4 +1,4 @@
-function [yf,iters] = computeCtrlRecursive(coeff,u,pp)
+function [yf,iters,er,Ys] = computeCtrlRecursive(coeff,u,pp)
 % computeCtrlRecursive Solves the polynomial CAM optimization problem using a
 % recursive approach with lagrange multiplier formulation
 %
