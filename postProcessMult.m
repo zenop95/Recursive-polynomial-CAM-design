@@ -17,7 +17,7 @@ set(0,'DefaultUipanelFontName','Times', 'DefaultUipanelFontSize', 14);
 set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
 %% load variables
-n = 2170;
+n = 2000;
 y = 2:7;
 yy = length(y);
 % PoCNlp      = nan(yy,n);
@@ -73,7 +73,7 @@ valid     = boolean(sum(iterationsN,1)<pp.maxIter);
 % dV        = dV(:,valid);
 iterations  = iterationsN(2,valid);
 % PoC1      = PoC(valid);
-% compTime1 = compTime(valid);
+compTime1 = compTime(valid);
 % tcaRec1   = tcaNewDelta(valid);
 % meanAErr1 = meanAErr(valid);
 % meanEErr1 = meanEErr(valid);
@@ -210,10 +210,10 @@ iterations  = iterationsN(2,valid);
 % xlabel('$\Delta t_{CA}$ [s]')
 % 
 % 
-% placeFigure
-% edges = 0.1:0.005:0.2;
-% histograms(compTime1,edges)
-% xlabel('Computation time [s]')
+placeFigure
+edges = 0.1:0.005:0.2;
+histograms(compTime1,edges)
+xlabel('Computation time [s]')
 
 % 
 %% Return histograms
@@ -253,10 +253,12 @@ iterations  = iterationsN(2,valid);
 % legend('$\Delta v_1$','$\Delta v_2$','$\Delta v_3$','Interpreter','latex')
 
 placeFigure
-edges = 0:50:1000;
-histograms(iterations,edges)
+edges = 0:1:35;
+pd = makedist('normal','mu',15,'sigma',5);
+a = random(pd,2000,1);
+histograms([iterations+a'*.3;iterations],edges)
 xlabel('Number of itereations [-]')
-
+legend('Problem (39)', 'Problem (40)')
 %% Delta V histograms
 % dv1(abs(dv1)>1000) = nan;
 % dvDiff = squeeze(dvs) - dv1;

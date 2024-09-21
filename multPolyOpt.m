@@ -22,11 +22,11 @@ set(0,'defaultfigurecolor',[1 1 1])
 %% Initialization variables
 % returnTime = -1;                                                           % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 for kk = 2
-for j = 1:2170
+for j = 1:2000
 t_man = [0.5, -0.5 -1.5];
 j
 multiple = 0;
-returnTime = -2;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+returnTime = -3;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
 pp = initOpt(0,0,j);
 pp.cislunar = 0;
 pp = defineParams(pp,t_man,returnTime);
@@ -164,6 +164,7 @@ vRetErr(j) = norm(xRetMan(4:6)-xRetBall(4:6))*pp.Vsc*1e6;
 meanAErr(j) = (finalCoeMan.a - finalCoeBall.a)*pp.Lsc*1e3;
 meanEErr(j) = (finalCoeMan.ecc - finalCoeBall.ecc)*pp.Lsc*1e3;
 erss(:,j) = [er, nan(1,pp.maxIter-length(er))];
+iterVec(:,j) = [reshape(iters,[],1); nan(pp.maxIter-length(iters),1)];
 % nodeThrust(:,j) = thrustNode;
 end
 clearvars -except errP errV dvs xs PoC compTime PB E2B xSec tcaNewDelta pp t_man iterationsN convRad rRetErr vRetErr meanAErr meanEErr

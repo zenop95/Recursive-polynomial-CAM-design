@@ -30,7 +30,7 @@ pp.alpha          = 0.1;                                                        
 %% Operational constraints (modifiable)
 pp.flagMd           = 0; % Miss distance instead of PoC
 pp.flagStability    = 1; % only for Cislunar
-pp.lowThrust        = 1;                                                        % [bool]   (1,1) Low-thrust flag
+pp.lowThrust        = 0;                                                        % [bool]   (1,1) Low-thrust flag
 pp.fixedDir         = 0 + pp.flagStability*pp.cislunar;                         % [bool]   (1,1) Fixed-direction flag
 pp.fixedMag         = 0;                                                        % [bool]   (1,1) Fixed-magnitude flag
 pp.filterMans       = 0;                                                        % [bool]   (1,1) Filtered maneuver flag
@@ -43,7 +43,7 @@ pp.flagCA           = 1;
 pp.flagPoCTot       = 1*~pp.flagMd;
 pp.flagMeanSma      = 0;
 pp.flagReturn       = 0;
-pp.flagErrReturn    = 0;
+pp.flagErrReturn    = 1;
 ctrlMax           = 1000;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
 % ctrlMax           = 10;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
 pp.ctrlMax        = ctrlMax/(pp.Asc*pp.lowThrust + pp.Vsc*~pp.lowThrust)/1e6;
@@ -85,8 +85,7 @@ if pp.flagCA
     limLo = -inf(pp.flagPoCTot + ~pp.flagPoCTot*pp.n_conj,1); 
     isEqConstr = zeros(pp.flagPoCTot + ~pp.flagPoCTot*pp.n_conj,1);
 end   
-if pp.flagErrReturn; limUp = [limUp; 0]; limLo = [limLo; 1];  isEqConstr = [isEqConstr; pp.equalityConstr]; 
-                     limUp = [limUp; 0]; limLo = [limLo; 1];  isEqConstr = [isEqConstr; pp.equalityConstr]; end
+if pp.flagErrReturn; limUp = [limUp; 0];   limLo = [limLo; 0]; isEqConstr = [isEqConstr; 1]; end
 if pp.flagMeanSma;   limUp = [limUp; 0; 0];   limLo = [limLo; 0; 0]; isEqConstr = [isEqConstr; 1; 1]; end
 pp.limUp      = limUp;
 pp.limLo      = limLo;
