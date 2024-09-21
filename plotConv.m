@@ -2,20 +2,24 @@ placeFigure()
 js = reshape(reshape(1:9,3,3)',1,[]);
 for j = 1:9
     subplot(3,3,j)
-    plot(Ys(js(j),:)*pp.Asc*pp.ctrlMax*1e6,'.')
+    plot(1:10,Ys(js(j),1:10)*pp.Asc*pp.ctrlMax*1e6,'o') 
+    hold on
+    plot(11:13,Ys(js(j),11:13)*pp.Asc*pp.ctrlMax*1e6,'o')
+    plot(14:17,Ys(js(j),14:end)*pp.Asc*pp.ctrlMax*1e6,'o')
     grid on
-    % ylabel('$\Delta v$ [mm/s]')
 end
-ylabel('$u$ [mm/s2]')
-xlabel('Iteration [-]')
+% ylabel('$u$ [mm/s2]')
+% xlabel('Iteration [-]')
 
 figure()
-semilogy(reshape(er,1,[])*pp.Vsc*pp.ctrlMax*1e6,'.')
+    semilogy(1:10,er(1:10)*pp.Asc*pp.ctrlMax*1e6,'o') 
 grid on
 hold on
+    semilogy(11:13,er(11:13)*pp.Asc*pp.ctrlMax*1e6,'o') 
+    semilogy(14:17,er(14:17)*pp.Asc*pp.ctrlMax*1e6,'o') 
 xlabel('Iteration [-]')
 ylabel('$e$ [mm/s2]')
-plot([1,sum(iters)],pp.tol*pp.Vsc*pp.ctrlMax*1e6*ones(2,1),'k--')
+plot([1,sum(iters)],pp.tol*pp.Asc*pp.ctrlMax*1e6*ones(2,1),'k--')
 hold off
 axis tight
 

@@ -13,7 +13,7 @@ function pp = defineParams(pp,nFire,nRet)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 %% Optimization parameters (modifiable)
-pp.DAorder       = 2;                                                           % [-] (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 4;                                                           % [-] (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-] (1,1) PoC type (0: Constant, 1: Chan, 2: Max)
 % % pp.objFunction   = 'fuel';
 pp.objFunction   = 'energy';
@@ -26,11 +26,11 @@ pp.equalityConstr = 0;
 tol               = 1e-7;                                                          % [km/s] (1,1) Tolerance for the successive linearizations (0.1 mm/s)
 % tol               = 1e-9;                                                          % [km/s] (1,1) Tolerance for the successive linearizations (0.1 mm/s)
 pp.maxIter        = 5e3;                                                        % [-] (1,1) Maximum number of successive linearizations
-pp.alpha          = 0.1;                                                         % parameter to use previous iteration solution (0.1 when error return)
+pp.alpha          = 0.6;                                                         % parameter to use previous iteration solution (0.1 when error return)
 %% Operational constraints (modifiable)
-pp.flagMd           = 0; % Miss distance instead of PoC
-pp.flagStability    = 1; % only for Cislunar
-pp.lowThrust        = 0;                                                        % [bool]   (1,1) Low-thrust flag
+pp.flagMd           = 1; % Miss distance instead of PoC
+pp.flagStability    = 0; % only for Cislunar
+pp.lowThrust        = 1;                                                        % [bool]   (1,1) Low-thrust flag
 pp.fixedDir         = 0 + pp.flagStability*pp.cislunar;                         % [bool]   (1,1) Fixed-direction flag
 pp.fixedMag         = 0;                                                        % [bool]   (1,1) Fixed-magnitude flag
 pp.filterMans       = 0;                                                        % [bool]   (1,1) Filtered maneuver flag
@@ -41,9 +41,9 @@ pp.thrustMagnitude  = thrustMagnitude/pp.Asc/1e6;                               
 pp.thrustDirections = repmat([0 1 0]',1,5);                                   % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
 pp.flagCA           = 1;
 pp.flagPoCTot       = 1*~pp.flagMd;
-pp.flagMeanSma      = 0;
+pp.flagMeanSma      = 1;
 pp.flagReturn       = 0;
-pp.flagErrReturn    = 1;
+pp.flagErrReturn    = 0;
 ctrlMax           = 1000;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
 % ctrlMax           = 10;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
 pp.ctrlMax        = ctrlMax/(pp.Asc*pp.lowThrust + pp.Vsc*~pp.lowThrust)/1e6;
