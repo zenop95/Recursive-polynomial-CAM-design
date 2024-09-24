@@ -47,7 +47,7 @@ int main(void)
     DA::setEps(1e-30);
     
     // Initialize DA variables
-    AlgebraicVector<DA> x0(6), x00(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), md(n_conj), dx(nvar-1), rRet(3), vRet(3), distRel(3), meanCoe(6); 
+    AlgebraicVector<DA> x0(6), x00(6), xsf(6), xs0(6), xBall(6), xf(6), r(3), r_rel(2), v(3), rB(3), ctrlRtn(3), ctrl(3), rf(3), rs(3), rsB(3), vs(3), xRet(6), poc(n_conj), md(n_conj), dx(nvar-1), rRet(3), vRet(3), distRel(3), coe(6), meanCoe(6); 
     AlgebraicMatrix<DA> xTca(6,n_conj), xsTca(6,n_conj), P_eci(3,3), P_B3(3,3), P_B(2,2), Pp(3,3), Ps(3,3), toB(3,3), STM_p(6,6), STM_s(6,6), CPropP(6,6), CPropS(6,6), covsda(9,n_conj), r2ep(3,3), r2es(3,3);
                     DA  poc_tot, alpha, beta, tcaNew, tan, radial, retErrP, retErrV, meanSma, meanEcc;
 
@@ -188,7 +188,9 @@ int main(void)
                 rRet[j] = xRet[j];
                 vRet[j] = xRet[j+3];
             }
-            meanCoe = osculating2mean(cart2kep(xRet,1.0),1.0,Lsc);
+            coe     = cart2kep(xRet,1.0);
+            meanCoe = osculating2mean(coe,1.0,Lsc);
+            coe = coe2mee(coe);
             meanSma = meanCoe[0];
             meanEcc = meanSma*meanCoe[1];
         }
@@ -280,13 +282,25 @@ if (constraintFlags[0] == 1) {
         }
     }
 
-    DA a,e;
-    double eps = 1e-15;
+    DA a,e, e1, e2, e3;
+    double eps = 0;//1e-30;
+    // if (constraintFlags[2] == 1) {
+    //     a = (dot(rRet - cons(rRet), rRet - cons(rRet)) + eps)*1e5;
+    //     e = (dot(vRet - cons(vRet), vRet - cons(vRet)) + eps)*1e5;
+    //     constraints << a << endl;
+    //     constraints << e << endl;
+    // }
     if (constraintFlags[2] == 1) {
-        a = log10(dot(rRet - cons(rRet), rRet - cons(rRet)) + eps);
-        e = log10(dot(vRet - cons(vRet), vRet - cons(vRet)) + eps);
-        constraints << a - 15.0 << endl;
-        constraints << e - 15.0 << endl;
+        a = (coe[0] - cons(coe[0]));
+        e = ((coe[1] - cons(coe[1])));
+        e1 = ((coe[5] - cons(coe[5])));
+        e2 = ((coe[3] - cons(coe[3])));
+        e3 = ((coe[4] - cons(coe[4])));
+        constraints << a << endl;
+        constraints << e << endl;
+        constraints << e1 << endl;
+        constraints << e2 << endl;
+        constraints << e3 << endl;
     }
     if (constraintFlags[3] == 1) {
         a = ((meanSma - cons(meanSma))*(meanSma - cons(meanSma)));

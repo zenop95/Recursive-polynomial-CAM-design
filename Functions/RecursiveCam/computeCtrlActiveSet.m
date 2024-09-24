@@ -88,7 +88,11 @@ for k = 2:DAorder
         err  = norm(Yp-Y0);                                                     % [-] (n,1) Compute convergence variable at iteration iter
         er(iter) = err;
         Ys(:,iter) = Yp;
-        Y0 = (1-alpha)*Y0 + alpha*Yp;                                           % [-] (n,1) Update linearization point for kth-order solution
+        % if iter > 2
+        %     Y0 = 0.9*Ys(:,iter-2) + 0.09*Y0 + 0.01*Yp;                                           % [-] (n,1) Update linearization point for kth-order solution
+        % else
+            Y0 = 0.9*Y0 + 0.1*Yp;                                           % [-] (n,1) Update linearization point for kth-order solution
+        % end
     end
     iters(k) = iter-sum(iters(1:k-1));
 end

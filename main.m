@@ -19,13 +19,13 @@ set(0,'defaultfigurecolor',[1 1 1])
 set(groot,'defaultAxesTickLabelInterpreter','latex');  
 warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 %% User-defined inputs (modifiable)
-multiple = 3;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
+multiple = 0;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
 cislunar = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
-pp = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
-returnTime = -3;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-% fireTimes  = [0.6 0.4];                                                               % [-] Example of bi-impulsive maneuvers
+pp = initOpt(multiple,cislunar,231);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
+returnTime = -2;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+fireTimes  = [0.5 -0.5 -1.999];                                                               % [-] Example of bi-impulsive maneuvers
 % fireTimes  = [0.5 -0.5 -1.5];                                                               % [-] Example of bi-impulsive maneuvers
-fireTimes  = [0.6, 0.4, -0.6 ,-0.4, -1.6 ,-1.4];                                                               % [-] Example of bi-impulsive maneuvers
+% fireTimes  = [0.6, 0.4, -0.6 ,-0.4, -1.6 ,-1.4];                                                               % [-] Example of bi-impulsive maneuvers
 % fireTimes = [3.5,2.5,1.5,0.5];                                                  % [-] Example of bi-impulsive maneuvers
 % fireTimes = linspace(0.4,0.6,2);                                              % [-] Example of single low-thrust arc
 % fireTimes = [linspace(0.4,0.6,2) -linspace(.4,.6,2) -linspace(1.8,2,2)];                        % [-] Example of two low-thrust arcs with different discretization points
@@ -121,8 +121,9 @@ else
     ctrl = yF;                                                                  % [-] (3,n_man) Build control matrix node-wise in the general case
 end
 simTime = toc - timeSubtr - timeSubtr1;     
-convRad = load("write_read\convRad.dat")*pp.scaling(4)*pp.ctrlMax*1e6;
+% convRad = load("write_read\convRad.dat")*pp.scaling(4)*pp.ctrlMax*1e6;
 ctrl = pp.ctrlMax*ctrl;
+ctrl(:,2) = -ctrl(:,1);
 %% Validation
 metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...    
                             pp.DAorder);
@@ -133,5 +134,5 @@ if ~pp.flagMd
     lim           = 10^lim;
 end                                                     
 %% PostProcess
-% postProcess(xBall,x,x_sec,xRetMan,xRetBall,lim,ctrl,deltaTca,simTime,pp)
-plotConv
+postProcess(xBall,x,x_sec,xRetMan,xRetBall,lim,ctrl,deltaTca,simTime,pp)
+% plotConv

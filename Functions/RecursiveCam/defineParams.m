@@ -26,11 +26,11 @@ pp.equalityConstr = 0;
 tol               = 1e-7;                                                          % [km/s] (1,1) Tolerance for the successive linearizations (0.1 mm/s)
 % tol               = 1e-9;                                                          % [km/s] (1,1) Tolerance for the successive linearizations (0.1 mm/s)
 pp.maxIter        = 5e3;                                                        % [-] (1,1) Maximum number of successive linearizations
-pp.alpha          = 0.6;                                                         % parameter to use previous iteration solution (0.1 when error return)
+pp.alpha          = 0.1;                                                         % parameter to use previous iteration solution (0.1 when error return)
 %% Operational constraints (modifiable)
-pp.flagMd           = 1; % Miss distance instead of PoC
+pp.flagMd           = 0; % Miss distance instead of PoC
 pp.flagStability    = 0; % only for Cislunar
-pp.lowThrust        = 1;                                                        % [bool]   (1,1) Low-thrust flag
+pp.lowThrust        = 0;                                                        % [bool]   (1,1) Low-thrust flag
 pp.fixedDir         = 0 + pp.flagStability*pp.cislunar;                         % [bool]   (1,1) Fixed-direction flag
 pp.fixedMag         = 0;                                                        % [bool]   (1,1) Fixed-magnitude flag
 pp.filterMans       = 0;                                                        % [bool]   (1,1) Filtered maneuver flag
@@ -41,9 +41,9 @@ pp.thrustMagnitude  = thrustMagnitude/pp.Asc/1e6;                               
 pp.thrustDirections = repmat([0 1 0]',1,5);                                   % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
 pp.flagCA           = 1;
 pp.flagPoCTot       = 1*~pp.flagMd;
-pp.flagMeanSma      = 1;
+pp.flagMeanSma      = 0;
 pp.flagReturn       = 0;
-pp.flagErrReturn    = 0;
+pp.flagErrReturn    = 1;
 ctrlMax           = 1000;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
 % ctrlMax           = 10;                                              % [mm/s^2 or mm/s] (1,1) Maximum acceleration/deltaV if flagCtrlMax = true
 pp.ctrlMax        = ctrlMax/(pp.Asc*pp.lowThrust + pp.Vsc*~pp.lowThrust)/1e6;
@@ -85,7 +85,8 @@ if pp.flagCA
     limLo = -inf(pp.flagPoCTot + ~pp.flagPoCTot*pp.n_conj,1); 
     isEqConstr = zeros(pp.flagPoCTot + ~pp.flagPoCTot*pp.n_conj,1);
 end   
-if pp.flagErrReturn; limUp = [limUp; 0];   limLo = [limLo; 0]; isEqConstr = [isEqConstr; 1]; end
+% if pp.flagErrReturn; limUp = [limUp; 0];   limLo = [limLo; 0]; isEqConstr = [isEqConstr; 1]; end
+if pp.flagErrReturn; limUp = [limUp; zeros(5,1)];   limLo = [limLo; zeros(5,1)]; isEqConstr = [isEqConstr; ones(5,1)]; end
 if pp.flagMeanSma;   limUp = [limUp; 0; 0];   limLo = [limLo; 0; 0]; isEqConstr = [isEqConstr; 1; 1]; end
 pp.limUp      = limUp;
 pp.limLo      = limLo;

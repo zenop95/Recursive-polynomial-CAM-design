@@ -108,8 +108,10 @@ poc_tot = PoCTot(PoC);
 % Validate return
 if pp.flagReturn || pp.flagErrReturn || pp.flagMeanSma
     errRet = xRetMan - xRetBall;
-    finalCoeMan  = osculating2mean(cartesian2kepler(xRetMan,1),1,pp.Lsc);
-    finalCoeBall = osculating2mean(cartesian2kepler(xRetBall,1),1,pp.Lsc);
+    finalCoeMan   = cartesian2kepler(xRetMan,1);     
+    finalCoeBall  = cartesian2kepler(xRetBall,1);     
+    finalMeanCoeMan  = osculating2mean(finalCoeMan,1,pp.Lsc);
+    finalMeanCoeBall = osculating2mean(finalCoeBall,1,pp.Lsc);
 end
 
 disp(['Solver: ', pp.solvingMethod])
@@ -134,10 +136,16 @@ disp(['MD after validation ',num2str(md(1)), ' km']);
 if pp.flagReturn || pp.flagErrReturn ||  pp.flagMeanSma
     disp(['Position error in return ',num2str(norm(errRet(1:3))*pp.Lsc*1e3), ' m']);
     disp(['Velocity error in return ',num2str(norm(errRet(4:6))*pp.Vsc*1e6), ' mm/s']);
+    disp(['SMA error in return ',num2str((finalCoeMan.a-finalCoeBall.a)*pp.Lsc*1e3), ' m']);
+    disp(['ECC error in return ',num2str(finalCoeMan.ecc-finalCoeBall.ecc)]);
+    disp(['ARG error in return ',num2str(rad2deg(finalCoeMan.w-finalCoeBall.w)), ' deg']);
+    disp(['RAAN error in return ',num2str(rad2deg(finalCoeMan.RAAN-finalCoeBall.RAAN)), ' deg']);
+    disp(['TA error in return ',num2str(rad2deg(finalCoeMan.theta-finalCoeBall.theta)), ' deg']);
+    disp(['INC error in return ',num2str(rad2deg(finalCoeMan.inc-finalCoeBall.inc)), ' deg']);
 end
 if pp.flagMeanSma
-    disp(['Semi-major axis shift ',num2str((finalCoeMan.a - finalCoeBall.a)*pp.Lsc*1e3), ' m']);
-    disp(['Eccentricity shift ',num2str((finalCoeMan.ecc*finalCoeMan.a - finalCoeBall.ecc*finalCoeBall.a)*pp.Lsc*1e3), ' m']);
+    disp(['Semi-major axis shift ',num2str((finalMeanCoeMan.a - finalMeanCoeBall.a)*pp.Lsc*1e3), ' m']);
+    disp(['Eccentricity shift ',num2str((finalMeanCoeMan.ecc*finalMeanCoeMan.a - finalMeanCoeBall.ecc*finalMeanCoeBall.a)*pp.Lsc*1e3), ' m']);
 end
 if pp.flagMd
     disp(['Limit: ',num2str(sqrt(pp.mdLim)*pp.Lsc), ' km'])
