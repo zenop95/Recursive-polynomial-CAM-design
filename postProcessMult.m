@@ -17,9 +17,9 @@ set(0,'DefaultUipanelFontName','Times', 'DefaultUipanelFontSize', 14);
 set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
 %% load variables
-n = 2000;
-y = 2:7;
-yy = length(y);
+n = 2170;
+% y = 2:7;
+% yy = length(y);
 % PoCNlp      = nan(yy,n);
 % PoCRec      = nan(yy,n);
 % simTimeNlp  = nan(yy,n);
@@ -64,16 +64,33 @@ yy = length(y);
 %     % normRec(kk-1,:)     = dvn;  
 %     % cr(:,:,kk-1)     = convRad*pp.scaling(4)*pp.ctrlMax*1e6;  
 % end
-% load('SimOutput\IACReturn');
-load('SimOutput\IACMean');
-% for j = 1:n
-%     dV(:,j) = normOfVec(squeeze(dvs(:,:,j)))';
-% end
-valid     = boolean(sum(iterationsN,1)<pp.maxIter);
+% load('SimOutput\IACCoe');
+% PoC1      = PoC;
+% compTime1 = compTime;
+% load('SimOutput\IACMean');
+% load('SimOutput\IACfmincon.mat');
+load('SimOutput\IACCoe.mat');
+compt1 = compTime;
+load('SimOutput\IACMean.mat');
+compt2 = compTime;
+load('SimOutput\IACfminconCoe.mat');
+compt3 = compTime;
+load('SimOutput\IACfmincon.mat');
+compt4 = compTime;
+% PoC2      = PoC;
+% compTime2 = compTime;
+for j = 1:n
+    dV(:,j) = normOfVec(squeeze(dvs(:,:,j)))';
+end
+% PoC = [PoC1; PoC2];
+% compTime = [compTime1; compTime2];
+% valid     = logical(sum(iterationsN,1)<pp.maxIter);
 % dV        = dV(:,valid);
-iterations  = iterationsN(2,valid);
-% PoC1      = PoC(valid);
-compTime1 = compTime(valid);
+% iterations  = iterationsN(2,:);
+% load('SimOutput\IACMean');
+% iterations2  = iterationsN(2,:);
+% itts = [iterations;
+        % iterations2];
 % tcaRec1   = tcaNewDelta(valid);
 % meanAErr1 = meanAErr(valid);
 % meanEErr1 = meanEErr(valid);
@@ -211,12 +228,52 @@ compTime1 = compTime(valid);
 % 
 % 
 placeFigure
-edges = 0.1:0.005:0.2;
-histograms(compTime1,edges)
+edges = 0:.01:1;
+c = [compt1; compt3; compt2; compt4]';
+histograms(compTime,edges)
 xlabel('Computation time [s]')
+legend('Problem (39)', 'Problem (40)')
+A = iosr.statistics.boxPlot(c);
+A.limit = [1,95];
+% A.percentile = [20,80];
+A.showOutliers = false;
+A.showViolin = false;
+A.showViolin;
+hold on
+plot(2.5*ones(2,1),gca().YLim,'k--')
+grid on
+ylabel('Computation time [s]')
+xticklabels({'Recursive','fmincon','Recursive','fmincon'})
+box on
 
 % 
 %% Return histograms
+placeFigure
+subplot(3,2,1)
+edges = -1:0.05:1;
+histograms((aErr),edges)
+xlabel('$\varepsilon_{a}$ [m]')
+subplot(3,2,2)
+edges = -5e-8:5e-9:5e-8;
+histograms((eErr),edges)
+xlabel('$\varepsilon_{e}$ [-]')
+subplot(3,2,3)
+edges = -3e-9:1e-10:2e-10;
+histograms((incErr),edges)
+xlabel('$\varepsilon_{i}$ [deg]')
+subplot(3,2,4)
+edges = -.0005:.00005:.0015;
+histograms((wErr),edges)
+xlabel('$\varepsilon_{\omega}$ [deg]')
+subplot(3,2,5)
+edges = -2e-9:0.1e-9:2e-9;
+histograms((OmErr),edges)
+xlabel('$\varepsilon_{\Omega}$ [deg]')
+subplot(3,2,6)
+edges = -0.05:.005:.05;
+histograms((thetaErr),edges)
+xlabel('$\varepsilon_{\theta}$ [deg]')
+
 % placeFigure
 % subplot(2,1,1)
 % edges = 0:.01:.2;
@@ -227,38 +284,36 @@ xlabel('Computation time [s]')
 % histograms(vRetErr1,edges)
 % xlabel('$\varepsilon_{v}$ [mm/s]')
 
-% placeFigure
-% subplot(2,1,1)
-% edges = 0:.08:3;
-% histograms(abs(meanAErr1),edges)
-% xlabel('$\varepsilon_{a}$ [m]')
-% subplot(2,1,2)
-% histograms(abs(meanEErr1),edges)
-% xlabel('$\varepsilon_{e}$ [m]')
+placeFigure
+subplot(2,1,1)
+edges = -100:100:100;
+histograms(abs(meanAErr),edges)
+xlabel('$\varepsilon_{a}$ [m]')
+subplot(2,1,2)
+histograms(abs(meanEErr),edges)
+xlabel('$\varepsilon_{e}$ [m]')
+
+placeFigure
+edges = 0:1e-2:1;
+histograms(abs(PoC*1e6-1),edges)
+xlabel('PoC relative error [-]')
 % 
 % placeFigure
-% edges = 0:2.5e-3:5e-2;
-% histograms(abs(PoC1*1e6-1),edges)
-% xlabel('PoC relative error [-]')
-% 
-% placeFigure
-% edges = 0:30:500;
+% edges = 0:30:500;     
 % histograms(dvTot,edges)
 % xlabel('$\Delta v$ [mm/s]')
 % 
-% placeFigure
-% edges = 0:30:500;
-% histograms(dV,edges)
-% xlabel('$\Delta v$ [mm/s]')
-% legend('$\Delta v_1$','$\Delta v_2$','$\Delta v_3$','Interpreter','latex')
-
 placeFigure
-edges = 0:1:35;
-pd = makedist('normal','mu',15,'sigma',5);
-a = random(pd,2000,1);
-histograms([iterations+a'*.3;iterations],edges)
-xlabel('Number of itereations [-]')
-legend('Problem (39)', 'Problem (40)')
+edges = 0:20:500;
+histograms(dV,edges)
+xlabel('$\Delta v$ [mm/s]')
+legend('$\Delta v_1$','$\Delta v_2$','Interpreter','latex')
+
+% placeFigure
+% edges = 0:1:50;
+% histograms(itts,edges)
+% xlabel('Number of itereations [-]')
+% legend('Problem (39)', 'Problem (40)')
 %% Delta V histograms
 % dv1(abs(dv1)>1000) = nan;
 % dvDiff = squeeze(dvs) - dv1;

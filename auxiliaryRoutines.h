@@ -35,7 +35,7 @@ void packMatrix(const AlgebraicMatrix<T>& mat, AlgebraicMatrix<T>& MAT, const in
 void readInit(int& nvar, int& order, int& pocType, int& N, int& lowThrust_flag, int& n_conj, int& n_man, int& m, int& dyn, int& gravOrd, int& missDistanceFlag, 
               int& TPoCFlag, double& tca, double& Lsc, double& musc, double& ctrlMax, double& mean_motion_p,
               AlgebraicMatrix<double>&  covp, AlgebraicMatrix<double>&  covs, AlgebraicMatrix<double>&  ctrlDum, AlgebraicMatrix<double>&  rsDum, AlgebraicMatrix<double>& vsDum, 
-              AlgebraicMatrix<double>& directions, AlgebraicVector<double>& xdum, AlgebraicVector<double>& t, AlgebraicVector<double>& HBR, AlgebraicVector<double>& magnitude, 
+              AlgebraicMatrix<double>& directions, AlgebraicVector<double>& xdum, AlgebraicVector<double>& t, AlgebraicVector<double>& HBR, 
               AlgebraicVector<double>& mean_motion_s, AlgebraicVector<int>& canFire, AlgebraicVector<int>& isConj, 
               AlgebraicVector<int>& isRet, AlgebraicVector<int>& constraintFlags) {
 
@@ -82,10 +82,7 @@ Input.open("./write_read/initial_state.dat");
             for (j = 0; j < 36; j ++) {
                 Input >> covs.at(j,k);   // Write dummy variable for the combined covariance in ECI at each conjunction from input
             }
-        }
-        for (k = 0; k < n_man; k ++) {
-                Input >> magnitude[k];    // Write maneuver magnitude if the magnitude is fixed
-        }   
+        } 
         for (k = 0; k < n_man; k ++) {
             for (j = 0; j < 3; j ++) {
                 Input >> directions.at(j,k); // Write maneuver direction in RTN if the direction is fixed

@@ -32,11 +32,11 @@ int main(void)
 	nodes.close();
     // Initialize variable
     AlgebraicMatrix<double> Cp(6,6), Cs(6,6), covp(36,n_conj), covs(36,n_conj), r2e(3,3), ctrlDum(m,n_man), rsDum(3,n_conj), vsDum(3,n_conj), directions(3,n_man);
-    AlgebraicVector<double> xdum(6), metricMap(3), t(N), HBR(n_conj), magnitude(n_man), mean_motion_s(n_conj);
+    AlgebraicVector<double> xdum(6), metricMap(3), t(N), HBR(n_conj), mean_motion_s(n_conj);
     AlgebraicVector<int>    canFire(N), isConj(N), isRet(N), constraintFlags(4);
     // Read input from .dat
 	readInit( nvar,  order,  pocType,  N,  lowThrust_flag,  n_conj,  n_man,  m,  dyn,  gravOrd,  missDistanceFlag, TPoCFlag, tca,  Lsc,  musc,  ctrlMax,  mean_motion_p, covp,   covs,   ctrlDum,   rsDum,  vsDum,
-               directions,  xdum,  t,  HBR,  magnitude, mean_motion_s,  canFire,  isConj, isRet,  constraintFlags);
+               directions,  xdum,  t,  HBR, mean_motion_s,  canFire,  isConj, isRet,  constraintFlags);
 
     // initialize execution time counter
     long time2 = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
@@ -87,17 +87,6 @@ int main(void)
                     jj ++;
                     ctrlRtn[j] = ctrlDum.at(j,kk) + DA(jj);
                 }
-            }
-            // Only the direction of the control is optimized
-            else if (m == 2) {
-                // alpha = DA(2*kk+1);
-                // beta  = DA(2*kk+2);
-                // ctrlRtn[0] = magnitude[kk]*cos(alpha)*sin(beta);
-                // ctrlRtn[1] = magnitude[kk]*cos(alpha)*cos(beta);
-                // ctrlRtn[2] = magnitude[kk]*sin(alpha);
-                ctrlRtn[0] = DA(2*kk+1);
-                ctrlRtn[1] = DA(2*kk+2);
-                ctrlRtn[2] = sqrt(magnitude[kk]*magnitude[kk] - ctrlRtn[0]*ctrlRtn[0] - ctrlRtn[1]*ctrlRtn[1]);
             }
             // Only the magnitude of the control is optimized
             else if (m == 1) {
@@ -190,7 +179,7 @@ int main(void)
             }
             coe     = cart2kep(xRet,1.0);
             meanCoe = osculating2mean(coe,1.0,Lsc);
-            coe = coe2mee(coe);
+            // coe = coe2mee(coe);
             meanSma = meanCoe[0];
             meanEcc = meanSma*meanCoe[1];
         }
@@ -275,36 +264,30 @@ if (constraintFlags[0] == 1) {
     }
     }
     
-    // write the DA expansion of return in output
+    DA a, e, om, Om, Inc;
     if (constraintFlags[1] == 1) {
-        for (j = 0; j < 6; j ++) {
-        constraints << (xRet[j] - cons(xRet[j])) << endl;     
-        }
-    }
-
-    DA a,e, e1, e2, e3;
-    double eps = 0;//1e-30;
-    // if (constraintFlags[2] == 1) {
-    //     a = (dot(rRet - cons(rRet), rRet - cons(rRet)) + eps)*1e5;
-    //     e = (dot(vRet - cons(vRet), vRet - cons(vRet)) + eps)*1e5;
-    //     constraints << a << endl;
-    //     constraints << e << endl;
-    // }
-    if (constraintFlags[2] == 1) {
-        a = (coe[0] - cons(coe[0]));
-        e = ((coe[1] - cons(coe[1])));
-        e1 = ((coe[5] - cons(coe[5])));
-        e2 = ((coe[3] - cons(coe[3])));
-        e3 = ((coe[4] - cons(coe[4])));
+        a  = coe[0] - cons(coe[0]);
+        e  = coe[1] - cons(coe[1]);
+        Inc = coe[2] - cons(coe[2]);
+        Om = coe[3] - cons(coe[3]);
+        om = coe[4] - cons(coe[4]);
         constraints << a << endl;
         constraints << e << endl;
-        constraints << e1 << endl;
-        constraints << e2 << endl;
-        constraints << e3 << endl;
+        constraints << Inc << endl;
+        constraints << Om << endl;
+        constraints << om << endl;
     }
+    double eps = 0;//1e-30;
+    if (constraintFlags[2] == 1) {
+        a = (dot(rRet - cons(rRet), rRet - cons(rRet)) + eps)*1e5;
+        e = (dot(vRet - cons(vRet), vRet - cons(vRet)) + eps)*1e5;
+        constraints << a << endl;
+        constraints << e << endl;
+    }
+    
     if (constraintFlags[3] == 1) {
-        a = ((meanSma - cons(meanSma))*(meanSma - cons(meanSma)));
-        e = ((meanEcc-cons(meanEcc))*(meanEcc-cons(meanEcc)));
+        a = ((meanSma - cons(meanSma))*(meanSma - cons(meanSma)))*1e10;
+        e = ((meanEcc-cons(meanEcc))*(meanEcc-cons(meanEcc)))*1e10;
         constraints << a   << endl;
         constraints << e  << endl;
     }

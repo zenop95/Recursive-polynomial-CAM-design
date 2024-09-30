@@ -30,9 +30,9 @@ elseif ~multiple && cislunar
 
 else
     pp   = generateInitLeo(i);
-    pp.T         = pp.T/pp.Tsc;                                                     % [-]    (1,1) Scaled orbital period
+    pp.T         = pp.T/pp.Tsc;                                                 % [-] (1,1) Scaled orbital period
 end
-pp.gravOrd   = 0;                                                               % Order of the gravitational model
+pp.gravOrd   = 0;                                                               % [-] (1,1) Order of the gravitational model
 
 %(not modifiable)
 pp.Asc     = pp.Vsc/pp.Tsc;                                                     % [km/s2]   (1,1) Acceleration scaling constant
@@ -41,7 +41,7 @@ pp.et      = 478548000/pp.Tsc;                                                  
 pp.x_pTCA  = pp.primary.x0./pp.scaling;                                         % [-]       (6,1) Scaled primary cartesian state at TCA
 pp.primary.n = pp.primary.n*pp.Tsc;
 for k = 1:pp.n_conj
-    pp.secondary(k).n = pp.secondary(k).n*pp.Tsc;
+    pp.secondary(k).n = pp.secondary(k).n*pp.Tsc;                               % [-] (6,1) Scaled mean motion of the kth secondary
     pp.x_sTCA(:,k) = pp.secondary(k).x0./pp.scaling;                            % [-] (6,1) Scaled kth secondary cartesian state at TCA
     pp.HBR(k)      = pp.secondary(k).HBR/pp.Lsc;                                % [-] (6,1) Scaled Hard Body Radius of kth secondary
 end

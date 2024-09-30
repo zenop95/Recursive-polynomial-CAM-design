@@ -2,10 +2,11 @@ placeFigure()
 js = reshape(reshape(1:9,3,3)',1,[]);
 for j = 1:9
     subplot(3,3,j)
-    plot(1:10,Ys(js(j),1:10)*pp.Asc*pp.ctrlMax*1e6,'o') 
+    plot(1,Ys(js(j),1)*pp.Asc*pp.ctrlMax*1e6,'o') 
     hold on
-    plot(11:13,Ys(js(j),11:13)*pp.Asc*pp.ctrlMax*1e6,'o')
-    plot(14:17,Ys(js(j),14:end)*pp.Asc*pp.ctrlMax*1e6,'o')
+    plot(2:11,Ys(js(j),2:11)*pp.Asc*pp.ctrlMax*1e6,'o') 
+    plot(12:14,Ys(js(j),12:14)*pp.Asc*pp.ctrlMax*1e6,'o')
+    plot(15:18,Ys(js(j),15:end)*pp.Asc*pp.ctrlMax*1e6,'o')
     grid on
 end
 % ylabel('$u$ [mm/s2]')

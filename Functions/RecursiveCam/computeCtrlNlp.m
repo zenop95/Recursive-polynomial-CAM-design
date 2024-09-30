@@ -13,8 +13,9 @@ n_man    = pp.n_man;
 m        = pp.m;
 limUp    = pp.limUp;
 limLo    = pp.limLo;
-limLo(limLo == -inf) = -1000;
-y0       = reshape(u,1,m*n_man);
+limLo(limLo == -inf) = -10;
+y0       = [0; 0.3; 0; zeros(3,1)]';
+% y0       = reshape(u,1,m*n_man);
 lb       = -ones(m*n_man,1);
 ub       =  ones(m*n_man,1);
 options  = optimoptions( ...
@@ -45,7 +46,7 @@ function [c_in,c_eq] = polyConstr(y,coeff,limsUp,limsLo,isEqConstr)
     n_constr = length(coeff);
     n_eq     = sum(isEqConstr);
     n_in     = n_constr - n_eq;
-    c_in     = nan(2*n_in,1);
+    c_in     = nan(n_in,1);
     c_eq     = nan(n_eq,1);
     jj       = 0;
     kk       = 0;
@@ -62,7 +63,7 @@ function [c_in,c_eq] = polyConstr(y,coeff,limsUp,limsLo,isEqConstr)
         else
             kk = kk + 1;
             c_in(kk)        = val - limsUp(j);
-            c_in(kk + n_in) = val + limsLo(j);
+            % c_in(kk + n_in) = val + limsLo(j);
         end
 
     end

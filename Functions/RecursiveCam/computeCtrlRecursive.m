@@ -42,7 +42,7 @@ for j = 0:n_constr
 end
 y(end,:)           = [];                                                        % eliminate case where all constraints are inactive
 y(:,pp.isEqConstr) = 1;                                                         % always activate all equality constraints
-y                  = boolean(unique(y,'rows'))';
+y                  = logical(unique(y,'rows'))';
 comb               = size(y,2);
 J                  = nan(comb,1);
 Y0s                = nan(pp.m*pp.n_man,comb);

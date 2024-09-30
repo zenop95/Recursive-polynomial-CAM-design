@@ -1,13 +1,11 @@
+%% Define path and set figure properties
 beep off
 format longG
-% close all
-% clear
+close all
+clear
 addpath(genpath('.\data'))
 addpath(genpath('.\Functions'))
 addpath(genpath('.\CppExec'))
-addpath(genpath('.\OPM'))
-addpath(genpath('.\CDM'))
-addpath(genpath('.\Path'));
 addpath(genpath('C:\Program Files\Mosek\10.0\toolbox\r2017a'));
 set(0,'DefaultTextInterpreter','latex');
 set(0,'DefaultAxesFontSize',16);
@@ -18,20 +16,19 @@ set(0,'DefaultTextFontName','Times', 'DefaultTextFontSize', 14);
 set(0,'DefaultUipanelFontName','Times', 'DefaultUipanelFontSize', 14);
 set(0, 'DefaultLineLineWidth', 1);
 set(0,'defaultfigurecolor',[1 1 1])
-
-%% Initialization variables
-% returnTime = -1;                                                           % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-for kk = 2
-for j = 1:2170
-t_man = [0.5, -0.5];
-j
-multiple = 0;
-returnTime = -1;                                                                 % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-pp = initOpt(0,0,j);
-pp.cislunar = 0;
-pp = defineParams(pp,t_man,returnTime);
-pp.DAorder = kk;
-pp.nMans   = j;                                                            % [bool]   (1,1) Selects how many impulses to use
+set(groot,'defaultAxesTickLabelInterpreter','latex');  
+warning('off','MATLAB:table:ModifiedAndSavedVarnames')
+%% User-defined inputs (modifiable)
+multiple    = 3;                                                                   % [-]     (1,1) flag to activate multiple encounters test case
+cislunar    = 0;                                                                   % [-]     (1,1) flag to activate cislunar test case
+pp          = initOpt(multiple,cislunar,1);                                              % [struc] (1,1) Initialize paramters structure with conjunction data
+returnTime  = -3;                                                                % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
+fireTimes   = [0.6, 0.4, -0.6 ,-0.4, -1.6 ,-1.4];                                                               % [-] Example of bi-impulsive maneuvers
+pp.cislunar = cislunar;
+pp          = defineParams(pp,fireTimes,returnTime);                            % [-] (1,1) Include optimization paramters to parameters structure
+% pp.PoCLim   = pp.PoCLim/max(multiple,1);
+%% Non-user defined
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 N  = pp.N;                                                                      % [-] (1,1) Number of nodes in the propagation
 n_man = pp.n_man;                                                               % [-] (1,1) Number of nodes where the maneuver can be performed
 if N == 1 && pp.lowThrust; error(['The algorithm needs ' ...
@@ -41,6 +38,7 @@ if pp.fixedMag && pp.fixedDir; error(['Both magnitude and direction ' ...
 
 m     = 3 - pp.fixedMag - 2*pp.fixedDir;  pp.m  = m;                            % [-] (1,1)  Number of optimization variables per node
 u     = zeros(m,n_man);                                                         % [-] (m,N)  Ctrl of the unperturbed trajectory
+scale = ones(m,n_man);                                                          % [-] (m,N)  ~1 if polynomial scaling is used
 ctrl  = nan(3,n_man);                                                           % [-] (3,N)  Initialized ctrl of the optimized trajectory
 
 %% Propagation
@@ -55,8 +53,8 @@ tic
 % If the filtering routine is adpoted, first perform a first-order
 % propagation to find the most sensitive maneuvering times
 if pp.filterMans
-    [~,~,coeffPoC,~,timeSubtr1] = propDA(1,u,0,0,pp);
-    gradVec = buildDAArray(coeffPoC.C,coeffPoC.E,1);
+    [~,~,coeff,~,timeSubtr1] = propDA(1,u,scale,0,0,pp);
+    gradVec = buildDAArray(coeff.C,coeff.E,1);
     for j = 1:n_man
         grads(j) = norm(gradVec(1+m*(j-1):m*j));
     end
@@ -80,18 +78,18 @@ aa=tic;
 % Propagate the primary orbit and get the PoC coefficient and the position at each TCA
 
 [lim,coeff,timeSubtr,xBall,xRetBall] = propDA(pp.DAorder,u,0,pp);
-if ~pp.flagPoCTot && multiple > 1
-    coeff(pp.n_conj+1) = [];
-    pp.n_constr = pp.n_constr - 1;
-elseif pp.flagPoCTot && multiple > 1
-    coeff(1:pp.n_conj) = [];
-    pp.n_constr = pp.n_constr - pp.n_conj;
-end
+% if ~pp.flagPoCTot && multiple > 1
+%     coeff(pp.n_conj+1) = [];
+%     pp.n_constr = pp.n_constr - 1;
+% elseif pp.flagPoCTot && multiple > 1
+%     coeff(1:pp.n_conj) = [];
+%     pp.n_constr = pp.n_constr - pp.n_conj;
+% end
 metric = coeff(1).C(1);
 %% Optimization
 if strcmpi(pp.solvingMethod,'lagrange')
-        % [yF,iters,er] = computeCtrlActiveSet(coeff,u,pp);
-        yF = computeCtrlRecursive(coeff,u,pp);
+        [yF,iters,er,Ys] = computeCtrlActiveSet(coeff,u,pp);
+        % [yF,iters,er,Ys] = computeCtrlRecursive(coeff,u,pp);
 
 elseif strcmpi(pp.solvingMethod,'convex')
         yF = computeCtrlRecursiveConvex(coeff,u,pp);
@@ -118,65 +116,17 @@ else
     ctrl = yF;                                                                  % [-] (3,n_man) Build control matrix node-wise in the general case
 end
 simTime = toc - timeSubtr - timeSubtr1;     
+% convRad = load("write_read\convRad.dat")*pp.scaling(4)*pp.ctrlMax*1e6;
 ctrl = pp.ctrlMax*ctrl;
-
 %% Validation
-metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF,1,[]), ...    
+metricValPoly = eval_poly(coeff(1).C,coeff(1).E,reshape(yF./scale,1,[]), ...    
                             pp.DAorder);
-% distValPoly = eval_poly(coeff(2).C,coeff(2).E,reshape(yF,1,[]), ...    
-                            % pp.DAorder)*pp.Lsc;
+
 [~,~,~,x,xRetMan,x_sec,deltaTca] = propDA(1,ctrl,1,pp);                      % Validate the solution by forward propagating and computing the real PoC
-if pp.pocType ~= 3
+if ~pp.flagMd
     metricValPoly = 10^metricValPoly;
     lim           = 10^lim;
-end
-
-finalCoeMan   = cartesian2kepler(xRetMan,1);     
-finalCoeBall  = cartesian2kepler(xRetBall,1);     
-finalMeanCoeMan  = osculating2mean(finalCoeMan,1,pp.Lsc);
-finalMeanCoeBall = osculating2mean(finalCoeBall,1,pp.Lsc);
-
-lim           = 10^lim;
-dvs(:,:,j) = ctrl*pp.Vsc*1e6;
-xs(:,j)  = x;
-xSec(:,j) = x_sec;
-% nodeThrust(:,j)  = thrustNode;
-STMp   = CWStateTransition(pp.primary.n^(3/2),deltaTca/pp.Tsc,0,1);
-STMs   = CWStateTransition(pp.secondary.n^(3/2),deltaTca/pp.Tsc,0,1);
-Cpprop = STMp*pp.Cp*STMp';
-Csprop = STMs*pp.Cs*STMs';
-Pp     = Cpprop(1:3,1:3);
-Ps     = Csprop(1:3,1:3);
-r2ep   = rtn2eci(x(1:3),x(4:6));
-r2es   = rtn2eci(x_sec(1:3),x_sec(4:6));
-P      = r2ep*Pp*r2ep' + r2es*Ps*r2es';
-e2b    = eci2Bplane(x(4:6),x_sec(4:6));
-e2b    = e2b([1 3],:);
-PB(:,:,j)     = e2b*P*e2b';
-p      = e2b*(x(1:3)-x_sec(1:3));
-smd    = dot(p,PB(:,:,j)\p);
-PoC(j) = maximumPc(p,PB(:,:,j),pp.HBR);                                        % [-] (1,1) PoC computed with Chan's formula
-PoC(j) = poc_Chan(pp.HBR,PB(:,:,j),smd,3);                                        % [-] (1,1) PoC computed with Chan's formula
-compTime(j) = simTime;
-E2B(:,:,j) = e2b;
-tcaNewDelta(j) = deltaTca;
-% iterationsN(:,j) = iters;
-% convRad(:,j) = load("write_read\convRad.dat")*pp.scaling(4)*pp.ctrlMax*1e6;
-rRetErr(j) = norm(xRetMan(1:3)-xRetBall(1:3))*pp.Lsc*1e3;
-vRetErr(j) = norm(xRetMan(4:6)-xRetBall(4:6))*pp.Vsc*1e6;
-aErr(j) = (finalCoeMan.a-finalCoeBall.a)*pp.Lsc*1e3;
-eErr(j) = finalCoeMan.ecc-finalCoeBall.ecc;
-wErr(j) = rad2deg(finalCoeMan.w-finalCoeBall.w);
-OmErr(j) = rad2deg(finalCoeMan.RAAN-finalCoeBall.RAAN);
-thetaErr(j) = rad2deg(finalCoeMan.theta-finalCoeBall.theta);
-incErr(j) = rad2deg(finalCoeMan.inc-finalCoeBall.inc);
-meanAErr(j) = (finalMeanCoeMan.a - finalMeanCoeBall.a)*pp.Lsc*1e3;
-meanEErr(j) = (finalMeanCoeMan.ecc - finalMeanCoeBall.ecc)*pp.Lsc*1e3;
-% erss(:,j) = [er, nan(1,pp.maxIter-length(er))];
-% iterVec(:,j) = [reshape(iters,[],1); nan(pp.maxIter-length(iters),1)];
-% nodeThrust(:,j) = thrustNode;
-end
-clearvars -except errP errV dvs xs PoC compTime PB E2B xSec tcaNewDelta pp t_man iterationsN convRad rRetErr vRetErr meanAErr meanEErr aErr eErr wErr OmErr thetaErr incErr
-save('simOutput/IACfmincon');
-end
-
+end                                                     
+%% PostProcess
+postProcess(xBall,x,x_sec,xRetMan,xRetBall,lim,ctrl,deltaTca,simTime,pp)
+plotConv

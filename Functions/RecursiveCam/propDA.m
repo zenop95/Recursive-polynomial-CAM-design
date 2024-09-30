@@ -3,19 +3,25 @@ function [lim,coeff,timeSubtr,xTca,xRet0,x_sec,deltaTca] = ...
 % propDA performs the DA propagation to build the NLP
 % 
 % INPUT:
-%        pp = [struct] optimization paramters structure
+%        DAorder      = [-]    (1,1) Maximum order of the polynomial constraints
+%        u            = [-]    (m,1) Nominal control (usually 0)
+%        validateFlag = [bool] (1,1) Toggle validation propagation
+%        pp           = [struct] optimization paramters structure
 % 
 % OUTPUT:
-%        lim       = [-] PoC limit
-%        coeffPoC  = [struct] structure with polynomial coefficient
-%        timeSubtr = [struct] time to subtract from execution time to
-%                             disregard writing and reading times
-%        xTca      = [struct] states at TCA
-%        PoC0      = [struct] PoC of the ballistic trajectory
+%        lim       = [-]      (1,1)      PoC limit
+%        coeff     = [struct]            Structure with polynomial coefficients
+%        timeSubtr = [s]      (1,1)      Time to subtract from execution time to
+%                                        disregard writing and reading times
+%        xTca      = [-]      (6,n_conj) States of the primary at TCAs 
+%        xRet0     = [-]      (6,1)      State at SK node
+%        x_sec     = [-]      (6,n_conj) States of the secondary at TCAs 
+%        deltaTca  = [-]      (n_conj,1) TCA shift due to maneuver
 %
 % Author: Zeno Pavanello, 2024
 % E-mail: zpav176@aucklanduni.ac.nz
 %-------------------------------------------------------------------------------
+%% initialize variables from input structure
 n_conj     = pp.n_conj;
 n_man      = pp.n_man;
 pocType    = pp.pocType;
@@ -31,7 +37,7 @@ N          = length(pp.t);
 u          = reshape(u,[],1);
 xTca       = nan(6,pp.n_conj);
 bb         = tic;
-% Write file to pass to C++
+%% Write file to pass to C++
 fid = fopen('write_read/initial_state.dat', 'w');
 fprintf(fid, '%2i\n',     N);
 fprintf(fid, '%2i\n',     n_conj);
@@ -78,9 +84,6 @@ if ~validateFlag
         end
     end
     for i = 1:n_man 
-        fprintf(fid, '%40.16f\n', pp.thrustMagnitude);
-    end
-    for i = 1:n_man 
         for j = 1:3 
             fprintf(fid, '%40.16f\n', pp.thrustDirections(j,i));
         end
@@ -102,13 +105,14 @@ end
 fclose(fid);
 timeSubtr1 = toc(bb);                                                           % Exlude writing time from computation time measure
 xRet0 = [];
+
 %% Run the C++ Executable to perform the DA propagation
 if ~validateFlag
     !wsl ./CppExec/polyProp
 elseif validateFlag
     !wsl ./CppExec/validatePoly
     lim=[];coeff=[];timeSubtr=[];
-    out = reshape(load("write_read/constPart.dat"),6,2*pp.n_conj+1);             % If validating we only care about the TCA positions
+    out = reshape(load("write_read/constPart.dat"),6,2*pp.n_conj+1);            
     xTca = out(:,1:n_conj);
     x_sec = out(:,n_conj+1:2*n_conj);
     deltaTca = load("write_read/tcaOut.dat")*pp.Tsc;             
@@ -118,14 +122,13 @@ end
 b = tic;
 
 %% Extract output from propagation
-a         = load("write_read/constPart.dat");                                                         
+a = load("write_read/constPart.dat");                                                         
 for k = 1:n_conj
     xTca(:,k) = a(1+(k-1)*6:6*k);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
 if pp.flagReturn || pp.flagErrReturn || pp.flagMeanSma
     xRet0 = a(end-5:end);                                               % [-] (6,n_conj) Constant part of the propagated state and control
 end
-timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
 
 if pp.flagMd
     lim = pp.mdLim;
@@ -137,7 +140,7 @@ end
 coeff  = struct();
 if ~validateFlag
     coeff  = LoadCOSY('write_read/constraints.dat', ...
-                   (3-2*pp.fixedDir-pp.fixedMag)*pp.n_man,pp.n_constr,0);
+                   (3-2*pp.fixedDir)*pp.n_man,pp.n_constr,0);
 end
 
 timeSubtr = toc(b) + timeSubtr1 + load("write_read/timeOut.dat")/1000 ;         % Exclude reading time from computation time measure
