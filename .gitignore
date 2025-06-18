@@ -50,3 +50,23 @@ CppExec/CGTProp
 *.ts
 *.txt
 CppExec/findTca
+New folder/a.mat
+New folder/dtca0.5.mat
+New folder/gradMd.mat
+New folder/gradPoC.mat
+New folder/md.mat
+New folder/md05.mat
+New folder/md15.mat
+New folder/md25.mat
+New folder/md35.mat
+New folder/pc4.mat
+New folder/pc5.mat
+New folder/pc6.mat
+New folder/pc7.mat
+New folder/poc.mat
+New folder/PoC_comp.mat
+New folder/pocSimsRec6.mat
+New folder/resMdConvex.mat
+New folder/resMdPp.mat
+New folder/resPocPp.mat
+New folder/untitled2.m
