@@ -38,4 +38,5 @@ Author: Zeno Pavanello, 2025
 E-mail: zpav176@aucklanduni.ac.nz
 
 [1] Pavanello, Z., Pirovano, L., & Armellin, R. (2025). Recursive Polynomial Method for Fast Collision Avoidance Maneuver Design. IEEE Transactions on Aerospace and Electronic Systems, 61(2), 2914–2925. https://doi.org/10.1109/TAES.2024.3480041
+
 [2] Pavanello, Z., Pirovano, L., & Armellin, R. (2025). Efficient collision avoidance manoeuvres under multiple polynomial constraints. Acta Astronautica, 234, 548–559. https://doi.org/10.1016/j.actaastro.2025.05.002
