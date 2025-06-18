@@ -2,11 +2,11 @@
 initializePath();
 multiple    = 0;                                                                % [-]     (1,1) flag to activate multiple encounters test case
 cislunar    = 0;                                                                % [-]     (1,1) flag to activate cislunar test case
-pp          = initOpt(multiple,cislunar,1);                                     % [struc] (1,1) Initialize paramters structure with conjunction data
+pp          = initOpt(multiple,cislunar,1254);                                     % [struc] (1,1) Initialize paramters structure with conjunction data
 returnTime  = 0;                                                               % [-] or [days] (1,N) in orbit periods if Earth orbit, days if cislunar
-fireTimes   = [0.5];                               
+fireTimes   = 0.5;                               
 pp.cislunar = cislunar;
-pp          = defineParams(pp,fireTimes,returnTime);                            % [-] (1,1) Include optimization paramters to parameters structure
+pp          = defineParams(pp,fireTimes,returnTime,1e-6,1.5,1);                            % [-] (1,1) Include optimization paramters to parameters structure
 
 %% Non-user defined
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -51,15 +51,6 @@ Cs(:,:,4) = diag([2e-3 0.6 4e-4]);
 for j = 1:n_conj
     secondary(j).x0       = absState(:,conj_id(j));         
     secondary(j).mass     = 260;          % [kg] mass
-    % r2ep = rtn2eci(xBall(1:3,conj_id(j)),xBall(4:6,conj_id(j)));
-    % r2es = rtn2eci(absState(1:3,conj_id(j)),absState(4:6,conj_id(j)));    
-    % cp = r2es'*r2ep*[B(conj_id(j),9) B(conj_id(j),12) B(conj_id(j),13);
-    %      B(conj_id(j),12) B(conj_id(j),10) B(conj_id(j),14);
-    %      B(conj_id(j),13) B(conj_id(j),14) B(conj_id(j),11)]*r2ep'*r2es;
-    % cs = [B(conj_id(j),21) B(conj_id(j),24) B(conj_id(j),25);
-    %      B(conj_id(j),24) B(conj_id(j),22) B(conj_id(j),26);
-    %      B(conj_id(j),25) B(conj_id(j),26) B(conj_id(j),23)];
-    % secondary(j).C0       = [fix((cp + cs)*1e4)/1e4 zeros(3,3); zeros(3,6)];
     secondary(j).C0       = [Cs(:,:,conj_id(j)) zeros(3,3); zeros(3,6)];
     secondary(j).HBR      = primary.HBR + 0.003;         % [km]
     secondary(j).A_drag   = 1;            % [m^2] drag surface area

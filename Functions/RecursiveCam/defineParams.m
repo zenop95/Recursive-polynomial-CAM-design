@@ -14,26 +14,25 @@ function pp = defineParams(pp,fireTimes,returnTime,pclim,mdLim,mdMan)
 % E-mail: zpav176@aucklanduni.ac.nz
 %--------------------------------------------------------------------------
 %% Optimization parameters (modifiable)
-pp.DAorder       = 5;                                                           % [-] (1,1) Order of the DA polynomial expansion
+pp.DAorder       = 2;                                                           % [-] (1,1) Order of the DA polynomial expansion
 pp.pocType       = 1;                                                           % [-] (1,1) PoC type (0: Constant, 1: Chan, 2: Max)
 % % pp.objFunction   = 'fuel';
 pp.objFunction   = 'energy';
 pp.solvingMethod = 'lagrange';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
-% pp.solvingMethod = 'convex';                                                  % [str] (1,1) Optimization method (recursive, fmincon)
 % pp.solvingMethod = 'fmincon';                                                
 % mdLim            = 0.5;                                                         % [km]     (1,1) Miss distance limit
 pp.mdLim         = (mdLim/pp.Lsc)^2;                                            % [-]      (1,1) Non-dimensionalized miss distance limit
 pp.PoCLim        = pclim;                                                        % [-]      (1,1) PoC limit for each conjunction
 tol               = 1e-7;                                                       % [km/s]   (1,1) Tolerance for the successive linearizations (0.1 mm/s)
 % tol               = 1e-8;                                                     % [km/s^2] (1,1) Tolerance for the successive linearizations (0.01 mm/s^2)
-pp.maxIter        = 5e3;                                                        % [-]      (1,1) Maximum number of successive linearizations of the high-order tensors
+pp.maxIter        = 5e2;                                                        % [-]      (1,1) Maximum number of successive linearizations of the high-order tensors
 pp.alpha          = 0.6;                                                        % [-]      (1,1) When linearizing the PP at iteration k, the linearization point is taken as tilde{Y} = (1-alpha)*Y_{k-2} + alpha*Y_{k-1}
 %% Operational constraints (modifiable)
 pp.flagMd           = mdMan;                                                        % [bool]   (1,1) Miss distance instead of PoC
 pp.flagStability    = 0;                                                        % [bool]   (1,1) Fix the direction of thurst to maximize stability, only for Cislunar
 pp.lowThrust        = 0;                                                        % [bool]   (1,1) Toggle low-thrust dynamics
 pp.fixedDir         = 0 + pp.flagStability*pp.cislunar;                         % [bool]   (1,1) Toggle fixed-direction thrust
-pp.filterMans       = 1;                                                        % [bool]   (1,1) Toggle filtering the maneuver
+pp.filterMans       = 0;                                                        % [bool]   (1,1) Toggle filtering the maneuver
 pp.nMans            = 1;                                                        % [bool]   (1,1) Selects how many impulses to use (only valid if filerMans==1)
 pp.thrustDirections = repmat([0 1 0]',1,20);                                     % [-]      (3,N) Thrust directions in RTN for consecutive impulse nodes (columnwise)
 pp.flagCA           = 1;                                                        % [bool]   (1,1) Toggle Collision Avoidance constraints
@@ -45,6 +44,7 @@ ctrlMax           = 1000;                                                       
 pp.ctrlMax        = ctrlMax/(pp.Asc*pp.lowThrust + pp.Vsc*~pp.lowThrust)/1e6;   % [-] (1,1) Non-dimensionalized maximum acceleration/deltaV
 % pp.ctrlMax          = 1;
 pp.tol = tol/pp.ctrlMax;                                                        % [km/s^2 or km/s] (1,1) Scaled Tolerance
+
 %% Maneuvering times (should not be modified)
 if pp.cislunar                                                                  % transform days into synodic time units
     fireTimes = fireTimes/pp.Tsc*86400; 
